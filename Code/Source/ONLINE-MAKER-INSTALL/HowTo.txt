@@ -1,0 +1,13 @@
+1. Создать на сервере папку, например "online".
+Назначить права этой папке "777".
+
+2. Забросить в папку "online" файл "upload.php".
+Назначить права этому файлу "640".
+
+3. Запустить программу "Online_Maker.exe".
+Назначить полный http адрес к файлу "upload.php".
+Например: http://vkbot.jenya.in.ua/online/upload.php
+
+P.S: Online_Maker.exe и Online_Maker.ini
+должны находиться внутри программы "THE SOCIAL ROBOTS",
+а точнее в её папке "Data".  ( Ботовод\Data\Online_Maker.exe )

@@ -1,0 +1,20 @@
+9:59:16: OAUTH2 START
+9:59:16: DATAREAD:
+9:59:16: API_V=5.52
+9:59:16: CLIENT_ID=5501761
+9:59:16: SCOPE=notify,friends,messages,offline,status,wall,groups,email,notifications
+9:59:16: LOGIN=socionictroll0073@gmail.com
+9:59:16: PASSWORD=qwertyu780
+9:59:16: OPENURL:
+9:59:16: https://oauth.vk.com/authorize?client_id=5501761&scope=notify,friends,messages,offline,status,wall,groups,email,notifications&redirect_uri=https://oauth.vk.com/blank.html&display=popup&v=5.52&response_type=token
+9:59:17: https://oauth.vk.com/authorize?client_id=5501761&scope=notify,friends,messages,offline,status,wall,groups,email,notifications&redirect_uri=https://oauth.vk.com/blank.html&display=popup&v=5.52&response_type=token
+9:59:17: FILLSUBMIT
+9:59:18: T1
+9:59:19: T2
+9:59:19: LOCATION:
+9:59:19: https://oauth.vk.com/blank.html#access_token=31780c6eddbb82d3c99dbc6558f1d6aa060bf27cdbed7155be6ec72f84ecdef34e9302c77d9e5b12ae00c&expires_in=0&user_id=359436201&email=socionictroll0073@gmail.com
+9:59:19: GETTOKEN:
+9:59:19: 31780c6eddbb82d3c99dbc6558f1d6aa060bf27cdbed7155be6ec72f84ecdef34e9302c77d9e5b12ae00c
+9:59:19: DATAWRITE:
+9:59:19: TOKEN=31780c6eddbb82d3c99dbc6558f1d6aa060bf27cdbed7155be6ec72f84ecdef34e9302c77d9e5b12ae00c
+9:59:19: OAUTH2 STOP

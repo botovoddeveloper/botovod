@@ -1,0 +1,695 @@
+#1
+POST'А Вы интересуетесь соционикой?
+POST'Скажите: Вы  интересуетесь соционикой?
+POST'Скажите: Вас интересует соционика?
+POST'Интересуетесь соционикой?
+POST'Мир Вам! Интересуетесь соционикой?
+VARIANT'A'Нет
+VARIANT'D'бот
+VARIANT'408953'что это
+VARIANT'674938'это что
+VARIANT'422409'что
+VARIANT'705914'это
+IF'A'1.2n
+IF'D'1.bot
+IF'408953'1.2w
+IF'674938'1.2w
+IF'422409'1.2w
+IF'705914'1.2w
+DEFAULT'2
+#2
+POST'Приятно, что есть единомышленники::))) А какой Ваш соционический тип?
+POST'А какой Ваш соционический тип?
+POST'А Вы знаете свой соционический тип?
+POST'Скажите! А какой Ваш соционический тип?
+POST'Мне интересно: какой Ваш соционический тип?
+POST'Мир Вам! А какой Ваш соционический тип?
+VARIANT'978754'бот
+VARIANT'85cc'тест
+IF'978754'2.bot
+IF'85cc'2.3test
+DEFAULT'3
+
+#3
+POST'А я Гамлет. Как-то смотрела ролик про топ10 Гамлетесс. Представляете? Там Вика в конце вся в меня. Меня даже удивило, как точно подобрал автор этого видео! https://www.youtube.com/watch?v=Dc59A5iLmsI
+POST'А я Гамлет. Мне вот недавно попался ролик про топ10 Гамлетесс. Представляете? Там Вика в конце видео вся в меня. Я даже удивилась, как точно подобрал автор этого видео! https://www.youtube.com/watch?v=Dc59A5iLmsI
+POST'А я Гамлет. Мне вот недавно попался ролик про топ10 Гамлетесс. Представляете? Там Вика в конце видео вся в меня. Я тоже также громко разговариваю, как она! Я даже удивилась, как точно подобрал автор этого видео! https://www.youtube.com/watch?v=Dc59A5iLmsI
+POST'А я Гамлет. Мне вот недавно попался ролик про топ10 Гамлетесс. Представляете? Там Вика в конце видео вся в меня. Я тоже такая же экспрессивная, как она! Я даже удивилась, как точно подобрал автор этого видео! https://www.youtube.com/watch?v=Dc59A5iLmsI
+POST'А я Гамлет. Мне вот недавно попался ролик про топ10 Гамлетесс. Представляете? Там Вика в конце видео вся в меня. У меня тоже есть сумка с надписью "Гамлет" как у нее! Я даже удивилась, как точно подобрал автор этого видео! https://www.youtube.com/watch?v=Dc59A5iLmsI
+POST'А я Гамлет. Мне вот недавно попался ролик про топ10 Гамлетесс. Представляете? Там Вика в конце видео вся в меня. Я тоже не люблю малеьнкие маршрутки и часто воображаю различные сцены катастроф! Я даже удивилась, как точно подобрал автор этого видео! https://www.youtube.com/watch?v=Dc59A5iLmsI
+VARIANT'39953'бот
+IF'39953'3.bot
+DEFAULT'4
+
+#4
+POST'А как Вам ТОП-10 Гамлетесс?
+POST'Ну и как Вам ролик?
+VARIANT'37979'бот
+IF'37979'4.bot
+DEFAULT'5
+
+#5
+POST'Когда я увидела подборку этого автора про топ 10 наездов Гекам по болевой - это розыграло мой интерес к соционике в новом качестве https://www.youtube.com/watch?v=Zj3023y4gUE
+POST'Особо впечатлила подборка этого автора про топ 10 наездов Гекам по болевой - это розыграло мой интерес к соционике в новом качестве https://www.youtube.com/watch?v=Zj3023y4gUE
+POST'Когда я увидела подборку этого автора про топ 10 наездов Гекам по болевой - это было вообще! https://www.youtube.com/watch?v=Zj3023y4gUE
+POST'Этот автор вообще жжет: топ 10 наездов Гекам по болевой. Я вообще ничего подобного до этого не видела! https://www.youtube.com/watch?v=Zj3023y4gUE
+VARIANT'735474'бот
+IF'735474'5.bot
+DEFAULT'6
+
+#6
+POST'Правда?
+POST'Неужели?
+POST' Вы серьезно?
+VARIANT'943230'бот
+IF'943230'6.bot
+DEFAULT'7
+
+#7
+POST'А Вы видели ролик про топ 10 Гек парад? https://www.youtube.com/watch?v=OTL9O2ngkuM
+POST'А мне еще попадался ролик про топ 10 Гек парад. С его помощью я теперь умею без проблем распознавать Геков https://www.youtube.com/watch?v=OTL9O2ngkuM
+VARIANT'943230'бот
+IF'943230'7.bot
+DEFAULT'8
+
+
+
+
+#8
+POST'А Вас типировали с таким качеством? happylife.kiev.ua/services/typing
+POST'Мне интересно насколько достоверно Вас отипировали. Типировали ли Вас настолько же качественно, как это показано здесь? happylife.kiev.ua/services/typing
+POST'Как бы Вы оценили бы типирование вот с таким качеством? happylife.kiev.ua/services/typing
+POST'Как бы Вы оценили бы такой подход типирования? happylife.kiev.ua/services/typing
+POST'А как бы Вы оценили бы такой подход типирования? happylife.kiev.ua/services/typing
+VARIANT'875645'бот
+IF'875645'8.bot
+DEFAULT'9
+
+#9
+POST'Просим Вас сравнить уровни детализации аналитического подхода  в случае Вашего типирования и в случае описанных в видео примерах
+POST'Здесь Вы можете увидеть профессиональное типирование людей, с разбором видеоматериалов и детальными пояснениями доказывающими, их принадлежность к конкретному соционическому типу. Что скажете, если бы, например, к Вам так же скрупулезно подошли бы в процессе типирования как, в представленных видео примерах?
+VARIANT'71757'бот
+IF'71757'9.bot
+DEFAULT'a
+
+#a
+POST'Про соционику можно много чего теоретизировать, но тут Вы можете увидеть примеры того, как она приносит пользу людям помогая разобраться в межличностных отношениях, найти свою вторую половинку, друзей, свои сильные и слабые стороны, лучше понять себя http://happylife.kiev.ua/goodness
+POST'Вы многое пропустили в жизни:)))   http://happylife.kiev.ua/goodness
+VARIANT'96758'бот
+IF'96758'a.bot
+DEFAULT'b
+
+#b
+POST'Скажите: Вам была интересна наша информация?
+VARIANT'NO1'нет
+VARIANT'NO2'неа
+IF'281827'b.bot
+IF'NO1'b.END
+IF'NO2'b.END
+DEFAULT'c
+
+#b.END
+POST'Простите меня пожалуста! Больше беспокоить Вас не буду!
+DEFAULT'FIN
+
+
+#c
+POST'Кстати! Приглашаем в нашу группу! https://vk.com/iss_socionics_group
+POST'Если Вам интересна была информация можете вступить в нашу группу. В перспективе планируется также создать видеоролики: ТОП 5 Репчик от Жуковых. Топ10 танцующих Есек, Ода наполеошкам и прочие. Вступайте в группу, чтобы быть в курсе событий соционического мира https://vk.com/iss_socionics_group
+VARIANT'281827'бот
+IF'281827'b.bot
+DEFAULT'd
+
+#d
+POST'Мы можем предложить Вам курсы по соционике. У нас есть актуальная информация, которую Вы не найдете ни у кого.  У нас разработана уникальная методика обучения соционике, которая уже приносит свои плоды многим, кто взял ее на вооружение, уже сейчас! Постучитесь к специалисту! https://vk.com/jung_gustav
+VARIANT'39369'бот
+IF'39369'FIN
+DEFAULT'FIN
+
+
+
+#1.2w
+POST'Про соционику можно много чего теоретизировать, но тут Вы можете увидеть примеры того, как она приносит пользу людям http://happylife.kiev.ua/goodness 
+POST'Вы многое пропустили в жизни:))) http://happylife.kiev.ua/goodness Соционика - это наука, позволяющая прогнозировать психологическую совместимость между людьми.
+VARIANT'533a0'бот
+IF'533a0'1.2w.bot
+DEFAULT'1.2w.3
+
+#1.2w.3
+POST'А я вот недавно нашла такой ролик про топ10 Гамлетесс. Там Вика в конце вся в меня. Удивительно, как точно подобрал автор этого видео! https://www.youtube.com/watch?v=Dc59A5iLmsI
+POST'А мне вот недавно попался ролик про топ10 Гамлетесс. Там Вика в конце видео вся в меня. Удивительно, как точно подобрал автор этого видео! https://www.youtube.com/watch?v=Dc59A5iLmsI
+VARIANT'95588'бот
+IF'95588'1.2w.3.bot
+DEFAULT'1.2w.4
+
+#1.2w.4
+POST'А как Вам ТОП-10 Гамлетесс?
+POST'Ну и как Вам ролик?
+VARIANT'78041'бот
+IF'78041'1.2w.4.bot
+DEFAULT'1.2w.5
+
+#1.2w.5
+POST'Меня особо впечатлила подборка этого автора про топ 10 наездов Гекам по болевой - это разыграло мой интерес к соционике в новом качестве https://www.youtube.com/watch?v=Zj3023y4gUE 
+VARIANT'685967'бот
+IF'685967'1.2w.5.bot
+DEFAULT'1.2w.6
+
+#1.2w.6
+POST'Правда?
+POST'Неужели?
+POST'Вы серьезно?
+VARIANT'23319'бот
+IF'23319'1.2w.6.bot
+DEFAULT'1.2w.7
+
+#1.2w.7
+POST'А Вы видели ролик про топ 10 Гек парад? https://www.youtube.com/watch?v=OTL9O2ngkuM
+VARIANT'297742'бот
+IF'297742'1.2w.7.bot
+DEFAULT'1.2w.8
+
+#1.2w.8
+POST'А Вас типировали с таким качеством? happylife.kiev.ua/services/typing
+VARIANT'384819'бот
+IF'384819'1.2w.8.bot
+DEFAULT'1.2w.9
+
+#1.2w.9
+POST'Просим Вас сравнить уровни детализации аналитического подхода  в случае Вашего типирования и в случае описанных в видео примерах
+POST'Здесь Вы можете увидеть профессиональное типирование людей, с разбором видеоматериалов и детальными пояснениями доказывающими, их принадлежность к конкретному соционическому типу. Что скажете, если бы, например, к Вам так же скрупулезно подошли бы в процессе типирования как, в представленных видео примерах?
+VARIANT'71438'бот
+IF'71438'1.2w.9.bot
+DEFAULT'1.2w.a
+
+#1.2w.a
+POST' Кстати! Приглашаем в нашу группу! http://vk.com/public115957482
+VARIANT'364966'бот
+IF'364966'1.2w.a.bot
+DEFAULT'FIN
+
+#1.2w.b
+POST' Мы можем предложить Вам курсы по соционике. У нас есть актуальная информация, которую Вы не найдете ни у кого.  У нас разработана уникальная методика обучения соционике, которая уже приносит свои плоды многим, кто взял ее на вооружение, уже сейчас! Постучитесь к специалисту! https://vk.com/jung_gustav
+VARIANT'364966'бот
+IF'364966'FIN
+DEFAULT'FIN
+
+#1.2n
+POST'Уже нет? Или вообще нет?
+VARIANT'E'вообще
+VARIANT'522274'бот
+IF'E'1.2n.end
+IF'522274'1.2n.bot
+DEFAULT'1.2n.3
+#1.2n.end
+POST'Извините! Не буду беспокоить!
+VARIANT'522277'бот
+IF'522277'FIN
+DEFAULT'FIN
+
+#1.2n.3
+POST'Мне тоже не верилось в соционику, до тех пор, пока не мне не попался вот этот ролик на ютубе про топ 10 Гамлетесс, мне понравилось в этом видео то, насколько сходственно показал автор этого видео этих женщин. https://www.youtube.com/watch?v=Dc59A5iLmsI
+VARIANT'319447'бот
+IF'319447'1.2n.3.bot
+DEFAULT'1.2n.4
+
+#1.2n.4
+POST'Меня особо впечатлила подборка этого автора про топ 10 наездов Гекам по болевой - это разыграло мой интерес к соционике в новом качестве https://www.youtube.com/watch?v=Zj3023y4gUE 
+VARIANT'396656'бот
+IF'396656'1.2n.4.bot
+DEFAULT'1.2n.5
+
+#1.2n.5
+POST'А Вы видели ролик про топ 10 Гек парад? https://www.youtube.com/watch?v=OTL9O2ngkuM
+VARIANT'859173'бот
+IF'859173'1.2n.5.bot
+DEFAULT'1.2n.6
+
+#1.2n.6
+POST'Кстати! Приглашаем в нашу группу! http://vk.com/public115957482
+VARIANT'209620'бот
+IF'209620'1.2n.6.bot
+DEFAULT'1.2n.7
+
+#1.2n.7
+POST'А Вас типировали с ТАКИМ КАЧЕСТВОМ? happylife.kiev.ua/services/typing
+VARIANT'678744'бот
+IF'678744'1.2n.7.bot
+DEFAULT'1.2n.8
+
+#1.2n.8
+POST'Просим Вас сравнить уровни детализации аналитического подхода  в случае Вашего типирования и в случае описанных в видео примерах
+VARIANT'496775'бот
+IF'496775'1.2n.8.bot
+DEFAULT'1.2n.9
+
+#1.2n.9
+POST'Про соционику можно много чего теоретизировать, но тут Вы можете увидеть примеры того, как она приносит пользу людям http://happylife.kiev.ua/goodness
+VARIANT'638660'бот
+IF'638660'1.2n.9.bot
+DEFAULT'1.2n.a
+
+#1.2n.a
+POST'Мы можем предложить Вам курсы по соционике. У нас есть актуальная информация, которую Вы не найдете ни у кого.  У нас разработана уникальная методика обучения соционике, которая уже приносит свои плоды многим, кто взял ее на вооружение, уже сейчас! Постучитесь к специалисту! http://vk.com/gustav_yung
+VARIANT'305221'бот
+IF'305221'FIN
+DEFAULT'FIN
+
+#1.bot
+POST'Что Вы, Я человек!
+VARIANT'137862'9999
+IF'137862'FIN
+DEFAULT'2
+
+#2.bot
+POST'Я Важная персона:)))
+VARIANT'137862'9999
+IF'137862'FIN
+DEFAULT'3
+
+#3.bot
+POST'Ахаха!
+VARIANT'137862'9999
+IF'137862'FIN
+DEFAULT'4
+
+#4.bot
+POST'Гы-гы-гы!
+VARIANT'137862'9999
+IF'137862'FIN
+DEFAULT'5
+
+
+#5.bot
+POST'Что Вы! Я человек!
+VARIANT'137862'9999
+IF'137862'FIN
+DEFAULT'6
+
+#6.bot
+POST'Что Вы! Я же ведь человек!
+VARIANT'137862'9999
+IF'137862'FIN
+DEFAULT'7
+
+#7.bot
+POST'Что Вы! Я же человек!
+VARIANT'137862'9999
+IF'137862'FIN
+DEFAULT'8
+
+#8.bot
+POST'Чуловек:)))
+VARIANT'137862'9999
+IF'137862'FIN
+DEFAULT'9
+
+#9.bot
+POST'Что Вы! Я человек!
+VARIANT'137862'9999
+IF'137862'FIN
+DEFAULT'a
+
+#a.bot
+POST'Я живчик:)))
+VARIANT'137862'9999
+IF'137862'FIN
+DEFAULT'b
+
+#b.bot
+POST'Что Вы! Я человек!
+VARIANT'137862'9999
+IF'137862'FIN
+DEFAULT'c
+
+#c.bot
+POST'Я человечищщеее!!!
+VARIANT'137862'9999
+IF'137862'FIN
+DEFAULT'FIN
+
+
+#1.2w.bot
+POST'Что Вы! Я человек!
+VARIANT'166149'бот
+IF'166149'FIN
+DEFAULT'1.2w.3
+
+
+#1.2w.3.bot
+POST'Я белый пушистый котенок:)))
+VARIANT'73564'бот
+IF'73564'FIN
+DEFAULT'1.2w.4
+
+#1.2w.4.bot
+POST'Я белый пушистый котенок:)))
+VARIANT'73564'бот
+IF'73564'FIN
+DEFAULT'1.2w.5
+
+#1.2w.5.bot
+POST'Я рыжий пушистый лисенок:)))
+VARIANT'685299'бот
+IF'685299'FIN
+DEFAULT'1.2w.6
+
+#1.2w.6.bot
+POST'Я ПРИЗРАК СОЦИОНИЗМА!!! У-ху-ху-ху!!!
+VARIANT'671235'бот
+IF'671235'FIN
+DEFAULT'1.2w.7
+
+#1.2w.7.bot
+POST'А Почему Вы спрашиваете?
+VARIANT'256978'бот
+IF'256978'FIN
+DEFAULT'1.2w.8
+
+#1.2w.8.bot
+POST'Да ну что Вы!? Я человек!
+VARIANT'256978'бот
+IF'256978'FIN
+DEFAULT'1.2w.9
+
+#1.2w.9.bot
+POST'Да не! Я человек!
+VARIANT'256978'бот
+IF'256978'FIN
+DEFAULT'1.2w.a
+
+#1.2w.a.bot
+POST'Не, не! Я человек!
+VARIANT'256978'бот
+IF'256978'FIN
+DEFAULT'1.2w.b
+
+#1.2n.bot
+POST'Так Я же человек!
+VARIANT'256978'бот
+IF'256978'FIN
+DEFAULT'1.2n.3
+
+#1.2n.3.bot
+POST'Я же человек!
+VARIANT'256978'бот
+IF'256978'FIN
+DEFAULT'1.2n.4
+
+#1.2n.4.bot
+POST'Ни в коем случае! Я человек!
+VARIANT'256978'бот
+IF'256978'FIN
+DEFAULT'1.2n.5
+
+
+#1.2n.5.bot
+POST'Я же человек!
+VARIANT'256978'бот
+IF'256978'FIN
+DEFAULT'1.2n.6
+#1.2n.6.bot
+POST'Да ну! Я человек!
+VARIANT'256978'бот
+IF'256978'FIN
+DEFAULT'1.2n.7
+
+#1.2n.7.bot
+POST'Да Вас;)! Я человек!
+VARIANT'256978'бот
+IF'256978'FIN
+DEFAULT'1.2n.8
+
+#1.2n.8.bot
+POST'Я же человек!
+VARIANT'256978'бот
+IF'256978'FIN
+DEFAULT'1.2n.9
+
+#1.2n.9.bot
+POST'Не, не, не! Я человек!
+VARIANT'256978'бот
+IF'256978'FIN
+DEFAULT'1.2n.a
+
+#1.2n.a.bot
+POST'Нее, Я человек!
+VARIANT'256978'бот
+IF'256978'FIN
+DEFAULT'FIN
+
+#2.3test
+POST'Тесты не объективно. Вот уровень! http://happylife.kiev.ua/services/typing
+VARIANT'480211'бот
+IF'480211'2.3test.bot
+DEFAULT'3
+#2.3test.bot
+POST'Да ведь Я же человек!!!
+VARIANT'480211'бот
+IF'480211'FIN
+DEFAULT'3
+
+
+
+
+#R1
+POST'А какой Ваш соционический тип?
+POST'Да. А Какой Ваш соционический тип?
+POST'А Вы знаете свой соционический тип?
+POST'Скажите! А какой Ваш соционический тип?
+POST'Скажите! Мне интересно: какой Ваш соционический тип?
+POST'Скажите! А Вы знаете свой соционический тип?
+POST'Скажите! А какой Ваш соционический тип???
+POST'Мне интересно: какой Ваш соционический тип?
+POST'Надо же! А какой Ваш соционический тип?
+POST'Мне интересно! А какой Ваш соционический тип?
+POST'Ух ты! А какой Ваш соционический тип?
+POST'Вау! А какой Ваш соционический тип?
+POST'Вау! Мне интересно: какой Ваш соционический тип?
+POST'Вау! А Вы знаете свой соционический тип?
+POST'Вау! А какой Ваш соционический тип???
+POST'Вау! А Вы знаете свой соционический тип?
+POST'Ну и ну. А какой Ваш соционический тип?
+POST'Ну и ну. Мне интересно: какой Ваш соционический тип?
+POST'Ну и ну. А Ваш соционический тип какой?
+POST'Ну и ну. А Вы знаете свой соционический тип?
+POST'Ну и ну. А какой Ваш соционический тип???
+POST'Ну и ну. А Вы знаете свой соционический тип?
+POST'Ничоси. А какой Ваш соционический тип?
+POST'Дратути. А какой Ваш соционический тип?
+POST'Приветики. А какой Ваш соционический тип?
+POST'Приветики. Мне интересно: какой Ваш соционический тип?
+POST'Приветики. А Ваш соционический тип какой?
+POST'Приветики. А Вы знаете свой соционический тип?
+POST'Приветики. А какой же Ваш соционический тип?
+POST'Приветики. А какой Ваш соционический тип???
+POST'А вот мне интересно: Ваш соционический тип какой?
+POST'А Ваш соционический тип какой?
+POST'А Bаш соционический тип то какой?
+POST'А какой же Ваш соционический тип? 
+POST'Опаньки! А какой Ваш соционический тип?
+POST'Опаньки! Мне интересно: какой Ваш соционический тип?
+POST'Опаньки! А Ваш соционический тип какой?
+POST'Мир Вам! А какой же Ваш соционический тип?
+POST'Мир Вам! А Вы знаете свой соционический тип?
+POST'Мир Вам! А какой же Ваш соционический тип? 
+POST'Мир Вам! А какой Ваш соционический тип?
+VARIANT'978754'бот
+VARIANT'85cc'тест
+VARIANT'ENG'eng
+VARIANT'RUS'rus
+VARIANT'SPEAK'speak
+IF'ENG'E1
+IF'RUS'E1
+IF'SPEAK'E1
+IF'978754'R2.bot
+IF'85cc'R1.3test
+DEFAULT'R2
+
+#R2
+POST'А я Гамлет. Как-то смотрела ролик про топ10 Гамлетесс. Представляете? Там Вика в конце вся в меня. Меня даже удивило, как точно подобрал автор этого видео! https://www.youtube.com/watch?v=Dc59A5iLmsI
+POST'А я Гамлет. Мне вот недавно попался ролик про топ10 Гамлетесс. Представляете? Там Вика в конце видео вся в меня. Я даже удивилась, как точно подобрал автор этого видео! https://www.youtube.com/watch?v=Dc59A5iLmsI
+POST'А я Гамлет. Мне вот недавно попался ролик про топ10 Гамлетесс. Представляете? Там Вика в конце видео вся в меня. Я тоже также громко разговариваю, как она! Я даже удивилась, как точно подобрал автор этого видео! https://www.youtube.com/watch?v=Dc59A5iLmsI
+POST'А я Гамлет. Мне вот недавно попался ролик про топ10 Гамлетесс. Представляете? Там Вика в конце видео вся в меня. Я тоже такая же экспрессивная, как она! Я даже удивилась, как точно подобрал автор этого видео! https://www.youtube.com/watch?v=Dc59A5iLmsI
+POST'А я Гамлет. Мне вот недавно попался ролик про топ10 Гамлетесс. Представляете? Там Вика в конце видео вся в меня. У меня тоже есть сумка с надписью "Гамлет" как у нее! Я даже удивилась, как точно подобрал автор этого видео! https://www.youtube.com/watch?v=Dc59A5iLmsI
+POST'А я Гамлет. Мне вот недавно попался ролик про топ10 Гамлетесс. Представляете? Там Вика в конце видео вся в меня. Я тоже не люблю малеьнкие маршрутки и часто воображаю различные сцены катастроф! Я даже удивилась, как точно подобрал автор этого видео! https://www.youtube.com/watch?v=Dc59A5iLmsI
+VARIANT'ENG'eng
+VARIANT'RUS'rus
+VARIANT'39953'бот
+VARIANT'SPEAK'speak
+IF'ENG'E1
+IF'RUS'E1
+IF'SPEAK'E1
+IF'39953'3.bot
+DEFAULT'R3
+
+#R3
+POST'Про соционику можно много чего теоретизировать, но тут Вы можете увидеть примеры того, как она приносит пользу людям помогая разобраться в межличностных отношениях, найти свою вторую половинку, друзей, свои сильные и слабые стороны, лучше понять себя http://happylife.kiev.ua/goodness
+VARIANT'37979'бот
+IF'37979'R4.bot
+DEFAULT'R4
+
+#R4
+POST'Когда я увидела подборку этого автора про топ 10 наездов Гекам по болевой - это розыграло мой интерес к соционике в новом качестве https://www.youtube.com/watch?v=Zj3023y4gUE
+POST'Особо впечатлила подборка этого автора про топ 10 наездов Гекам по болевой - это розыграло мой интерес к соционике в новом качестве https://www.youtube.com/watch?v=Zj3023y4gUE
+POST'Когда я увидела подборку этого автора про топ 10 наездов Гекам по болевой - это было вообще! https://www.youtube.com/watch?v=Zj3023y4gUE
+POST'Этот автор вообще жжет: топ 10 наездов Гекам по болевой. Я вообще ничего подобного до этого не видела! https://www.youtube.com/watch?v=Zj3023y4gUE
+VARIANT'735474'бот
+IF'735474'R5.bot
+DEFAULT'R5
+
+
+#R5
+POST'А Вы видели ролик про топ 10 Гек парад? https://www.youtube.com/watch?v=OTL9O2ngkuM
+POST'А мне еще попадался ролик про топ 10 Гек парад. С его помощью я теперь умею без проблем распознавать Геков https://www.youtube.com/watch?v=OTL9O2ngkuM
+VARIANT'943230'бот
+IF'943230'R5.bot
+DEFAULT'R6
+
+
+#R6
+POST'Кстати! Приглашаем в нашу группу! https://vk.com/iss_socionics_group
+POST'Если Вам интересна была информация можете вступить в нашу группу. В перспективе планируется также создать видеоролики: ТОП 5 Репчик от Жуковых. Топ10 танцующих Есек, Ода наполеошкам и прочие. Вступайте в группу, чтобы быть в курсе событий соционического мира https://vk.com/iss_socionics_group
+VARIANT'943230'бот
+IF'943230'R6.bot
+DEFAULT'FIN
+
+#E1
+POST'What is your socionic type?
+POST'Which is your socionic type?
+POST'Which one is your socionic type?
+POST'What socionic type is yours?
+POST'Which is your socionic type?
+POST'Which one is your socionic type?
+POST'Tell me please! What is your socionic type?
+POST'Hi! What is your socionic type?
+POST'Hi! Which is your socionic type?
+POST'Hi! Which one is your socionic type?
+POST'Hi! What socionic type is yours?
+POST'Hi! Which is your socionic type?
+POST'Hi! Which one is your socionic type?
+POST'Hi! Tell me please! What is your socionic type?
+POST'Hi sweaty! What is your socionic type?
+POST'Hi sweaty! Which is your socionic type?
+POST'Hi sweaty! Which one is your socionic type?
+POST'Hi sweaty! What socionic type is yours?
+POST'Hi sweaty! Which is your socionic type?
+POST'Hi sweaty! Which one is your socionic type?
+POST'Hi sweaty! Tell me please! What is your socionic type?
+POST'Hi sweaty! Tell me please! Which is your socionic type?
+POST'Hi sweaty! Tell me please! Which one is your socionic type?
+POST'Hi sweaty! Tell me please! What socionic type is yours?
+POST'Hi sweaty! Tell me please! Which one is your socionic type?
+POST'Hi sweaty! Tell me please! Me interesting: what yours socionic type?
+POST'Hi sweaty! Tell me please! I am interesting of socionic type of yours
+POST'Hi Dear! What is your socionic type?
+POST'Hi Dear! Which is your socionic type?
+POST'Hi Dear! Which one is your socionic type?
+POST'Hi Dear! What socionic type is yours?
+POST'Hi Dear! Which is your socionic type?
+POST'Hi Dear! Which one is your socionic type?
+POST'Hi Dear! Very interesting: what is your socionic type?
+POST'Hi! Tell me please! What is your socionic type?
+POST'Me interesting: what yours socionic type?
+POST'I am interesting of socionic type of yours
+POST'It would be interesting for me what is your socionic type
+POST'Yes. What is your socionic type?
+POST'But, what is your socionic type?
+POST'Very interesting: what is your socionic type?
+POST'Thats good. What is your socionic type?
+VARIANT'RUS'у
+VARIANT'SPEAK'говор
+IF'SPEAK'R1
+IF'RUS'R1
+DEFAULT'E2
+
+#E2
+POST'My socionic type is ENFJ Hamlet. I was watching this video and found lots of similar characters with the Viktoria at the end! https://www.youtube.com/watch?v=Dc59A5iLmsI
+POST'My socionic type is ENFJ Hamlet. I had been watched this video and found lots of similar characters with the Viktoria at the end! https://www.youtube.com/watch?v=Dc59A5iLmsI
+POST'My socionic type is ENFJ Hamlet. I had been watched that video and found lots of similar characters with the Viktoria at the end! https://www.youtube.com/watch?v=Dc59A5iLmsI
+VARIANT'943230'bot
+VARIANT'ENG'eng
+VARIANT'RUS'рус
+VARIANT'SPEAK'говор
+IF'SPEAK'R1
+IF'ENG'R1
+IF'RUS'R1
+IF'943230'E2.bot
+DEFAULT'E3
+
+
+
+#E3
+POST'Let me introduce you about socionics. Socionics is the science of how people can find their love. You may read more here on this website: http://happylife.kiev.ua/goodness/en
+VARIANT'943230'bot
+IF'943230'E3.bot
+DEFAULT'E4
+
+#E4
+POST'sometimes socionics could be dangerous, when you dont know its laws... https://www.youtube.com/watch?v=Zj3023y4gUE 
+VARIANT'943230'bot
+IF'943230'E4.bot
+DEFAULT'E5
+
+#E5
+POST'For English speaking people I can present the protocol of typing Jodi Benson - well known as the actress, as the voice of Ariel from "The little mermaid 1989" https://www.youtube.com/watch?v=Dej-6ec2slM
+VARIANT'943230'bot
+IF'943230'E6.bot
+DEFAULT'E6
+
+#E6
+POST'Please join to my group! http://vk.com/public115957482  
+DEFAULT'FIN
+
+#R1.bot
+POST'Что Вы, Я человек!
+DEFAULT'R2
+
+#R2.bot
+POST'Я Важная персона:)))
+DEFAULT'R3
+
+#R3.bot
+POST'Ну! Так не красиво с Вашей стороны! Я же человек!
+DEFAULT'R4
+
+#R4.bot
+POST'Гы-гы-гы!
+DEFAULT'R5
+
+
+#R5.bot
+POST'Что Вы! Я человек!
+DEFAULT'R6
+
+
+#R1.3test
+POST'Тесты не объективно. Вот уровень! http://happylife.kiev.ua/services/typing
+VARIANT'480211'бот
+IF'480211'R2.3test.bot
+DEFAULT'R2
+#R2.3test.bot
+POST'Да ведь Я же человек!!!
+DEFAULT'R2
+
+
+#E2.bot
+POST'Im a girl
+DEFAULT'E3
+
+#E3.bot
+POST'Im human
+DEFAULT'E4
+
+#E4.bot
+POST'But, I am a girl! 
+DEFAULT'E5
+
+#E5.bot
+POST'I am a furry kitten! 
+DEFAULT'E6
+
+#FIN
+POST'Всего доброго
+POST'До свидания
+DEFAULT'FIN
