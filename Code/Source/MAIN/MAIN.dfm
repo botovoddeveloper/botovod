@@ -556,9 +556,8 @@ object f: Tf
               Height = 283
               Align = alClient
               BorderStyle = bsNone
-              Color = 15921906
               Font.Charset = ANSI_CHARSET
-              Font.Color = clBlack
+              Font.Color = clWindowText
               Font.Height = -11
               Font.Name = 'Consolas'
               Font.Style = []
@@ -577,7 +576,6 @@ object f: Tf
             Height = 431
             DoubleBuffered = False
             Align = alCustom
-            Color = 15921906
             Columns = <
               item
                 Caption = '  ID'
@@ -598,11 +596,12 @@ object f: Tf
               end>
             ColumnClick = False
             Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
+            Font.Color = clWindowText
             Font.Height = -11
             Font.Name = 'Tahoma'
             Font.Style = []
             GridLines = True
+            Items.ItemData = {}
             ReadOnly = True
             RowSelect = True
             ParentFont = False
@@ -618,9 +617,8 @@ object f: Tf
             Width = 257
             Height = 46
             Align = alCustom
-            Color = 15921906
             Font.Charset = ANSI_CHARSET
-            Font.Color = clBlack
+            Font.Color = clWindowText
             Font.Height = -11
             Font.Name = 'Consolas'
             Font.Style = []
@@ -746,7 +744,7 @@ object f: Tf
                     end>
                   ColumnClick = False
                   Font.Charset = DEFAULT_CHARSET
-                  Font.Color = clBlack
+                  Font.Color = clWindowText
                   Font.Height = -11
                   Font.Name = 'Tahoma'
                   Font.Style = []
@@ -776,9 +774,8 @@ object f: Tf
                     Height = 328
                     Align = alCustom
                     BorderStyle = bsNone
-                    Color = 15921906
                     Font.Charset = DEFAULT_CHARSET
-                    Font.Color = clBlack
+                    Font.Color = clWindowText
                     Font.Height = -11
                     Font.Name = 'Tahoma'
                     Font.Style = []
@@ -1118,7 +1115,7 @@ object f: Tf
                     end>
                   ColumnClick = False
                   Font.Charset = DEFAULT_CHARSET
-                  Font.Color = clBlack
+                  Font.Color = clWindowText
                   Font.Height = -11
                   Font.Name = 'Tahoma'
                   Font.Style = []
@@ -1233,7 +1230,7 @@ object f: Tf
                         end>
                       ColumnClick = False
                       Font.Charset = DEFAULT_CHARSET
-                      Font.Color = clBlack
+                      Font.Color = clWindowText
                       Font.Height = -11
                       Font.Name = 'Tahoma'
                       Font.Style = []
@@ -1297,7 +1294,7 @@ object f: Tf
                         end>
                       ColumnClick = False
                       Font.Charset = DEFAULT_CHARSET
-                      Font.Color = clBlack
+                      Font.Color = clWindowText
                       Font.Height = -11
                       Font.Name = 'Tahoma'
                       Font.Style = []
@@ -1419,7 +1416,6 @@ object f: Tf
             Height = 431
             DoubleBuffered = False
             Align = alCustom
-            Color = 15921906
             Columns = <
               item
                 Caption = '  ID'
@@ -1440,11 +1436,12 @@ object f: Tf
               end>
             ColumnClick = False
             Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
+            Font.Color = clWindowText
             Font.Height = -11
             Font.Name = 'Tahoma'
             Font.Style = []
             GridLines = True
+            Items.ItemData = {}
             ReadOnly = True
             RowSelect = True
             ParentFont = False
@@ -1560,9 +1557,8 @@ object f: Tf
               Height = 205
               Align = alClient
               BorderStyle = bsNone
-              Color = 15921906
               Font.Charset = ANSI_CHARSET
-              Font.Color = clBlack
+              Font.Color = clWindowText
               Font.Height = -11
               Font.Name = 'Consolas'
               Font.Style = []
@@ -1714,7 +1710,6 @@ object f: Tf
               Height = 292
               DoubleBuffered = False
               Align = alClient
-              Color = 15921906
               Columns = <
                 item
                   Caption = '  '#1053#1072#1079#1074#1072#1085#1080#1077' '#1075#1088#1091#1087#1087#1099
@@ -1732,11 +1727,12 @@ object f: Tf
                 end>
               ColumnClick = False
               Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
+              Font.Color = clWindowText
               Font.Height = -11
               Font.Name = 'Tahoma'
               Font.Style = []
               GridLines = True
+              Items.ItemData = {}
               ReadOnly = True
               RowSelect = True
               ParentFont = False
@@ -1765,7 +1761,6 @@ object f: Tf
               Height = 226
               DoubleBuffered = False
               Align = alClient
-              Color = 15921906
               Columns = <
                 item
                   Caption = '  '#1048#1084#1103' '#1088#1086#1073#1086#1090#1072
@@ -1788,11 +1783,12 @@ object f: Tf
                 end>
               ColumnClick = False
               Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
+              Font.Color = clWindowText
               Font.Height = -11
               Font.Name = 'Tahoma'
               Font.Style = []
               GridLines = True
+              Items.ItemData = {}
               ReadOnly = True
               RowSelect = True
               ParentFont = False
@@ -2008,7 +2004,6 @@ object f: Tf
               Height = 299
               DoubleBuffered = False
               Align = alClient
-              Color = 15921906
               Columns = <
                 item
                   Caption = ' '#8470
@@ -2032,11 +2027,12 @@ object f: Tf
                 end>
               ColumnClick = False
               Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
+              Font.Color = clWindowText
               Font.Height = -11
               Font.Name = 'Tahoma'
               Font.Style = []
               GridLines = True
+              Items.ItemData = {}
               ReadOnly = True
               RowSelect = True
               ParentFont = False
@@ -2161,7 +2157,6 @@ object f: Tf
           Height = 292
           DoubleBuffered = False
           Align = alCustom
-          Color = 15921906
           Columns = <
             item
               Caption = '  '#8470
@@ -2181,11 +2176,12 @@ object f: Tf
             end>
           ColumnClick = False
           Font.Charset = DEFAULT_CHARSET
-          Font.Color = clBlack
+          Font.Color = clWindowText
           Font.Height = -11
           Font.Name = 'Tahoma'
           Font.Style = []
           GridLines = True
+          Items.ItemData = {}
           ReadOnly = True
           RowSelect = True
           ParentFont = False
@@ -2626,9 +2622,8 @@ object f: Tf
           Height = 278
           Align = alClient
           BorderStyle = bsNone
-          Color = 15921906
           Font.Charset = ANSI_CHARSET
-          Font.Color = clBlack
+          Font.Color = clWindowText
           Font.Height = -11
           Font.Name = 'Consolas'
           Font.Style = []
@@ -6278,7 +6273,7 @@ object f: Tf
     Left = 872
     Top = 16
     Bitmap = {
-      494C01010A005000A40118001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010A005000A80118001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       000000000000360000002800000060000000480000000100200000000000006C
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

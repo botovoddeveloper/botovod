@@ -11439,10 +11439,10 @@ object f: Tf
         FF00FFFFFF00}
     end
     object sLabelFX1: TsLabelFX
-      Left = 8
-      Top = 368
-      Width = 44
-      Height = 33
+      Left = 17
+      Top = 377
+      Width = 28
+      Height = 17
       Caption = 'NULL'
       ParentFont = False
       Font.Charset = RUSSIAN_CHARSET
@@ -11451,8 +11451,8 @@ object f: Tf
       Font.Name = 'Consolas'
       Font.Style = []
       Angle = 0
-      Shadow.OffsetKeeper.LeftTop = -10
-      Shadow.OffsetKeeper.RightBottom = 10
+      Shadow.OffsetKeeper.LeftTop = -1
+      Shadow.OffsetKeeper.RightBottom = 3
     end
   end
   object MANAGER: TsSkinManager
@@ -11603,10 +11603,13 @@ object f: Tf
           4D2171497AD0F15D9D2E3E9F2F3D87EC837774DA6BEBFC4DE2E1E610142FE961
           85694A794B79C3DDF80361001C92B447EBEFDDF08E7533EC05C526ED611DDEA6
           FDFB6BCA5BCA7B18FE07EEC81274}
+        OriginName = ''
       end>
-    SkinDirectory = 'D:\XE8_STUDIO\Components\AlphaControllsAndAlphaSkins\Skins'
-    SkinName = 'VKontakte_v2 (internal)'
-    SkinInfo = '7.64'
+    SkinDirectory = 
+      'C:\Program Files (x86)\Embarcadero\Studio\18.0\acnt_cx10berlin\S' +
+      'kins'
+    SkinName = 'Aluminium'
+    SkinInfo = '12'
     ThirdParty.ThirdEdits = ' '
     ThirdParty.ThirdButtons = 'TButton'
     ThirdParty.ThirdBitBtns = ' '

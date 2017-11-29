@@ -494,7 +494,7 @@ str  c_grin::GetDirectoryApplicationExename()
 }
 str  c_grin::GetDirectoryApplicationDatapath()
 {
-	return ExtractFilePath( Application->ExeName ) + "Data\\";
+	return ExtractFilePath( Application->ExeName ) + "..\\Data\\";
 }
 str  c_grin::GetPixSCR( int x, int y )
 {
@@ -634,7 +634,7 @@ void c_grin::SaveToFile( str data, str file )
 void c_grin::GoToUrl( str pageurl )
 {
 	wchar_t *wc = pageurl.t_str();
-	char c[200];
+	char c[MAX_PATH] = {0};
 	wcstombs(c, wc, wcslen(wc)+1);
 	ShellExecuteA( NULL, "open", c, NULL, NULL, SW_SHOW );
 }
@@ -770,46 +770,27 @@ void c_grin::IE_CacheClear()
 }
 str  c_grin::IE_GetCachePath()
 {
-	str CACHE_PATH = "xNULL";
-
 	DWORD size=1024;
-	wchar_t buf[1024];
+	wchar_t buf[1024] = {0};
 	GetUserName(buf, &size);
 
-	str SYSTEM_USERNAME = buf;
-
-	bool j = false;
-
-	if ( ! j )
-	{
-		if ( DirectoryExists( "C:\\Users\\"+SYSTEM_USERNAME+"\\AppData\\Local\\Microsoft\\Windows\\INetCookies" ) )
-		{
-			CACHE_PATH =      "C:\\Users\\"+SYSTEM_USERNAME+"\\AppData\\Local\\Microsoft\\Windows\\INetCookies";
-
-			j = true;
-		}
+	str systemUserName = buf;
+	if (DirectoryExists("C:\\Users\\"+systemUserName+"\\AppData\\Local\\Microsoft\\Windows\\INetCookies"))
+    {
+		return "C:\\Users\\"+systemUserName+"\\AppData\\Local\\Microsoft\\Windows\\INetCookies";
 	}
 
-	if ( ! j )
-	{
-		if ( DirectoryExists( "C:\\Documents and Settings\\"+SYSTEM_USERNAME+"\\Local Settings\\Temporary Internet Files" ) )
-		{
-			CACHE_PATH =      "C:\\Documents and Settings\\"+SYSTEM_USERNAME+"\\Local Settings\\Temporary Internet Files";
-
-			j = true;
-		}
+	if (DirectoryExists("C:\\Users\\"+systemUserName+"\\AppData\\Local\\Microsoft\\Windows\\Temporary Internet Files"))
+    {
+		return "C:\\Users\\"+systemUserName+"\\AppData\\Local\\Microsoft\\Windows\\Temporary Internet Files";
 	}
 
-	//
-
-	if ( ! j ) ShowMessage( "CACHE PATH NOT FINDED !!!" );
-
-	return CACHE_PATH;
+	ShowMessage( "IE Cache Path Unavailable." );
 }
 void c_grin::ShellExecute1( str file )
 {
 	wchar_t *wc = file.t_str();
-	char c[20];
+	char c[MAX_PATH] = {0};
 	wcstombs(c, wc, wcslen(wc)+1);
 
 	ShellExecuteA( NULL, "open", c, NULL, NULL, SW_SHOW );
@@ -1506,7 +1487,7 @@ bool c_static_advanced::connected( str token )
 }
 void c_static_advanced::connect( str Client_ID, str login, str pass, str *token )
 {
-	str TOKEN = "NULL";
+        str TOKEN = "NULL";
 
 	str inifile =  g.GetDirectoryApplicationDatapath() + "Global.Conf.ini";
 
@@ -1517,16 +1498,19 @@ void c_static_advanced::connect( str Client_ID, str login, str pass, str *token 
 	INI->WriteString( "OAUTH2", "token",     "NULL" 	);
 	delete INI;
 
-	str file2 = g.GetDirectoryApplicationDatapath() + "OAUTH2.exe";
+	str file2 = g.GetDirectoryApplicationExename() + "OAUTH2.exe";
 	g.ShellExecute1(file2);
 
-    bool HDWAS = false;
+        bool HDWAS = false;
 	while ( TOKEN == "NULL" )
 	{
-        Sleep(500);
-        HWND H = NULL;
-        H = g.GetFormHandle(" OAUTH 2");
-        if ( H != NULL ) HDWAS = true;
+                Sleep(500);
+                HWND H = NULL;
+                H = g.GetFormHandle(" OAUTH 2");
+                if ( H != NULL ) 
+                {
+                        HDWAS = true;
+                }
 
 		TIniFile *INIX = new TIniFile( inifile );
 		str T = INI->ReadString( "OAUTH2", "token", "NULL" );
@@ -1537,10 +1521,12 @@ void c_static_advanced::connect( str Client_ID, str login, str pass, str *token 
 			break;
 		}
 
-        if ( HDWAS && H == NULL ) break;
+                if ( HDWAS && H == NULL ) 
+                {
+                        break;
+                }
 	}
-
-   *token = TOKEN;
+        *token = TOKEN;
 }
 str  c_static_advanced::VKAPI_HTTPGET( str url )
 {

@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{480DD85A-AB0E-4A8A-AF65-F797A265DC75}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="The Social Robots.cbproj">
+            <Dependencies>..\OAUTH2\OAUTH2.cbproj</Dependencies>
+        </Projects>
+        <Projects Include="..\OAUTH2\OAUTH2.cbproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="The Social Robots" DependsOnTargets="OAUTH2">
+        <MSBuild Projects="The Social Robots.cbproj"/>
+    </Target>
+    <Target Name="The Social Robots:Clean" DependsOnTargets="OAUTH2:Clean">
+        <MSBuild Projects="The Social Robots.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="The Social Robots:Make" DependsOnTargets="OAUTH2:Make">
+        <MSBuild Projects="The Social Robots.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="OAUTH2">
+        <MSBuild Projects="..\OAUTH2\OAUTH2.cbproj"/>
+    </Target>
+    <Target Name="OAUTH2:Clean">
+        <MSBuild Projects="..\OAUTH2\OAUTH2.cbproj" Targets="Clean"/>
+    </Target>
+    <Target Name="OAUTH2:Make">
+        <MSBuild Projects="..\OAUTH2\OAUTH2.cbproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="The Social Robots;OAUTH2"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="The Social Robots:Clean;OAUTH2:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="The Social Robots:Make;OAUTH2:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

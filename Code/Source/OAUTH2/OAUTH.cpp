@@ -11,8 +11,8 @@
 #pragma link "SHDocVw_OCX"
 #pragma resource "*.dfm"
 #include "SHDocVw_OCX.h"
-#include "mshtml.h"
-#include "mshtmcid.h"
+#include <mshtml.h>
+#include <mshtmcid.h>
 #include <OleCtnrs.hpp>
 #include <atl\atlbase.h>
 #include <Inifiles.hpp>
@@ -89,7 +89,7 @@ void c_main::data_read()
 {
 	log("DATAREAD:");
 
-	str file = g.GetDirectoryApplicationExename() + "Global.Conf.ini";
+	str file = g.GetDirectoryApplicationExename() + "Data\\" + "Global.Conf.ini";
 
 	TIniFile *INI = new TIniFile( file );
 
@@ -105,7 +105,7 @@ void c_main::data_write()
 {
 	log("DATAWRITE:");
 
-	str file = g.GetDirectoryApplicationExename() + "Global.Conf.ini";
+	str file = g.GetDirectoryApplicationExename() + "Data\\" + "Global.Conf.ini";
 
 	TIniFile *INI = new TIniFile( file );
 
@@ -239,7 +239,6 @@ void c_main::FillForm(String FieldName, String FieldText)
 	{
 		TCppWebBrowser *CppWebBrowser1 = f->BROWSER;
 
-		// заполнение поля на форме. FieldName - имя поля в html коде.
 		CComQIPtr<IHTMLDocument2, &IID_IHTMLDocument2>                  pDoc;
 		CComQIPtr<IHTMLElementCollection, &IID_IHTMLElementCollection>  pColl;
 		CComQIPtr<IDispatch, &IID_IDispatch>                            pTmpDisp;
@@ -247,15 +246,16 @@ void c_main::FillForm(String FieldName, String FieldText)
 		CComQIPtr<IDispatch, &IID_IDispatch>                            pDisp;
 
 		if (SUCCEEDED(CppWebBrowser1->Document->QueryInterface(IID_IHTMLDocument2, (LPVOID*)&pDoc)) )
-			{
+		{
 			 if(SUCCEEDED (pDoc->get_all(&pColl) ) )
-				{
-				if(SUCCEEDED (pColl->item(TVariant(WideString(FieldName)), TVariant(0), &pDisp) ) )
-					{
-						pElement = pDisp;
-						pElement->put_value(FieldText.w_str() );
-					}
-				}
+			 {
+                if(SUCCEEDED (pColl->item(TVariant(WideString(FieldName)), TVariant(0), &pDisp) ) &&
+                    pDisp != NULL)
+                {
+                    pElement = pDisp;
+                    pElement->put_value(FieldText.w_str() );
+                }
+			 }
 		}
 	}
 	catch ( Exception *ex )
