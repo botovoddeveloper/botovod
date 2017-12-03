@@ -10,3 +10,6 @@
 *.exe
 *.stat
 
+bin/OAUTH2.pdi
+bin/OAUTH2.log
+Data/Logs/_Current.log
