@@ -517,6 +517,10 @@ object f: Tf
     object sTabSheet3: TsTabSheet
       Caption = #1054#1073#1097#1077#1085#1080#1077'  '
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object PAGES_SPEECH: TsPageControl
         Left = 0
         Top = 16
@@ -663,6 +667,10 @@ object f: Tf
         end
         object sTabSheet10: TsTabSheet
           Caption = #1052#1086#1076#1077#1083#1080' '#1086#1073#1097#1077#1085#1080#1103
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object Label26: TLabel
             Left = 16
             Top = 20
@@ -732,7 +740,6 @@ object f: Tf
                   Height = 278
                   DoubleBuffered = False
                   Align = alCustom
-                  Color = 15921906
                   Columns = <
                     item
                       Caption = ' '#8470
@@ -749,6 +756,7 @@ object f: Tf
                   Font.Name = 'Tahoma'
                   Font.Style = []
                   GridLines = True
+                  Items.ItemData = {}
                   ReadOnly = True
                   RowSelect = True
                   ParentFont = False
@@ -760,6 +768,10 @@ object f: Tf
               object sTabSheet16: TsTabSheet
                 Caption = 'sTabSheet16'
                 TabVisible = False
+                ExplicitLeft = 0
+                ExplicitTop = 0
+                ExplicitWidth = 0
+                ExplicitHeight = 0
                 object sGroupBox25: TsGroupBox
                   Left = 16
                   Top = 3
@@ -1604,6 +1616,10 @@ object f: Tf
     object sTabSheet2: TsTabSheet
       Caption = #1050#1086#1085#1092#1080#1075#1091#1088#1072#1094#1080#1080' '
       ImageIndex = 6
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object PAGES_CONFIGURATION: TsPageControl
         Left = 0
         Top = 16
@@ -2622,8 +2638,9 @@ object f: Tf
           Height = 278
           Align = alClient
           BorderStyle = bsNone
+          Color = 15921906
           Font.Charset = ANSI_CHARSET
-          Font.Color = clWindowText
+          Font.Color = clBlack
           Font.Height = -11
           Font.Name = 'Consolas'
           Font.Style = []
@@ -6273,7 +6290,7 @@ object f: Tf
     Left = 872
     Top = 16
     Bitmap = {
-      494C01010A005000A80118001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010A005000AC0118001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       000000000000360000002800000060000000480000000100200000000000006C
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

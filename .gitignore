@@ -6,3 +6,7 @@
 *.ilc
 *.local
 *.pch
+*.obj
+*.exe
+*.stat
+
