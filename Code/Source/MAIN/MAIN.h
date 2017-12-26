@@ -105,8 +105,6 @@ class c_main
 		//////////////////////////////
 
 		void log( str data ); TStringList *LOG;
-		void elog( str data );
-		void plog( str data );
 		void iSleep(int index);
 		void logline( str data );
         str  jsonfix( str data );

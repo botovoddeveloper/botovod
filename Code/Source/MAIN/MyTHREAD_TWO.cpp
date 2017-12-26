@@ -44,7 +44,7 @@ void __fastcall MyTHREAD_TWO::GOTOF()
 	}
 	catch ( Exception *ex )
 	{
-		f->main->elog("ERROR: MyTHREAD_TWO::Execute(): " + ex->Message );
+		f->main->log("ERROR: MyTHREAD_TWO::Execute(): " + ex->Message );
 	}
 }
 

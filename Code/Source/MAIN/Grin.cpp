@@ -786,6 +786,7 @@ str  c_grin::IE_GetCachePath()
 	}
 
 	ShowMessage( "IE Cache Path Unavailable." );
+    return str("");
 }
 void c_grin::ShellExecute1( str file )
 {
@@ -878,6 +879,7 @@ str  c_vk::GetParameterIntString( int index, str Parameter1, str Parameter2, str
 			}
 		}
 	}
+    return str("");
 }
 void c_vk::SetTimeout(TIdHTTP *HTTP)
 {
