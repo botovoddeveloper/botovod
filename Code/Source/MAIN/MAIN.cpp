@@ -147,11 +147,18 @@ void __fastcall Tf::PAGES_CONFIGURATIONChange(TObject *Sender)
 	p_logs              = g.GetDirectoryApplicationDatapath() + "Logs\\";
 
 	LOG = new TStringList;
-	LOG->LoadFromFile( f_currentlog );
-    f->ME_LOG->Lines->LoadFromFile( f_currentlog );
+    
+    if(FileExists(f_currentlog))
+    {
+        LOG->LoadFromFile( f_currentlog );
+        f->ME_LOG->Lines->LoadFromFile( f_currentlog );
+    }
 
 	GLOBAL_USERS_CACHE = new TStringList;
-	GLOBAL_USERS_CACHE->LoadFromFile( f_globaluserscache );
+    if(FileExists(f_globaluserscache))
+    {
+	    GLOBAL_USERS_CACHE->LoadFromFile( f_globaluserscache );
+    }
 
 	CNT_HELLO 			= 0;
 	CNT_ADDFRIEND 		= 0;
@@ -305,8 +312,10 @@ void c_main::conf_servers(bool save)
 	else
 	{
 		f->LV_SERVERS->Items->Clear();
-
-		L->LoadFromFile( f_servers );
+        if(FileExists(f_servers))
+        {
+		    L->LoadFromFile( f_servers );
+        }
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
@@ -339,8 +348,10 @@ void c_main::conf_groups(bool save)
 	else
 	{
 		f->LV_CONF_GROUPS->Items->Clear();
-
-		L->LoadFromFile( f_groups );
+        if(FileExists(f_groups))
+        {
+		    L->LoadFromFile( f_groups );
+        }
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
@@ -378,8 +389,10 @@ void c_main::conf_workgroups(bool save)
 	else
 	{
 		f->LV_WORKGROUPS->Items = f->LV_CONF_GROUPS->Items;
-
-		L->LoadFromFile( f_workgroups );
+        if(FileExists(f_workgroups))
+        {
+		    L->LoadFromFile( f_workgroups );
+        }
 
 		for ( int c = 0; c < f->LV_WORKGROUPS->Items->Count; c++ )
 		{
@@ -427,7 +440,7 @@ void c_main::conf_worktasks(bool save)
 
 		L->SaveToFile( UnicodeString(f_worktasks), TEncoding::UTF8 );
 	}
-	else
+	else if(FileExists(f_worktasks))
 	{
 		L->LoadFromFile( f_worktasks );       
         int pos = 0;
@@ -542,7 +555,10 @@ void c_main::conf_users(int index, bool save)
 	if ( ! save )
 	{
 		f->LV_CONF_USERS->Items->Clear();
-		L->LoadFromFile( f_users );
+        if(FileExists(f_users))
+        {
+		    L->LoadFromFile( f_users );
+        }
         int i = 1;
 		for ( int c = 0; c < L->Count; c++ )
 		{
@@ -583,17 +599,20 @@ void c_main::conf_dialogs(bool save)
 		for ( int c = 0; c < L->Count; c++ )
 		{
 			str id = L->Strings[c];
-			X->LoadFromFile( p_dialogs + id );
+            if(FileExists(p_dialogs + id))
+            {
+			    X->LoadFromFile( p_dialogs + id );
 
-			str name 		 = X->Strings[1];
-			str surname 	 = X->Strings[2];
+			    str name 		 = X->Strings[1];
+			    str surname 	 = X->Strings[2];
 
-			TListItem *ListItem;
-			ListItem = f->LV_DIALOGS->Items->Add();
-			ListItem->Caption = " " + id;
-			ListItem->SubItems->Add( " " + name );
-			ListItem->SubItems->Add( " " + surname );
-			ListItem->SubItems->Add( getCountOfMesages(X->Text) );
+			    TListItem *ListItem;
+			    ListItem = f->LV_DIALOGS->Items->Add();
+			    ListItem->Caption = " " + id;
+			    ListItem->SubItems->Add( " " + name );
+			    ListItem->SubItems->Add( " " + surname );
+			    ListItem->SubItems->Add( getCountOfMesages(X->Text) );
+            }
 		}
 
 		f->LV_DIALOGS->Visible = true;
@@ -648,14 +667,17 @@ void c_main::conf_dialogs_test(bool save)
 		for ( int c = 0; c < L->Count; c++ )
 		{
 			str id = L->Strings[c];
-			X->LoadFromFile( p_dialogs_test + id );
+            if(FileExists(p_dialogs_test + id))
+            {
+			    X->LoadFromFile( p_dialogs_test + id );
 
-			TListItem *ListItem;
-			ListItem = f->LV_DIALOGS_TEST->Items->Add();
-			ListItem->Caption = " " + id;
-			ListItem->SubItems->Add( getCountOfMesages(X->Text) );
-            ListItem->SubItems->Add( " " + X->Strings[0] );
-            ListItem->SubItems->Add( getLastStage(X->Text) );
+			    TListItem *ListItem;
+			    ListItem = f->LV_DIALOGS_TEST->Items->Add();
+			    ListItem->Caption = " " + id;
+			    ListItem->SubItems->Add( getCountOfMesages(X->Text) );
+                ListItem->SubItems->Add( " " + X->Strings[0] );
+                ListItem->SubItems->Add( getLastStage(X->Text) );
+            }
 		}
 
 		f->LV_DIALOGS_TEST->Visible = true;
@@ -670,8 +692,11 @@ void c_main::conf_dialogs_test(bool save)
 }
 void c_main::show_current_server()
 {
-	f->l_NextClientID->Caption = "¹" + IntToStr(CurrentServer+1) + " - ID: " + f->LV_SERVERS->Items->Item[CurrentServer]->SubItems->Strings[0];
-	f->LV_SERVERS->ItemIndex = CurrentServer;
+    if(f->LV_SERVERS->Items->Count > 0)
+    {
+        f->l_NextClientID->Caption = "¹" + IntToStr(CurrentServer+1) + " - ID: " + f->LV_SERVERS->Items->Item[CurrentServer]->SubItems->Strings[0];
+	    f->LV_SERVERS->ItemIndex = CurrentServer;
+    }
 }
 void c_main::increment_server()
 {
@@ -1806,19 +1831,36 @@ void c_main::LoadModel(int index)
 	str file_f = p_robots + L->Strings[index] + "\\AutoStopPosts.txt";
 
 	delete L;
-
-	MODEL_HELLO->LoadFromFile(file_a);
-	MODEL_LOGICAL->LoadFromFile(file_b);        
+    if(FileExists(file_a))
+    {
+	    MODEL_HELLO->LoadFromFile(file_a);
+    }
+    if(FileExists(file_b))
+    {
+	    MODEL_LOGICAL->LoadFromFile(file_b);        
+    }
     FMODEL = file_b;
-	MODEL_AUTOANS->LoadFromFile(file_c);        
+    if(FileExists(file_c))
+    {
+	    MODEL_AUTOANS->LoadFromFile(file_c);        
+    }
     FAUTOANS = file_c;
-	MODEL_AUTOSTOP_KEYS->LoadFromFile(file_e);
-	MODEL_AUTOSTOP_POSTS->LoadFromFile(file_f);
+    if(FileExists(file_e))
+    {
+	    MODEL_AUTOSTOP_KEYS->LoadFromFile(file_e);
+    }
+    if(FileExists(file_f))
+    {
+	    MODEL_AUTOSTOP_POSTS->LoadFromFile(file_f);
+    }
 
     LoadModelHello();
 	LoadModelLogical();
 	LoadModelAutoAnsRules();
-	LoadModelAutoAnsDefault(file_d);
+    if(FileExists(file_d))
+    {
+	    LoadModelAutoAnsDefault(file_d);
+    }
 	LoadModelAutoStopKeys();
 	LoadModelAutoStopPosts();
 }
@@ -1891,7 +1933,11 @@ void c_main::LoadModelAutoAnsRules()
 void c_main::LoadModelAutoAnsDefault(str file)
 {
 	TStringList *L = new TStringList;
-	L->LoadFromFile( file );
+
+    if(FileExists(file))
+    {
+	    L->LoadFromFile( file );
+    }
 
 	f->E_MODEL_AUTOANS_DEFAULT->Text = Trim( L->Strings[0] );
 
@@ -3891,7 +3937,10 @@ void c_vcl::groupechoReadRobots()
 void c_vcl::groupechoReadUsers()
 {
     TStringList *L = new TStringList;
-	L->LoadFromFile( f->main->f_users );
+    if(FileExists(f->main->f_users))
+    {
+	    L->LoadFromFile( f->main->f_users );
+    }
 
 	for ( int c = 0; c < f->LV_CONF_GROUPS->Items->Count; c++ )
 	{
@@ -4645,8 +4694,11 @@ void __fastcall Tf::TREEClick(TObject *Sender)
 	try
 	{
 		GB_MODEL->Caption = L" Выделенное звено ";
-		str indexName = TREE->Selected->Text;
-		main->LoadModelStage( indexName );
+        if(TREE->Items->Count > 0)
+        {
+            str indexName = TREE->Selected->Text;
+		    main->LoadModelStage( indexName );
+        }
 	}
 	catch (...)
 	{
