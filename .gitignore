@@ -10,5 +10,7 @@
 *.exe
 *.stat
 
-bin/*.*
-Data/*.*
+bin/
+Data/
+Debug/
+Release/
