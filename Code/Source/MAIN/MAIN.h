@@ -60,7 +60,7 @@ class c_main
 
 		//////////////////////////////
 
-		str f_ini,            f_servers, f_groups, f_workgroups, f_worktasks, f_users,           f_globaluserscache, f_currentlog;
+		str f_ini, f_servers, f_groups, f_workgroups, f_worktasks, f_users, f_globaluserscache, f_currentlog;
 
 		str p_robots, p_dialogs, p_dialogs_test, p_logs;
 
@@ -103,7 +103,7 @@ class c_main
 		void GlobalUsersCache_Delete(str id);
 
 		//////////////////////////////
-
+        void checkDirectoryExisting(str directoryPath);
 		void log( str data ); TStringList *LOG;
 		void iSleep(int index);
 		void logline( str data );

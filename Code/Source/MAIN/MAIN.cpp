@@ -146,6 +146,12 @@ void __fastcall Tf::PAGES_CONFIGURATIONChange(TObject *Sender)
 	p_dialogs_test      = g.GetDirectoryApplicationDatapath() + "DialogsTest\\";
 	p_logs              = g.GetDirectoryApplicationDatapath() + "Logs\\";
 
+    checkDirectoryExisting(g.GetDirectoryApplicationDatapath());
+    checkDirectoryExisting(p_robots);
+    checkDirectoryExisting(p_dialogs);
+    checkDirectoryExisting(p_dialogs_test);
+    checkDirectoryExisting(p_logs);
+    
 	LOG = new TStringList;
     
     if(FileExists(f_currentlog))
@@ -464,7 +470,8 @@ void c_main::conf_robots(int index, bool save)
 	if ( save )
 	{
 		str robotpath = p_robots + IntToStr(RobotPathID) + "_" + g.GetMD5(RobotPathID) + "\\";
-		CreateDir( robotpath );
+        checkDirectoryExisting(robotpath);
+        
 		RobotPathID++;
 		conf_ini( true );
 
@@ -773,6 +780,18 @@ void c_main::log( str data )
 	{
 
 	}
+}
+
+void c_main::checkDirectoryExisting(str directoryPath)
+{
+    if(DirectoryExists(directoryPath) == false)
+    {
+        if (CreateDir(directoryPath) == false ||
+            ForceDirectories(directoryPath) == false)
+        {
+            ShowMessage(L"Не могу создать папку : " + directoryPath + L" Код ошибки: " + IntToStr((int)GetLastError()) );
+        }
+    }
 }
 
 void c_main::iSleep(int index)
@@ -4455,7 +4474,9 @@ void __fastcall Tf::b_CONF_ROBOTS_EDIT_APPLYClick(TObject *Sender)
 
 			if ( RobotName == OldName )
 			{
-				TMemIniFile *INI = new TMemIniFile( UnicodeString(main->p_robots + L->Strings[c] + "\\Conf.ini"),TEncoding::UTF8 );
+                str robotpath = main->p_robots + L->Strings[c] + "\\";
+                main->checkDirectoryExisting(robotpath);
+				TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath + "Conf.ini"),TEncoding::UTF8 );
 				INI->WriteString( UnicodeString("MAIN"),    UnicodeString("owner"),   UnicodeString(Trim(cb_conf_robots_edit_groups->Items->Strings[cb_conf_robots_edit_groups->ItemIndex]))   );
 				INI->WriteString( UnicodeString("MAIN"),    UnicodeString("name"),    UnicodeString(f->e_conf_robots_edit_name->Text) );
 				INI->WriteString( UnicodeString("ACCOUNT"), UnicodeString("login"),   UnicodeString(f->e_conf_robots_edit_login->Text) );
@@ -5289,18 +5310,25 @@ void __fastcall Tf::N20Click(TObject *Sender)
 	{
 		str NeededRobotName = Trim(LV_CONF_ROBOTS->Items->Item[index]->Caption);
 		str token;
-		if ( proc->Establish( NeededRobotName, &token ) )
-		{
-			main->conf_robots(LV_CONF_GROUPS->ItemIndex,false);
+        if(f->LV_SERVERS->Items->Count > 0)
+        {
+            if ( proc->Establish( NeededRobotName, &token ) )
+            {
+                main->conf_robots(LV_CONF_GROUPS->ItemIndex,false);
 
-			g.Sm( L"[ OK ]\n\nДоступ к API разрешён." );
-		}
+                g.Sm( L"[ OK ]\n\nДоступ к API разрешён." );
+            }
+            else
+            {
+                main->conf_robots(LV_CONF_GROUPS->ItemIndex,false);
+                g.Sm( L"[ ERROR ]\n\nДоступ к API запрещён." );
+            }
+        }
 		else
-		{
-			main->conf_robots(LV_CONF_GROUPS->ItemIndex,false);
-
-			g.Sm( L"[ ERROR ]\n\nДоступ к API запрещён." );
-		}
+        {
+            main->conf_robots(LV_CONF_GROUPS->ItemIndex,false);
+            g.Sm( L"[ ERROR ]\n\nСервера не добавлены." );
+        }    
 	}
 }
 void __fastcall Tf::N58Click(TObject *Sender)

@@ -9,7 +9,6 @@
 *.obj
 *.exe
 *.stat
-*.dfm
 
 bin/
 Data/
