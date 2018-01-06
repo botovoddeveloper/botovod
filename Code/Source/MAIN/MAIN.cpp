@@ -2265,10 +2265,11 @@ bool c_process::Establish( str RobotName, str *Token )
 			TDateTime T = Time();
 			str DT = DateToStr(D) + " - " + TimeToStr(T);
 
-			TIniFile *INI = new TIniFile( IniFile );
-			INI->WriteString("CONNECTION","activity",DT);
-			INI->WriteString("CONNECTION","client_id",client_id);
-			INI->WriteString("CONNECTION","token",token);
+            TMemIniFile *INI = new TMemIniFile( UnicodeString(IniFile), TEncoding::UTF8 );
+			INI->WriteString(UnicodeString("CONNECTION"), UnicodeString("activity"),  UnicodeString(DT));
+			INI->WriteString(UnicodeString("CONNECTION"), UnicodeString("client_id"), UnicodeString(client_id));
+			INI->WriteString(UnicodeString("CONNECTION"), UnicodeString("token"),     UnicodeString(token));
+            INI->UpdateFile();
 			delete INI;
 
 			f->main->increment_server();

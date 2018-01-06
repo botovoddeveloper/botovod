@@ -1474,6 +1474,7 @@ void c_static_advanced::connect( str Client_ID, str login, str pass, str *token 
 	INI->WriteString( UnicodeString("OAUTH2"), UnicodeString("login"),     UnicodeString(login) 		);
 	INI->WriteString( UnicodeString("OAUTH2"), UnicodeString("password"),  UnicodeString(pass) 		);
 	INI->WriteString( UnicodeString("OAUTH2"), UnicodeString("token"),     UnicodeString("NULL") 	);
+    INI->UpdateFile();
 	delete INI;
 
 	str file2 = g.GetDirectoryApplicationExename() + "OAUTH2.exe";
@@ -1490,8 +1491,8 @@ void c_static_advanced::connect( str Client_ID, str login, str pass, str *token 
             HDWAS = true;
         }
 
-		TIniFile *INIX = new TIniFile( inifile );
-		str T = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("token"), UnicodeString("NULL") );
+		TMemIniFile *INIX = new TMemIniFile( UnicodeString(inifile), TEncoding::UTF8 );
+		str T = INIX->ReadString( UnicodeString("OAUTH2"), UnicodeString("token"), UnicodeString("NULL") );
 		delete INIX;
 		if ( T != "NULL" )
 		{
