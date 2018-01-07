@@ -986,10 +986,10 @@ void c_main::search_request( str RequestUrl, str OffSet, str Count, int iteratio
 
 		if ( Pos("items\":[]",response) == 0 )
 		{
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-			L->LoadFromFile( f_users );
-
+			if(FileExists(f_users))
+            {
+			    L->LoadFromFile( f_users );
+            }
             // JSON //////////////////////////////////////////////////////////////////////////////
 			std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
 			TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
@@ -1108,8 +1108,10 @@ int  c_main::getCountOfHello(str GroupName)
 	int C = 0;
 
 	TStringList *L = new TStringList;
-	L->LoadFromFile( f_users );
-
+    if(FileExists(f_users))
+    {
+	    L->LoadFromFile( f_users );
+    }
 	for ( int x = 0; x < L->Count; x++ )
 	{
 		str CurGroup = Trim( g.Encrypt(1,5,"#",L->Strings[x]) );
@@ -1159,7 +1161,10 @@ void c_main::DrawMessageBox(str Name, str Surname, str RobotGID, TStringList *DI
 void c_main::DeleteUserFromQueueAndPutToDialogs(str UserID, str UserName, str UserSurname, str RobotName, bool msghello, str Text)
 {
 	TStringList *L = new TStringList;
-	L->LoadFromFile( f_users );
+    if(FileExists(f_users))
+    {
+	    L->LoadFromFile( f_users );
+    }
 	for ( int c = L->Count-1; c >= 0; c-- )
 	{
 		str uid = g.Encrypt(2,5,"#",L->Strings[c]);
@@ -2553,8 +2558,10 @@ void c_process::ProcessHello(str GroupName)
 	g.ProcessMessages();
 
 	TStringList *L = new TStringList;
-	L->LoadFromFile( f->main->f_users );
-
+    if(FileExists(f->main->f_users))
+    {
+	    L->LoadFromFile( f->main->f_users );
+    }
 	f->main->TGC = 0;
 
 	for ( int x = 0; x < L->Count; x++ )
@@ -5367,7 +5374,10 @@ void __fastcall Tf::N10Click(TObject *Sender)
 		str id = Trim(LV_CONF_USERS->Items->Item[index]->SubItems->Strings[0]);
 
 		TStringList *L = new TStringList;
-		L->LoadFromFile( main->f_users );
+        if(FileExists(main->f_users))
+        {
+		    L->LoadFromFile( main->f_users );
+        }
 		for ( int c = 0; c < L->Count; c++ )
 		{
 			str uid = g.Encrypt(2,5,"#",L->Strings[c]);
@@ -5419,7 +5429,10 @@ void __fastcall Tf::N23Click(TObject *Sender)
 		str id = Trim(LV_CONF_USERS->Items->Item[i]->SubItems->Strings[0]);
 
 		TStringList *L = new TStringList;
-		L->LoadFromFile( main->f_users );
+        if(FileExists(main->f_users))
+        {
+		    L->LoadFromFile( main->f_users );
+        }
 		for ( int c = 0; c < L->Count; c++ )
 		{
 			str uid = g.Encrypt(2,5,"#",L->Strings[c]);
