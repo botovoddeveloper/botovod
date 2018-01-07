@@ -21,9 +21,6 @@
 
 Tf *f;
 
-
-
-
 class c_main
 {
 	public:
@@ -40,7 +37,8 @@ class c_main
 
 		str  get_token( str data );
 
-		void log( str data );          TStringList *LOG;
+		void log( str data );          
+        TStringList *LOG;
 
         void FillForm(String FieldName, String FieldText);
 		void ClickButton(String ButtonName);
@@ -63,16 +61,12 @@ void __fastcall Tf::FormShow(TObject *Sender)
 	f->BROWSER->Left = -2;
 	f->BROWSER->Top  = -2;
 
-	/////////////////////////////////////////
-
 	main = new c_main();
 
-	/////////////////////////////////////////
-
-	main->data_read();         g.ProcessMessages();
-
-	main->open_url();          g.ProcessMessages();
-
+	main->data_read();         
+    g.ProcessMessages();
+	main->open_url();          
+    g.ProcessMessages();
 	main->fill_submit();
 }
 
@@ -80,53 +74,54 @@ void __fastcall Tf::FormShow(TObject *Sender)
 	 c_main::c_main()
 {
 	LOG = new TStringList;
-
 	TOKEN = "NULL";
-
 	log("OAUTH2 START");
 }
 void c_main::data_read()
 {
 	log("DATAREAD:");
 
-	str file = g.GetDirectoryApplicationExename() + "Data\\" + "Global.Conf.ini";
+	str file = g.GetDirectoryApplicationDatapath() + "Global.Conf.ini";
 
-	TIniFile *INI = new TIniFile( file );
-
-	API_V     = INI->ReadString( "OAUTH2", "api",       "0" );    log("API_V="+API_V);
-	CLIENT_ID = INI->ReadString( "OAUTH2", "client_id", "0" );    log("CLIENT_ID="+CLIENT_ID);
-	SCOPE     = INI->ReadString( "OAUTH2", "scope",     "0" );    log("SCOPE="+SCOPE);
-	LOGIN 	  = INI->ReadString( "OAUTH2", "login",     "0" );    log("LOGIN="+LOGIN);
-	PASSWORD  = INI->ReadString( "OAUTH2", "password",  "0" );    log("PASSWORD="+PASSWORD);
-
+	TMemIniFile *INI = new TMemIniFile( UnicodeString(file), TEncoding::UTF8 );
+	API_V     = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("api"),       UnicodeString("0") );    
+	CLIENT_ID = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("client_id"), UnicodeString("0") );    
+	SCOPE     = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("scope"),     UnicodeString("0") );    
+	LOGIN 	  = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("login"),     UnicodeString("0") );    
+	PASSWORD  = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("password"),  UnicodeString("0") );    
 	delete INI;
+
+    log("API_V="+API_V);
+    log("CLIENT_ID="+CLIENT_ID);
+    log("SCOPE="+SCOPE);
+    log("LOGIN="+LOGIN);
+    log("PASSWORD="+PASSWORD);
 }
 void c_main::data_write()
 {
 	log("DATAWRITE:");
-
-	str file = g.GetDirectoryApplicationExename() + "Data\\" + "Global.Conf.ini";
-
-	TIniFile *INI = new TIniFile( file );
-
-	INI->WriteString( "OAUTH2", "token", TOKEN );     log("TOKEN="+TOKEN);
-
+	str file = g.GetDirectoryApplicationDatapath() + "Global.Conf.ini";
+    TMemIniFile *INI = new TMemIniFile( UnicodeString(file), TEncoding::UTF8 );
+	INI->WriteString( UnicodeString("OAUTH2"), UnicodeString("token"), UnicodeString(TOKEN) );     
+    INI->UpdateFile();
 	delete INI;
+
+    log("TOKEN="+TOKEN);
 }
 void c_main::open_url()
 {
 	try
 	{
 		log("OPENURL:");
-
 		str request = "https://oauth.vk.com/authorize?client_id="+CLIENT_ID+"&scope="+SCOPE+"&redirect_uri=https://oauth.vk.com/blank.html&display=popup&v="+API_V+"&response_type=token";
 
 		log( request );
-
 		f->BROWSER->Navigate( request.w_str() );
 
-		while ( f->BROWSER->ReadyState != Shdocvw::READYSTATE_COMPLETE ) Application->ProcessMessages();
-
+		while ( f->BROWSER->ReadyState != Shdocvw::READYSTATE_COMPLETE ) 
+        {
+            Application->ProcessMessages();
+        }
 		log( f->BROWSER->LocationURL );
 	}
 	catch ( Exception *ex )
@@ -139,31 +134,24 @@ void c_main::fill_submit()
 	log("FILLSUBMIT");
 
 	FillForm( "email", LOGIN );
-
 	FillForm( "pass", PASSWORD );
-
 	ClickButton("submit_input");
 
-	while ( f->BROWSER->ReadyState != Shdocvw::READYSTATE_COMPLETE ) Application->ProcessMessages();
-
+	while ( f->BROWSER->ReadyState != Shdocvw::READYSTATE_COMPLETE ) 
+    {
+        Application->ProcessMessages();
+    }
 	f->T->Enabled = true;
 }
 void __fastcall Tf::TTimer(TObject *Sender)
 {
 	main->log("T1");
-
 	T->Enabled = false;
-
-	//main->ClickButton( "login_submit" );
-
-	//while ( f->BROWSER->ReadyState != Shdocvw::READYSTATE_COMPLETE ) Application->ProcessMessages();
-
 	T2->Enabled = true;
 }
 void __fastcall Tf::T2Timer(TObject *Sender)
 {
 	main->log("T2");
-
 	T2->Enabled = false;
 
 	str RETURN = BROWSER->LocationURL;
@@ -172,7 +160,6 @@ void __fastcall Tf::T2Timer(TObject *Sender)
 	{
 		main->log("LOCATION:");
 		main->log( RETURN );
-
 		main->process_result( RETURN );
 	}
 	else
@@ -185,30 +172,24 @@ void c_main::process_result(str data)
 	if ( Pos("access_token",data) > 0 )
 	{
 		TOKEN = get_token( data );
-
 		data_write();
-
 		log("OAUTH2 STOP");
-
 		Application->Terminate();
 	}
-	else log("ACCESS TOKEN NOT FOUND ((((((((((");
+	else 
+    {
+        log("ACCESS TOKEN NOT FOUND ((((((((((");
+    }
 }
-//
 void c_main::log( str data )
 {
 	try
 	{
-		str file = g.GetDirectoryApplicationExename() + "OAUTH2.log";
-
+		str file = g.GetDirectoryApplicationDatapath() + "Logs\\" + "OAUTH2.log";
 		TDateTime T = Time();
-
 		LOG->Add( TimeToStr(T) + ": " + data );
-
-		LOG->SaveToFile( file );
-
+		LOG->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
 		f->sLabelFX1->Caption = data;
-
 		Application->ProcessMessages();
 	}
 	catch (...)
@@ -219,20 +200,13 @@ void c_main::log( str data )
 str  c_main::get_token( str data )
 {
 	log("GETTOKEN:");
-
 	int p = Pos("access_token=",data);
-
 	data = data.SubString( p+13, data.Length() );
-
 	p = Pos("&",data);
-
 	data = data.SubString( 1, p-1 );
-
 	log( data );
-
 	return data;
 }
-//
 void c_main::FillForm(String FieldName, String FieldText)
 {
 	try
@@ -269,30 +243,30 @@ void c_main::ClickButton(String ButtonName)
 	{
 		TCppWebBrowser* Browser = f->BROWSER;
 
-	  if( Browser->Document )
+	    if( Browser->Document )
 		{
-		  TComInterface<IHTMLDocument2> pDocument;
-		  Browser->Document->QueryInterface(IID_IHTMLDocument2,
+		    TComInterface<IHTMLDocument2> pDocument;
+		    Browser->Document->QueryInterface(IID_IHTMLDocument2,
 											(LPVOID*)&pDocument);
-		  if( pDocument )
-			{
-			  TComInterface<IHTMLElementCollection> pCollection;
-			  pDocument->get_all(&pCollection);
-			  if( pCollection )
+		    if( pDocument )
+            {
+			    TComInterface<IHTMLElementCollection> pCollection;
+			    pDocument->get_all(&pCollection);
+			    if( pCollection )
 				{
-				  TComInterface<IDispatch> pDisp;
-				  pCollection->item(TVariant(WideString(ButtonName)),
-									TVariant(0),
-									&pDisp);
-				  if( pDisp )
+				    TComInterface<IDispatch> pDisp;
+				    pCollection->item(TVariant(WideString(ButtonName)),
+									    TVariant(0),
+									    &pDisp);
+				    if( pDisp )
 					{
-					 TComInterface<IHTMLElement> pElement;
-					 pDisp->QueryInterface(IID_IHTMLElement,
-											(LPVOID*)&pElement);
-					 if( pElement )
-					   {
-						 pElement->click();
-					   }
+					    TComInterface<IHTMLElement> pElement;
+					    pDisp->QueryInterface(IID_IHTMLElement,
+											    (LPVOID*)&pElement);
+					    if( pElement )
+					    {
+						    pElement->click();
+					    }
 					}
 				}
 			}

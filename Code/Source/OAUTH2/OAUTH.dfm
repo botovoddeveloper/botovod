@@ -11456,6 +11456,7 @@ object f: Tf
     end
   end
   object MANAGER: TsSkinManager
+    IsDefault = False
     InternalSkins = <
       item
         Name = 'VKontakte_v2 (internal)'
