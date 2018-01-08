@@ -984,7 +984,7 @@ void c_main::search_request( str RequestUrl, str OffSet, str Count, int iteratio
             }
 		}
 
-		if ( Pos("items\":[]",response) == 0 )
+		if ( Pos("items\":[]",response) > 0 )
 		{
 			if(FileExists(f_users))
             {
@@ -993,9 +993,14 @@ void c_main::search_request( str RequestUrl, str OffSet, str Count, int iteratio
             // JSON //////////////////////////////////////////////////////////////////////////////
 			std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
 			TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
-			str allcount = obj_response->GetValue("count")->ToString();
 
-			TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
+            TJSONArray *obj_items = NULL;
+            TJSONPair* itemsJSONPair = obj_response->Get("items");
+            if(itemsJSONPair)
+            {
+                obj_items = static_cast<TJSONArray*>(itemsJSONPair->JsonValue);
+            }
+			
 			for ( int c = 0; c < obj_items->Count; c++ )
 			{
 				TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Get(c));
