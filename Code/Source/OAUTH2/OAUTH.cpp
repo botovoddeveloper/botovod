@@ -48,7 +48,7 @@ c_main *main;
 
 __fastcall Tf::Tf(TComponent* Owner) : TForm(Owner)
 {
-	g.IE_CacheClear();
+	g.IE_CacheCookiesClear();
 }
 void __fastcall Tf::FormShow(TObject *Sender)
 {

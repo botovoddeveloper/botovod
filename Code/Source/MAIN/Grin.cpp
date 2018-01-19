@@ -27,6 +27,8 @@
 #include <IdIOHandlerStack.hpp>
 #include <IdSSL.hpp>
 #include <IdSSLOpenSSL.hpp>
+#include <windows.h>
+#include <wininet.h>
 
 
 typedef String str; int DevCount = 0;
@@ -96,8 +98,7 @@ class c_grin
 	static str  GetTempMail1( str PostAddress );
 
 	// WINDOWS INTERNET EXPLORER
-	static void IE_CacheClear();
-	static str  IE_GetCachePath();
+    static void IE_CacheCookiesClear();
 
 	// SHELL EXECUTE, WINEXEC
 	static void ShellExecute1( str file );
@@ -708,52 +709,173 @@ str  c_grin::GetTempMail1( str PostAddress )
 	}
 	return RETURN;
 }
-void c_grin::IE_CacheClear()
+void c_grin::IE_CacheCookiesClear()
 {
-	str CACHE_PATH = IE_GetCachePath();
-	TStringList *l = new TStringList;
-	sa.cache_findcachefiles( l, CACHE_PATH );
+      HANDLE hEntry;
+      DWORD len, entry_size = 0;
+      GROUPID id;
+      INTERNET_CACHE_ENTRY_INFO * info = NULL;
+      HANDLE hGroup = FindFirstUrlCacheGroup(0, CACHEGROUP_SEARCH_ALL, 0,
+                                             0, &id, 0);
+      if (hGroup) 
+      {
+        do 
+        {
+          len = entry_size;
+          hEntry = FindFirstUrlCacheEntryEx(NULL, 0, 0xFFFFFFFF, id, info, &len,
+                                            NULL, NULL, NULL);
+          if (!hEntry && GetLastError() == ERROR_INSUFFICIENT_BUFFER && len) 
+          {
+            entry_size = len;
+            info = (INTERNET_CACHE_ENTRY_INFO *)realloc(info, len);
+            if (info) 
+            {
+              hEntry = FindFirstUrlCacheEntryEx(NULL, 0, 0xFFFFFFFF, id, info,
+                                                &len, NULL, NULL, NULL);
+            }
+          }
+          
+          if (hEntry && info) 
+          {
+            bool ok = true;
+            do 
+            {
+              DeleteUrlCacheEntry(info->lpszSourceUrlName);
+              len = entry_size;
+              if (!FindNextUrlCacheEntryEx(hEntry, info, &len, NULL, NULL, NULL)) 
+              {
+                if (GetLastError() == ERROR_INSUFFICIENT_BUFFER && len) 
+                {
+                  entry_size = len;
+                  info = (INTERNET_CACHE_ENTRY_INFO *)realloc(info, len);
+                  if (info) {
+                    if (!FindNextUrlCacheEntryEx(hEntry, info, &len,
+                                                 NULL, NULL, NULL)) 
+                    {
+                      ok = false;
+                    }
+                  }
+                } 
+                else 
+                {
+                  ok = false;
+                }
+              }
+            } 
+            while (ok);
+          }
+          if (hEntry) 
+          {
+            FindCloseUrlCache(hEntry);
+          }
+          DeleteUrlCacheGroup(id, CACHEGROUP_FLAG_FLUSHURL_ONDELETE, 0);
+        } 
+        while(FindNextUrlCacheGroup(hGroup, &id,0));
+        FindCloseUrlCache(hGroup);
+      }
 
-	for ( int i = 0; i < l->Count; i++ )
-	{
-		if ( l->Strings[i].Pos(".") == false )
-		{
-			sa.cache_findcachefiles( l, l->Strings[i].c_str() );
-		}
-	}
-
-	for ( int c = 0; c < l->Count; c++ )
-	{
-		try
-		{
-			DeleteFile( l->Strings[c] );
-		}
-		catch (...) 
-        { 
+      len = entry_size;
+      hEntry = FindFirstUrlCacheEntryEx(NULL, 0, 0xFFFFFFFF, 0, info, &len,
+                                        NULL, NULL, NULL);
+      if (!hEntry && GetLastError() == ERROR_INSUFFICIENT_BUFFER && len) 
+      {
+        entry_size = len;
+        info = (INTERNET_CACHE_ENTRY_INFO *)realloc(info, len);
+        if (info) 
+        {
+          hEntry = FindFirstUrlCacheEntryEx(NULL, 0, 0xFFFFFFFF, 0, info, &len,
+                                            NULL, NULL, NULL);
         }
-	}
-	delete l;
+      }
+      
+      if (hEntry && info) 
+      {
+        bool ok = true;
+        do 
+        {
+          DeleteUrlCacheEntry(info->lpszSourceUrlName);
+          len = entry_size;
+          if (!FindNextUrlCacheEntryEx(hEntry, info, &len, NULL, NULL, NULL)) 
+          {
+            if (GetLastError() == ERROR_INSUFFICIENT_BUFFER && len) 
+            {
+              entry_size = len;
+              info = (INTERNET_CACHE_ENTRY_INFO *)realloc(info, len);
+              if (info) {
+                if (!FindNextUrlCacheEntryEx(hEntry, info, &len,
+                                             NULL, NULL, NULL)) 
+                {
+                  ok = false;
+                }
+              }
+            } 
+            else 
+            {
+              ok = false;
+            }
+          }
+        } 
+        while (ok);
+      }
+      
+      if (hEntry) 
+      {
+        FindCloseUrlCache(hEntry);
+      }
+
+      len = entry_size;
+      hEntry = FindFirstUrlCacheEntry(NULL, info, &len);
+      if (!hEntry && GetLastError() == ERROR_INSUFFICIENT_BUFFER && len) 
+      {
+        entry_size = len;
+        info = (INTERNET_CACHE_ENTRY_INFO *)realloc(info, len);
+        if (info) 
+        {
+          hEntry = FindFirstUrlCacheEntry(NULL, info, &len);
+        }
+      }
+      
+      if (hEntry && info) 
+      {
+        bool ok = true;
+        do 
+        {
+          DeleteUrlCacheEntry(info->lpszSourceUrlName);
+          len = entry_size;
+          if (!FindNextUrlCacheEntry(hEntry, info, &len)) 
+          {
+            if (GetLastError() == ERROR_INSUFFICIENT_BUFFER && len) 
+            {
+              entry_size = len;
+              info = (INTERNET_CACHE_ENTRY_INFO *)realloc(info, len);
+              if (info) 
+              {
+                if (!FindNextUrlCacheEntry(hEntry, info, &len)) 
+                {
+                  ok = false;
+                }
+              }
+            } 
+            else 
+            {
+              ok = false;
+            }
+          }
+        } 
+        while (ok);
+      }
+      
+      if (hEntry) 
+      {
+        FindCloseUrlCache(hEntry);
+      }
+      
+      if (info)
+      {
+        free(info);
+      }
 }
-str  c_grin::IE_GetCachePath()
-{
-	DWORD size=1024;
-	wchar_t buf[1024] = {0};
-	GetUserName(buf, &size);
 
-	str systemUserName = buf;
-	if (DirectoryExists("C:\\Users\\"+systemUserName+"\\AppData\\Local\\Microsoft\\Windows\\INetCookies"))
-    {
-		return "C:\\Users\\"+systemUserName+"\\AppData\\Local\\Microsoft\\Windows\\INetCookies";
-	}
-
-	if (DirectoryExists("C:\\Users\\"+systemUserName+"\\AppData\\Local\\Microsoft\\Windows\\Temporary Internet Files"))
-    {
-		return "C:\\Users\\"+systemUserName+"\\AppData\\Local\\Microsoft\\Windows\\Temporary Internet Files";
-	}
-
-	ShowMessage( "IE Cache Path Unavailable." );
-    return str("");
-}
 void c_grin::ShellExecute1( str file )
 {
 	wchar_t *wc = file.t_str();
