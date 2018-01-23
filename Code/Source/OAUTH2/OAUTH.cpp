@@ -1,4 +1,4 @@
-#include <vcl.h>
+﻿#include <vcl.h>
 #pragma hdrstop
 #include "OAUTH.h"
 #pragma package(smart_init)
@@ -165,6 +165,7 @@ void __fastcall Tf::T2Timer(TObject *Sender)
 	else
 	{
         T2->Enabled = true;
+        main->ClickButton(L"Разрешить");
 	}
 }
 void c_main::process_result(str data)
@@ -268,6 +269,43 @@ void c_main::ClickButton(String ButtonName)
 						    pElement->click();
 					    }
 					}
+                    else
+                    {
+                        long nItemCount = 0;				
+                        HRESULT hr = pCollection->get_length(&nItemCount);
+                        if (SUCCEEDED(hr))
+                        {
+                            for (long i = 0; i < nItemCount; i++)
+                            {
+                                TComInterface<IDispatch> spDisp;
+                                hr = pCollection->item(CComVariant(i), CComVariant(), &spDisp);
+                                if (SUCCEEDED(hr))
+                                {
+                                    TComInterface<IHTMLElement> spElement = spDisp;
+                                    if (spElement)
+                                    {
+                                        CComBSTR className;
+                                        hr = spElement->get_className(&className);
+                                        if (SUCCEEDED(hr) && className)
+                                        {
+                                            log((LPCTSTR)className);
+                                        }
+                                    
+                                        CComBSTR innerText;
+                                        hr = spElement->get_innerText(&innerText);
+                                        if (SUCCEEDED(hr) && innerText)
+                                        {
+                                            String innerTextStr = (LPCTSTR)innerText;
+                                            if(innerTextStr.CompareIC(ButtonName) == 0)
+                                            {
+                                                pElement->click();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
 				}
 			}
 		 }
@@ -277,8 +315,6 @@ void c_main::ClickButton(String ButtonName)
 		log( ex->Message );
     }
 }
-
-
 
 void __fastcall Tf::B_TESTClick(TObject *Sender)
 {
