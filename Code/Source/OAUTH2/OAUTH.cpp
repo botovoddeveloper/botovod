@@ -298,7 +298,7 @@ void c_main::ClickButton(String ButtonName)
                                             String innerTextStr = (LPCTSTR)innerText;
                                             if(innerTextStr.CompareIC(ButtonName) == 0)
                                             {
-                                                pElement->click();
+                                                spElement->click();
                                             }
                                         }
                                     }
