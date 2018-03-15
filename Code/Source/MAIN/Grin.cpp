@@ -121,6 +121,7 @@ class c_vk
 
 	static bool Establish( str Client_ID, str Login, str Password, str *Token, str Api_Version, bool *WasConnected );
 
+	static str  set_online( bool *success, str Token );
 	static str  account_ban_user( bool *success, str UserId, str Token );
 	static bool robot_in_ban( bool *success, str UserId, str Token );
 	static str  users_get( bool *success, str UserIdsCommaLine, str Token, bool MySelf );
@@ -132,8 +133,19 @@ class c_vk
 	static str  friends_delete( bool *success, str UserID, str Token );
 	static str  friends_get( bool *success, str UserID, str Token, int OffSet, int Count );
 	static str  messages_send( bool *success, str UserID, str Message, str Token, str CaptchaSID, str CaptchaANS );
-	static str  messages_get( bool *success, bool Out, int OffSet, int Count, str Token );
+	static str  messages_send2( bool *success, str UserID, str attachment, str Token );
+	static str  messages_get( bool *success, int OffSet, int Count, str Token );
+	static str  messages_getDialogs( bool *success, int OffSet, int Count, str Token );
+	static str  messages_getHistory( bool *success, int OffSet, int Count, str UserID, str Token );
 	static str  messages_markAsRead( bool *success, str MessageIDS, str Token );
+	static str  UploadToServer( bool *success, str file, str upload_url );
+	static str  photos_getUploadServer( bool *success, str Token );
+	static str  photos_saveMessagesPhoto( bool *success, str photo, str server, str hash, str Token );
+	static str  audio_getUploadServer( bool *success, str Token );
+	static str  audioUploadToServer( bool *success, str file, str upload_url );
+	static str  audio_Save( bool *success, str audio, str server, str hash, str Token );
+	static str  docs_getMessagesUploadServer( bool *success, str Token );
+	static str  docs_save( bool *success, str file, str title, str tags, str Token );
 };
 
 class c_static_advanced
@@ -150,6 +162,10 @@ class c_static_advanced
 	static bool connected( str token );
 	static void connect( str Client_ID, str login, str pass, str *token );
 	static str  VKAPI_HTTPGET( str url );
+
+	static str  cut_kk(str data);
+	static str  cut_photo(str data);
+	static str  StripSlashes(str dirty);
 };
 
 c_grin                g;
@@ -1004,6 +1020,38 @@ bool c_vk::Establish( str Client_ID, str Login, str Password, str *Token, str Ap
 	*Token = token;
 	return isCONNECTION;
 }
+str  c_vk::set_online( bool *success, str Token )
+{
+	str J = "NULL";
+
+	try
+	{
+		TIdHTTP *HTTP = new TIdHTTP(NULL);
+		HTTP->HandleRedirects = true;
+		SetTimeout(HTTP);
+
+		str URL = "https://api.vk.com/method/account.setOnline?voip=0&access_token="+Token+"&v=5.62";
+
+		try
+		{
+			J = HTTP->Get( HTTP->URL->URLEncode( URL ) );
+
+			*success = true;
+		}
+		catch (...)
+		{
+			*success = false;
+        }
+
+		delete HTTP;
+	}
+	catch ( Exception *ex )
+	{
+		J = ex->Message;
+	}
+
+	return J;
+}
 str  c_vk::account_ban_user( bool *success, str UserId, str Token )
 {
 	str J = "NULL";
@@ -1398,13 +1446,8 @@ str  c_vk::messages_send( bool *success, str UserID, str Message, str Token, str
 
 	return J;
 }
-str  c_vk::messages_get( bool *success, bool Out, int OffSet, int Count, str Token )
+str  c_vk::messages_send2( bool *success, str UserID, str attachment, str Token )
 {
-	str out = "0";
-    if ( Out ) 
-    {
-        out = "1";
-    }
 	str J = "NULL";
 
 	try
@@ -1413,7 +1456,100 @@ str  c_vk::messages_get( bool *success, bool Out, int OffSet, int Count, str Tok
 		HTTP->HandleRedirects = true;
 		SetTimeout(HTTP);
 
-		str URL = "https://api.vk.com/method/messages.get?out="+out+"&offset="+IntToStr(OffSet)+"&count="+IntToStr(Count)+"&access_token="+Token+"&v="+vk.API_VERSION;
+		str URL = "https://api.vk.com/method/messages.send?user_id="+UserID+"&attachment="+attachment+"&access_token="+Token+"&v="+vk.API_VERSION;
+
+		try
+		{
+			J = HTTP->Get( HTTP->URL->URLEncode( URL ) );
+			*success = true;
+		}
+		catch (...)
+		{
+			*success = false;
+        }
+
+		delete HTTP;
+	}
+	catch ( Exception *ex )
+	{
+		J = ex->Message;
+	}
+
+	return J;
+}
+str  c_vk::messages_get( bool *success, int OffSet, int Count, str Token )
+{
+	str J = "NULL";
+
+	try
+	{
+		TIdHTTP *HTTP = new TIdHTTP(NULL);
+		HTTP->HandleRedirects = true;
+		SetTimeout(HTTP);
+
+		str URL = "https://api.vk.com/method/messages.get?offset="+IntToStr(OffSet)+"&count="+IntToStr(Count)+"&access_token="+Token+"&v="+vk.API_VERSION;
+
+		try
+		{
+			J = HTTP->Get( HTTP->URL->URLEncode( URL ) );
+			*success = true;
+		}
+		catch (...)
+		{
+			*success = false;
+        }
+
+		delete HTTP;
+	}
+	catch ( Exception *ex )
+	{
+		J = ex->Message;
+	}
+
+	return J;
+}
+str  c_vk::messages_getDialogs( bool *success, int OffSet, int Count, str Token )
+{
+	str J = "NULL";
+
+	try
+	{
+		TIdHTTP *HTTP = new TIdHTTP(NULL);
+		HTTP->HandleRedirects = true;
+		SetTimeout(HTTP);
+
+		str URL = "https://api.vk.com/method/messages.getDialogs?offset="+IntToStr(OffSet)+"&count="+IntToStr(Count)+"&access_token="+Token+"&v="+vk.API_VERSION;
+
+		try
+		{
+			J = HTTP->Get( HTTP->URL->URLEncode( URL ) );
+			*success = true;
+		}
+		catch (...)
+		{
+			*success = false;
+        }
+
+		delete HTTP;
+	}
+	catch ( Exception *ex )
+	{
+		J = ex->Message;
+	}
+
+	return J;
+}
+str  c_vk::messages_getHistory( bool *success, int OffSet, int Count, str UserID, str Token )
+{
+	str J = "NULL";
+
+	try
+	{
+		TIdHTTP *HTTP = new TIdHTTP(NULL);
+		HTTP->HandleRedirects = true;
+		SetTimeout(HTTP);
+
+		str URL = "https://api.vk.com/method/messages.getHistory?offset="+IntToStr(OffSet)+"&count="+IntToStr(Count)+"&user_id="+UserID+"&access_token="+Token+"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -1455,6 +1591,228 @@ str  c_vk::messages_markAsRead( bool *success, str MessageIDS, str Token )
 		{
 			*success = false;
         }
+
+		delete HTTP;
+	}
+	catch ( Exception *ex )
+	{
+		J = ex->Message;
+	}
+
+	return J;
+}
+str  c_vk::UploadToServer( bool *success, str file, str upload_url )
+{
+	TIdHTTP *HTTP = new TIdHTTP(NULL);
+	HTTP->HandleRedirects = true;
+
+	TStringStream *RETURN = new TStringStream;
+
+	std::auto_ptr<TIdMultiPartFormDataStream>Stream(new TIdMultiPartFormDataStream);
+	HTTP->Request->ContentType = "multipart/form-data";
+	Stream->AddFile("photo", file, "multipart/form-data");
+	HTTP->Post( upload_url , Stream.get(), RETURN );
+
+	str RET = RETURN->DataString;
+
+	delete HTTP;
+	delete RETURN;
+	return RET;
+}
+str  c_vk::photos_getUploadServer( bool *success, str Token )
+{
+	str J = "NULL";
+
+	try
+	{
+		TIdHTTP *HTTP = new TIdHTTP(NULL);
+		HTTP->HandleRedirects = true;
+		SetTimeout(HTTP);
+
+		str URL = "https://api.vk.com/method/photos.getMessagesUploadServer?access_token="+Token+"&v=5.69";//+vk.API_VERSION;
+
+		try
+		{
+			J = HTTP->Get( HTTP->URL->URLEncode( URL ) );
+			*success = true;
+		}
+		catch (...)
+		{
+			*success = false;
+        }
+
+		delete HTTP;
+	}
+	catch ( Exception *ex )
+	{
+		J = ex->Message;
+	}
+
+	return J;
+}
+str  c_vk::photos_saveMessagesPhoto( bool *success, str photo, str server, str hash, str Token )
+{
+	str J = "NULL";
+
+	try
+	{
+		TIdHTTP *HTTP = new TIdHTTP(NULL);
+		HTTP->HandleRedirects = true;
+		SetTimeout(HTTP);
+
+		str URL = "https://api.vk.com/method/photos.saveMessagesPhoto?photo="+photo+"&server="+server+"&hash="+hash+"&access_token="+Token+"&v=5.69";//+vk.API_VERSION;
+
+		try
+		{
+			J = HTTP->Get( HTTP->URL->URLEncode( URL ) );
+			*success = true;
+		}
+		catch (...)
+		{
+			*success = false;
+		}
+
+		delete HTTP;
+	}
+	catch ( Exception *ex )
+	{
+		J = ex->Message;
+	}
+
+	return J;
+}
+str  c_vk::audio_getUploadServer( bool *success, str Token )
+{
+	str J = "NULL";
+
+	try
+	{
+		TIdHTTP *HTTP = new TIdHTTP(NULL);
+		HTTP->HandleRedirects = true;
+		SetTimeout(HTTP);
+
+		str URL = "https://api.vk.com/method/audio.getUploadServer?access_token="+Token+"&v=5.69";//+vk.API_VERSION;
+
+		try
+		{
+			J = HTTP->Get( HTTP->URL->URLEncode( URL ) );
+			*success = true;
+		}
+		catch (...)
+		{
+			*success = false;
+		}
+
+		delete HTTP;
+	}
+	catch ( Exception *ex )
+	{
+		J = ex->Message;
+	}
+
+	return J;
+}
+str  c_vk::audioUploadToServer( bool *success, str file, str upload_url )
+{
+	TIdHTTP *HTTP = new TIdHTTP(NULL);
+	HTTP->HandleRedirects = true;
+
+	TStringStream *RETURN = new TStringStream;
+
+	std::auto_ptr<TIdMultiPartFormDataStream>Stream(new TIdMultiPartFormDataStream);
+	HTTP->Request->ContentType = "multipart/form-data";
+	Stream->AddFile("file", file, "multipart/form-data");
+	HTTP->Post( upload_url , Stream.get(), RETURN );
+
+	str RET = RETURN->DataString;
+
+	delete HTTP;
+	delete RETURN;
+	return RET;
+}
+str  c_vk::audio_Save( bool *success, str audio, str server, str hash, str Token )
+{
+	str J = "NULL";
+
+	try
+	{
+		TIdHTTP *HTTP = new TIdHTTP(NULL);
+		HTTP->HandleRedirects = true;
+		SetTimeout(HTTP);
+
+		str URL = "https://api.vk.com/method/audio.save?audio="+audio+"&server="+server+"&hash="+hash+"&access_token="+Token+"&v=5.69";//+vk.API_VERSION;
+
+		try
+		{
+			J = HTTP->Get( HTTP->URL->URLEncode( URL ) );
+			*success = true;
+		}
+		catch (...)
+		{
+			*success = false;
+		}
+
+		delete HTTP;
+	}
+	catch ( Exception *ex )
+	{
+		J = ex->Message;
+	}
+
+	return J;
+}
+str  c_vk::docs_getMessagesUploadServer( bool *success, str Token )
+{
+	str J = "NULL";
+
+	try
+	{
+		TIdHTTP *HTTP = new TIdHTTP(NULL);
+		HTTP->HandleRedirects = true;
+		SetTimeout(HTTP);
+
+		str URL = "https://api.vk.com/method/docs.getMessagesUploadServer?type=audio_message&access_token="+Token+"&v=5.69";//+vk.API_VERSION;
+
+		try
+		{
+			J = HTTP->Get( HTTP->URL->URLEncode( URL ) );
+			*success = true;
+		}
+		catch (...)
+		{
+			*success = false;
+		}
+
+		delete HTTP;
+	}
+	catch ( Exception *ex )
+	{
+		J = ex->Message;
+	}
+
+	return J;
+}
+str  c_vk::docs_save( bool *success, str file, str title, str tags, str Token )
+{
+	str J = "NULL";
+
+	try
+	{
+		TIdHTTP *HTTP = new TIdHTTP(NULL);
+		HTTP->HandleRedirects = true;
+		SetTimeout(HTTP);
+
+		str URL = "https://api.vk.com/method/docs.save?file="+file+"&title="+title+"&tags="+tags+"&access_token="+Token+"&v=5.69";//+vk.API_VERSION;
+
+		try
+		{
+			J = HTTP->Get( HTTP->URL->URLEncode( URL ) );
+			*success = true;
+		}
+		catch (...)
+		{
+			*success = false;
+		}
 
 		delete HTTP;
 	}
@@ -1651,8 +2009,48 @@ str  c_static_advanced::VKAPI_HTTPGET( str url )
 
 	return J;
 }
+str  c_static_advanced::cut_kk(str data)
+{
+	data = data.SubString(2,data.Length());
+	data = data.SubString(1,data.Length()-1);
 
+	return data;
+}
+str  c_static_advanced::cut_photo(str data)
+{
+	//str fx = "photo\\\":\\\"";
 
+	//int p = Pos( fx, data );
+
+	//data = data.SubString(p+fx.Length(), data.Length() );
+
+	//p = Pos("\\", data);
+
+	//data = data.SubString(1,p-1);
+
+	//return data;
+
+	str fx = "photo\":\"";
+	int p  = Pos(fx,data);
+	str xData = data.SubString(p+fx.Length(),data.Length());
+	p = Pos("\",\"hash",xData);
+	xData = xData.SubString(1,p-1);
+
+	return xData;
+}
+str  c_static_advanced::StripSlashes(str dirty)
+{
+	str j = "";
+
+	for ( int c = 1; c <= dirty.Length(); c++ )
+	{
+		str ch = dirty[c];
+
+		if ( ch != "\\" ) j = j + ch;
+	}
+
+	return j;
+}
 
 
 

@@ -137,6 +137,13 @@
             <DependentOn>MAIN.h</DependentOn>
             <BuildOrder>2</BuildOrder>
         </CppCompile>
+        <CppCompile Include="MyTHREAD_ONLINE.cpp">
+            <DependentOn>MyTHREAD_ONLINE.h</DependentOn>
+            <BuildOrder>6</BuildOrder>
+        </CppCompile>
+        <None Include="MyTHREAD_ONLINE.h">
+            <BuildOrder>5</BuildOrder>
+        </None>
         <CppCompile Include="MyTHREAD_TWO.cpp">
             <DependentOn>MyTHREAD_TWO.h</DependentOn>
             <BuildOrder>5</BuildOrder>
@@ -197,7 +204,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName=".\Win32\Debug\The_Social_Robots.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\..\..\bin\The Social Robots.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>The_Social_Robots.exe</RemoteName>
                         <Overwrite>true</Overwrite>
@@ -239,6 +246,12 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
+                <DeployFile LocalName="..\..\..\bin\The Social Robots.tds" Configuration="Debug" Class="DebugSymbols">
+                    <Platform Name="Win32">
+                        <RemoteName>The_Social_Robots.tds</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile Condition="'$(DynamicRTL)'=='true' And '$(Multithreaded)'=='true'" LocalName="$(BDS)\bin64\cc64240mt.dll" Class="DependencyModule">
                     <Platform Name="Win64">
                         <Overwrite>true</Overwrite>
@@ -259,12 +272,27 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployClass Name="ProjectiOSDeviceResourceRules">
+                <DeployClass Name="DependencyModule">
+                    <Platform Name="Win32">
+                        <Operation>0</Operation>
+                        <Extensions>.dll;.bpl</Extensions>
+                    </Platform>
                     <Platform Name="iOSDevice64">
                         <Operation>1</Operation>
+                        <Extensions>.dylib</Extensions>
+                    </Platform>
+                    <Platform Name="OSX32">
+                        <RemoteDir>Contents\MacOS</RemoteDir>
+                        <Operation>1</Operation>
+                        <Extensions>.dylib</Extensions>
                     </Platform>
                     <Platform Name="iOSDevice32">
                         <Operation>1</Operation>
+                        <Extensions>.dylib</Extensions>
+                    </Platform>
+                    <Platform Name="iOSSimulator">
+                        <Operation>1</Operation>
+                        <Extensions>.dylib</Extensions>
                     </Platform>
                 </DeployClass>
                 <DeployClass Name="ProjectOSXResource">
@@ -616,27 +644,12 @@
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
-                <DeployClass Name="DependencyModule">
-                    <Platform Name="Win32">
-                        <Operation>0</Operation>
-                        <Extensions>.dll;.bpl</Extensions>
-                    </Platform>
+                <DeployClass Name="ProjectiOSDeviceResourceRules">
                     <Platform Name="iOSDevice64">
                         <Operation>1</Operation>
-                        <Extensions>.dylib</Extensions>
-                    </Platform>
-                    <Platform Name="OSX32">
-                        <RemoteDir>Contents\MacOS</RemoteDir>
-                        <Operation>1</Operation>
-                        <Extensions>.dylib</Extensions>
                     </Platform>
                     <Platform Name="iOSDevice32">
                         <Operation>1</Operation>
-                        <Extensions>.dylib</Extensions>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <Operation>1</Operation>
-                        <Extensions>.dylib</Extensions>
                     </Platform>
                 </DeployClass>
                 <ProjectRoot Platform="iOSDevice64" Name="$(PROJECTNAME).app"/>

@@ -1,6 +1,7 @@
 #ifndef MAINH
 #define MAINH
 #include "MyTHREAD_TWO.h"
+#include "MyTHREAD_ONLINE.h"
 #include <System.Classes.hpp>
 #include <Vcl.Controls.hpp>
 #include <Vcl.StdCtrls.hpp>
@@ -11,11 +12,6 @@
 #include <System.ImageList.hpp>
 #include <Vcl.ImgList.hpp>
 #include <Vcl.ExtCtrls.hpp>
-#include "sRichEdit.hpp"
-#include "sGroupBox.hpp"
-#include "sListView.hpp"
-#include "sEdit.hpp"
-#include "sButton.hpp"
 #include <Vcl.Menus.hpp>
 #include <clipbrd.hpp>
 #include <Vcl.Dialogs.hpp>
@@ -42,6 +38,15 @@
 #include <System.JSON.hpp>
 #include <Data.DBXJSON.hpp>
 #include "sDialogs.hpp"
+#include "acPNG.hpp"
+#include <IdAntiFreeze.hpp>
+#include "sSkinManager.hpp"
+#include "sPageControl.hpp"
+#include "sRichEdit.hpp"
+#include "sGroupBox.hpp"
+#include "sListView.hpp"
+#include "sEdit.hpp"
+#include "sButton.hpp"
 
 typedef String str;
 
@@ -50,9 +55,12 @@ class c_main
 {
 	public:
 
-		MyTHREAD_TWO    *iMyTHREAD_TWO;                     bool TERMINATED; int  TINT_CURR; str PREFIX, BUFF_CURRENTLOG;
+		str HTTPDOMAIN;
 
-		TClipboard *clp;     TStringList *INBOX, *OUTBOX; bool INBOX_WRITED;
+		MyTHREAD_TWO    	*iMyTHREAD_TWO;                     bool TERMINATED; int  TINT_CURR; str PREFIX, BUFF_CURRENTLOG;
+		MyTHREAD_ONLINE     *iMyTHREAD_ONLINE;
+
+		TClipboard *clp;     TStringList *INBOX, *AUTOANSOUTBOX;
 
 		TStringList *AUTOANSBUFF; // robotName, Token, file, dialog, message, uid, uname, usurname
 
@@ -60,9 +68,11 @@ class c_main
 
 		//////////////////////////////
 
-		str f_ini, f_servers, f_groups, f_workgroups, f_worktasks, f_users, f_globaluserscache, f_currentlog;
+		str f_ini,            f_servers, f_groups, f_workgroups, f_worktasks, f_users,           f_globaluserscache, f_currentlog, f_soundcaptcha;
 
-		str p_robots, p_dialogs, p_dialogs_test, p_logs;
+		str f_od_import_robot_model, f_od_import_robots;
+
+		str p_robots, p_dialogs, p_dialogs_test, p_logs, p_resources_audio, p_resources_records, p_resources_images;
 
 		//////////////////////////////
 
@@ -85,16 +95,19 @@ class c_main
 		void conf_workgroups(bool save);
 		void conf_worktasks(bool save);
 		void conf_robots(int index, bool save);
+		void conf_robots_import(int groupindex,str name, str login, str pass);
 		void conf_users(int index, bool save);
 		void conf_dialogs(bool save);
-        void conf_models(bool save);
-        void conf_dialogs_test(bool save);
+		void conf_models(bool save);
+
+		void soundplay_captha();
 
 		void show_current_server();
 		void increment_server();
 
-		void get_robotdata( int index, str *GroupName, str *RobotName, str *Server_ID, str *Login, str *Password, str *Token, str *Activity );
+		void get_robotdata( int index, str *GroupName, str *RobotName, str *Server_ID, str *Login, str *Password, str *Token, str *Activity, str *Online, str *LastOnline, bool *freeze );
 		int  get_robotnext( str GroupName ); int TGC;
+        long int getUnix();
 
         //////////////////////////////
 
@@ -103,20 +116,25 @@ class c_main
 		void GlobalUsersCache_Delete(str id);
 
 		//////////////////////////////
-        void checkDirectoryExisting(str directoryPath);
-		void log( str data ); TStringList *LOG;
-		void iSleep(int index);
+
+		void log( str data ); 
+        TStringList *LOG;
+		void iSleep(int index, str token);
 		void logline( str data );
         str  jsonfix( str data );
 		void buffer_write( str data );
 		void search_request( str RequestUrl, str OffSet, str Count, int iteration );   int countOfprocessed;
+		void response_read(str response, TStringList *L, str Count, str OffSet, str RequestUrl, int iteration);
+		str  include_actual_bdata(int m, int d, str request);
 		str  get_vkurl_param(str ParamName, str Data);
 		str  getCountOfMesages(str Dialog);
 		int  getCountOfHello(str GroupName);
 		void DrawMessageBox(str Name, str Surname, str RobotGID, TStringList *DIALOGS);
 		void DeleteUserFromQueueAndPutToDialogs(str UserID, str UserName, str UserSurname, str RobotName, bool msghello, str Text);
 		void WriteInboxList(str Token);
-		void WriteOutboxList(str Token, str RobotName);
+		void WriteOutboxAutoAnsList(str Token, str RobotName);
+		void GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, str Token, str RobotName);
+		void GetHistory(TStringList *LIST, str UID, int OUT_3, int Count, str Token, str RobotName);
 		void SetAsRead(TStringList *DIALOG);
 		str  GetLastStageName(TStringList *DIALOG);
 		void GetOnlyOneStage(TStringList *MODEL, str StageName);
@@ -131,6 +149,7 @@ class c_main
 		void log_transform();
 		void generatelogname();
 		void createStandartDataHello(TStringList *L);
+        void createGlobalDataModel(TStringList *L);
 		void createStandartDataModel(TStringList *L);
 		void createStandartDataAutoAnsRules(TStringList *L);
 		void createStandartDataAutoAnsDefault(TStringList *L);
@@ -141,14 +160,17 @@ class c_main
 		void deleteDialogsPerRobot(str robotname);
 		str  from_list_to_str(TStringList *L);
 		int  getrobotindex(str robotname, TStringList *L);
-        bool if_imbanned(str Token, str uid);
+		bool if_imbanned(str Token, str uid);
+		void sended_count_add(str robotname);         TStringList *AUTOANS_LIMIT;
+		bool sended_count_iflimit(str robotname);
 
 												TTreeNode *NODE; str FMODEL, MYPARENT;
         void LoadModel(int index);
 		void LoadModelHello();               	TStringList *MODEL_HELLO;
-        void LoadModelLogical();             	TStringList *MODEL_LOGICAL;
-        void LoadModelLogicalTree(int level);
-                                                bool MOD, IFCREATE, IFROOT;
+		void LoadModelLogical();             	TStringList *MODEL_LOGICAL;
+		void LoadModelLogicalTree(int level);
+		void LoadModelGlobal();                 TStringList *MODEL_GLOBAL;
+												bool MOD, IFCREATE, IFROOT;
         void LoadModelStage(str StageName);
         void LoadModelStagePosts();         	TStringList *POSTS;
         void LoadModelStageVariants();      	TStringList *VARIANTS;
@@ -168,6 +190,25 @@ class c_main
 
 		void LoadModelAutoStopKeys();           TStringList *MODEL_AUTOSTOP_KEYS, *MODEL_AUTOSTOP_POSTS;
 		void LoadModelAutoStopPosts();
+
+		void Robot_Freeze(int index);
+		void Robot_UnFreeze(int index);
+		void Robots_Freeze();
+		void Robots_UnFreeze();
+
+		void import_robots(str file);
+		str  get_fromfile(int i, str data);
+
+		void GlobalUsersCache_DublicatesDelete();
+
+		str  ConvertErrors(str edata);
+
+        str  GetPHPLINE(str data);
+		void GetServersFromNET(TStringList *L);
+
+		void asplit(TStringList* lout, str s, str separator);
+        void checkDirectoryExisting(str directoryPath);
+        void conf_dialogs_test(bool save);
 };
 
 // class c_process
@@ -177,6 +218,7 @@ class c_process
 
 		c_process();
 
+        void CCleanerGO();
 		bool Establish( str RobotName, str *Token );
 		str  SendMessage( str UserID, str Message, str Token );
 		str  AddToFriends( str UserID, str Message, str Token );
@@ -191,17 +233,27 @@ class c_process
 		void ProcessAutoAnswerCheckNew(str RobotName, str Token);
 		void ProcessAutoAnswerAddToDialogs(TStringList *NEWBOX, str RobotName, str Token, str Uid);
 		void ProcessAutoAnswerRunBuffer();
-		void ProcessSpeech(str GroupName, str RobotName, str Server_ID, str Login, str Password, str Token, str Activity, str ModelFile, str AutoStopKeysFile, str AutoStopPostsFile);
-		void ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserID, TStringList *DIALOG, str Token, str RobotModelFile, bool *SaveDialog, str AutoStopKeysFile, str AutoStopPostsFile);
-		void ProcessSpeechUserDo(str UserID, TStringList *DIALOG, str STACK, str Token, str RobotModelFile, bool *SaveDialog, str AutoStopKeysFile, str AutoStopPostsFile, bool *MakeReaded);
-        void ProcessTwoClose();
+		void ProcessSpeech(str _GroupName);
+		void ProcessSpeech(str GroupName, str RobotName, str Server_ID, str Login, str Password, str Token, str Activity, str ModelGlobalFile, str ModelFile, str AutoStopKeysFile, str AutoStopPostsFile);
+		void ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserID, TStringList *DIALOG, str Token, str RobotModelGlobalFile, str RobotModelFile, bool *SaveDialog, str AutoStopKeysFile, str AutoStopPostsFile);
+		void ProcessSpeechUserDo(str UserID, TStringList *DIALOG, str STACK, str Token, str RobotGlobalModelFile, str RobotModelFile, bool *SaveDialog, str AutoStopKeysFile, str AutoStopPostsFile, bool *MakeReaded);
+		void ProcessMessages_UIDS_To_GlobalUsersCache( str RobotName, str Token );
+		void ProcessTwoClose();
 
 		void SendStage1(str UserID, TStringList *DIALOG, str STACK, str Token, TStringList *MODEL);
+
+		void SendGlobalPost(str UserID, TStringList *DIALOG, str POSTTEXT, str Token, TStringList *MODEL, str CURRENT_STAGE);
+
 		void SendStageX(str UserID, TStringList *DIALOG, str STACK, str Token, TStringList *MODEL, str TARGET_STAGE);
-		void SendAutoAns(str RobotName, str UserID, str MessageData, str Token, TStringList *DIALOG, bool *success);
+
+		void SendAutoAns(str RobotName, str UserID, str MessageData, str Token, TStringList *DIALOG, bool *success, bool *e900, bool *e902);
+
 		void SendAutoStop(str UserID, TStringList *DIALOG, str STACK, str Token, str AutoStopPostsFile);
 
+		void SendImage(str UserID, TStringList *IMAGELIST, str Token);
 
+		void SendAudio(str UserID, TStringList *AUDIOLIST, str Token);
+		void SendAudioRec(str UserID, TStringList *AUDIOLIST, str Token);
 };
 
 // class c_ii
@@ -211,13 +263,14 @@ class c_ii
 
 		c_ii();
 
+		str  GetGlobalPostText(str STACK, TStringList *GLOBALMODEL, TStringList *DIALOG);
+		bool LastMessageIsGlobal(TStringList *DIALOG);
+
 		str  GetStage(str STACK, TStringList *STAGE);
 
-		void MakeVariantMass(TStringList *STAGE, TStringList *VARIANTS);
-		void WriteVariantTarget(bool *changed, TStringList *STAGE, TStringList *VARIANTS, str STACK);
-		void CheckExtended(bool *extended, TStringList *STAGE, TStringList *VARIANTS, str *TARGETSTAGE);
+		void MakeMass(TStringList *STAGE, TStringList *LinesIF);
+		str  GetTarget(TStringList *LinesIF, str STACK);
 
-		void GetChanged(TStringList *STAGE, TStringList *VARIANTS, str *TARGETSTAGE);
 		void GetDefault(TStringList *STAGE, str *TARGETSTAGE);
 
 		str  GetOldStage(str uid, str token, TStringList *RobotModel, str Message);
@@ -225,6 +278,39 @@ class c_ii
 
 		bool IfAutoStop(str message, str file);
 		str  GetAutoStopMessage(str file);
+
+		str  do_randomize(str text);
+		str  get_alpha_keys(str text);
+
+		str  MakePostLine(str post_variables_line);
+		str  MakePostLineGetOne(str buffer, int uppercount, int *memory_j);
+
+		bool if_EqualPosts(str ModelPost, str MyPost);
+		void MakePostLineGetAll(str buffer, TStringList *JPOSTVARIABLES_A);
+
+		void WritePostDataIn(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStringList *RECORDLIST, str *postline);
+		void ShowDataLNS(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStringList *RECORDLIST);
+		void ShowDataLNS(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStringList *RECORDLIST,TStringList *POSTS);
+
+		str  CutMediaTags(str data);
+};
+
+// class c_online
+class c_online
+{
+	public:
+
+        TStringList *APIBUFFER; // TOKEN, UNIX
+
+		c_online();
+
+		void addtobuffer(str token);
+
+		void processing();
+		void make_online(str robotname, str token, bool *success);
+
+		void buffer_clear(int unix);
+
 };
 
 // class c_vcl
@@ -243,7 +329,6 @@ class c_vcl
 		void set_enabled_conf_robots( bool enable );
 
 		void set_enabled_dialogs( bool enable );
-        void set_enabled_test_dialogs( bool enable );
 
 		void groupechoReadRobots();
 		void groupechoReadUsers();
@@ -260,13 +345,17 @@ class c_vcl
         void GoToModels(str RobotName, int PositionView);
         void ModelStageClear();
         void GetAllStages(TsComboBox *CB);
-        void GetAllRobots(TsComboBox *CB);
+		void GetAllRobots(TsComboBox *CB);
+
+		void InputCaptchaOpenForm(str file);
 };
 
 // class c_captcha
 class c_captcha
 {
 	public:
+
+	bool WAITMANUAL;
 
 	c_captcha();
 
@@ -388,12 +477,10 @@ class Tf : public TForm
 	TMenuItem *N20;
 	TsGroupBox *sGroupBox19;
 	TLabel *Label12;
-	TLabel *Label14;
 	TLabel *Label16;
 	TsEdit *e_conf_users_URL;
 	TsBitBtn *b_CONF_USERS_SEARCH;
 	TsEdit *e_conf_users_offSet;
-	TsEdit *e_conf_users_Count;
 	TMenuItem *N8;
 	TMenuItem *N9;
 	TsListView *LV_DIALOGS;
@@ -447,15 +534,6 @@ class Tf : public TForm
 	TsTreeViewEx *TREE;
 	TPopupMenu *PM_URL;
 	TMenuItem *N29;
-	TsPageControl *PAGES_SPEECH;
-	TsTabSheet *sTabSheet8;
-	TsListView *LV_DIALOGS_TEST;
-	TsGroupBox *sGroupBox13;
-	TLabel *Label22;
-	TLabel *Label23;
-	TsGroupBox *sGroupBox22;
-	TsTabSheet *sTabSheet9;
-	TsTabSheet *sTabSheet10;
 	TPopupMenu *PM_TRAY;
 	TMenuItem *T1;
 	TMenuItem *EST11;
@@ -518,14 +596,6 @@ class Tf : public TForm
 	TMenuItem *N44;
 	TMenuItem *N45;
 	TMenuItem *N46;
-	TsComboBox *CB_DIALOGS_TEST_ROBOTS;
-	TLabel *Label27;
-	TsEdit *sEdit5;
-	TsButton *sButton3;
-	TsGroupBox *sGroupBox26;
-	TLabel *Label28;
-	TsButton *sButton4;
-	TsRichEdit *ME_DIALOG_TEST;
 	TsCheckBox *CH_LOG;
 	TsTabSheet *sTabSheet17;
 	TsRadioButton *RB_MODELS_C;
@@ -590,6 +660,50 @@ class Tf : public TForm
 	TGroupBox *GroupBox1;
 	TGroupBox *GroupBox2;
 	TsButton *b_MODEL_IMPORT;
+	TsTabSheet *sTabSheet21;
+	TsTabSheet *sTabSheet22;
+	TsTabSheet *sTabSheet23;
+	TsComboBox *ch_robot_online;
+	TLabel *Label22;
+	TsComboBox *ch_robot_online_edit;
+	TLabel *Label23;
+	TGroupBox *GroupBox3;
+	TGroupBox *GroupBox4;
+	TsCheckBox *ch_soundcaptcha;
+	TLabel *Label25;
+	TPanel *p_INPUTCAPTCHA;
+	TsButton *b_INPUTCAPCHA;
+	TLabel *Label27;
+	TsEdit *e_INPUTCAPCHA;
+	TImage *i_INPUTCAPCHA;
+	TsCheckBox *ch_dynamic_userbdata;
+	TMenuItem *N69;
+	TMenuItem *N01;
+	TOpenDialog *OpenDialog1;
+	TsButton *b_GlobalUsersCacheDublicatesDEL;
+	TsGroupBox *sGroupBox13;
+	TLabel *lbl_DATAFROM;
+	TImage *Image1;
+	TImage *i_about_b_1;
+	TImage *i_about_b_2;
+	TImage *i_about_b_3;
+	TsCheckBox *ch_RANDOMIZE;
+	TsCheckBox *ch_ALPHAKEYS;
+	TMenuItem *N70;
+	TMenuItem *N71;
+	TMenuItem *N72;
+	TMenuItem *N73;
+	TMenuItem *N74;
+	TMenuItem *N75;
+	TsEdit *e_speechlimit;
+	TGroupBox *GroupBox5;
+	TEdit *e_ccleanerpath;
+	TsBitBtn *b_ccleanerBrowse;
+	TOpenDialog *OpenDialog2;
+	TMemo *me_createGlobalDataModel;
+	TsEdit *e_conf_users_Count;
+	TLabel *Label14;
+	TsBitBtn *B_TEST_01;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall PAGESChange(TObject *Sender);
 	void __fastcall TRAYClick(TObject *Sender);
@@ -626,7 +740,6 @@ class Tf : public TForm
 	void __fastcall N11Click(TObject *Sender);
 	void __fastcall N22Click(TObject *Sender);
 	void __fastcall e_int_apiChange(TObject *Sender);
-	void __fastcall e_conf_users_offSetChange(TObject *Sender);
 	void __fastcall LV_WORKGROUPSClick(TObject *Sender);
 	void __fastcall N23Click(TObject *Sender);
 	void __fastcall N24Click(TObject *Sender);
@@ -666,7 +779,6 @@ class Tf : public TForm
 	void __fastcall LI_MODEL_LOGICAL_EXTENDEDClick(TObject *Sender);
 	void __fastcall B_MODEL_LOGICAL_VARIANTS_APPLYClick(TObject *Sender);
 	void __fastcall B_MODEL_LOGICAL_EXTENDED_APPLYClick(TObject *Sender);
-	void __fastcall LV_DIALOGS_TESTClick(TObject *Sender);
 	void __fastcall CH_LOGClick(TObject *Sender);
 	void __fastcall RB_MODELS_CClick(TObject *Sender);
 	void __fastcall B_MODEL_AUTOANS_ADDClick(TObject *Sender);
@@ -693,6 +805,27 @@ class Tf : public TForm
 	void __fastcall N66Click(TObject *Sender);
 	void __fastcall e_autoanswerlimitChange(TObject *Sender);
 	void __fastcall b_MODEL_IMPORTClick(TObject *Sender);
+	void __fastcall ch_soundcaptchaClick(TObject *Sender);
+	void __fastcall b_INPUTCAPCHAClick(TObject *Sender);
+	void __fastcall ch_dynamic_userbdataClick(TObject *Sender);
+	void __fastcall N69Click(TObject *Sender);
+	void __fastcall b_GlobalUsersCacheDublicatesDELClick(TObject *Sender);
+	void __fastcall i_about_b_1Click(TObject *Sender);
+	void __fastcall i_about_b_2Click(TObject *Sender);
+	void __fastcall i_about_b_3Click(TObject *Sender);
+	void __fastcall ch_RANDOMIZEClick(TObject *Sender);
+	void __fastcall N70Click(TObject *Sender);
+	void __fastcall N71Click(TObject *Sender);
+	void __fastcall N72Click(TObject *Sender);
+	void __fastcall N73Click(TObject *Sender);
+	void __fastcall LV_CONF_ROBOTSCustomDrawItem(TCustomListView *Sender, TListItem *Item,
+          TCustomDrawState State, bool &DefaultDraw);
+	void __fastcall LV_CONF_ROBOTSCustomDrawSubItem(TCustomListView *Sender, TListItem *Item,
+          int SubItem, TCustomDrawState State, bool &DefaultDraw);
+	void __fastcall N75Click(TObject *Sender);
+	void __fastcall b_ccleanerBrowseClick(TObject *Sender);
+	void __fastcall e_conf_users_CountChange(TObject *Sender);
+	void __fastcall B_TEST_01Click(TObject *Sender);
 
 
 
@@ -700,11 +833,15 @@ class Tf : public TForm
 
 	private:
 	public:
+
+
+
 	__fastcall Tf(TComponent* Owner);
 	///////////////////////////////////////////////////////////
 	c_main 	    *main;
 	c_process   *proc;
 	c_ii        *ii;
+    c_online    *online;
 	c_vcl       *vcl;
 	c_captcha   *captcha;
 

@@ -24,6 +24,7 @@
 #include <Inifiles.hpp>
 #include <memory>
 #include <FileCtrl.hpp>
+#include "DateUtils.hpp"
 
 
 Tf *f;
@@ -35,6 +36,7 @@ __fastcall Tf::Tf(TComponent* Owner) : TForm(Owner)
 	main 	= new c_main();
 	proc 	= new c_process();
 	ii      = new c_ii();
+    online  = new c_online();
 	vcl     = new c_vcl();
 	captcha = new c_captcha();
 	InitializeCriticalSection(&CS);
@@ -47,15 +49,13 @@ void __fastcall Tf::FormShow(TObject *Sender)
 
 		if ( access )
 		{
-			f->ClientHeight = 550;
-			f->ClientWidth  = 760;
+			f->ClientHeight = 650;
+			f->ClientWidth  = 905;
 
 			f->PAGES->Align = alClient;
 			f->PAGES->ActivePageIndex = 0;
 
 			f->PAGES_CONFIGURATION->ActivePageIndex = 0;
-
-            f->PAGES_SPEECH->ActivePageIndex = 0;
 			f->PAGES_MODELS_PAGEVIEW->ActivePageIndex = 1;
 			f->PAGES_AUTOSTOP->ActivePageIndex = 0;
 
@@ -64,12 +64,15 @@ void __fastcall Tf::FormShow(TObject *Sender)
 
 			BTEST1->SetFocus();
 			main->conf(false);
+
 			vcl->unset();
 			vcl->set();
 			vcl->EchoStatistic();
             vcl->ModelsSET(false);
+
 			LOADED = true;
 			T_OBJ_DRAW->Enabled = true;
+			main->iMyTHREAD_ONLINE = new MyTHREAD_ONLINE(false);
 		}
 		else 
         {
@@ -173,9 +176,9 @@ void __fastcall Tf::PAGES_CONFIGURATIONChange(TObject *Sender)
 
 	TINT_CURR       	= 0;
 
-	INBOX 		= new TStringList;
-	OUTBOX      = new TStringList;
-	AUTOANSBUFF = new TStringList;
+	INBOX 				= new TStringList;
+	AUTOANSOUTBOX       = new TStringList;
+	AUTOANSBUFF 		= new TStringList;
 
     NODE = new TTreeNode(NULL);
 
@@ -203,7 +206,6 @@ void c_main::conf(bool save)
 	conf_groups(save);
 	conf_dialogs(save);
     conf_models(save);
-	conf_dialogs_test(save);
 	conf_worktasks(save);
 
 	f->l_tinterval->Caption = f->e_int_timer_max->Text;
@@ -225,13 +227,16 @@ void c_main::conf_ini(bool save)
 		INI->WriteBool(   UnicodeString("OTHER"),  UnicodeString("logpauses"),   f->CH_LOG_PAUSES->Checked );
 		INI->WriteString( UnicodeString("OTHER"),  UnicodeString("currentlog"),    UnicodeString(BUFF_CURRENTLOG) );
 		INI->WriteString( UnicodeString("OTHER"),  UnicodeString("autoanswerlimit"), UnicodeString(f->e_autoanswerlimit->Text) );
+        INI->WriteString( UnicodeString("IODIALOGS"), UnicodeString("import_robot_models"), f_od_import_robot_model );
+		INI->WriteString( UnicodeString("IODIALOGS"), UnicodeString("import_robots"), f_od_import_robots );
+        
         INI->UpdateFile();
 	}
 	else
 	{
 		CurrentServer = INI->ReadInteger( UnicodeString("SERVER"), UnicodeString("current"),     0  );
 		RobotPathID   = INI->ReadInteger( UnicodeString("OTHER"),  UnicodeString("robotpathid"), 0  );
-		APIV          = INI->ReadString(  UnicodeString("OAUTH2"), UnicodeString("api"),        "0" );
+		APIV          = INI->ReadString(  UnicodeString("OAUTH2"), UnicodeString("api"),        UnicodeString("0") );
 		f->e_conf_users_offSet->Text  = INI->ReadString( UnicodeString("OTHER"),  UnicodeString("offset"),     UnicodeString("0") );
 		f->e_conf_users_Count->Text   = INI->ReadString( UnicodeString("OTHER"),  UnicodeString("count"),      UnicodeString("0") );
 		f->e_conf_users_URL->Text	  = INI->ReadString( UnicodeString("OTHER"),  UnicodeString("search_url"), UnicodeString("0") );
@@ -241,6 +246,8 @@ void c_main::conf_ini(bool save)
 		f->CH_LOG_PAUSES->Checked     = INI->ReadBool(   UnicodeString("OTHER"),  UnicodeString("logpauses") , false );
 		BUFF_CURRENTLOG               = INI->ReadString( UnicodeString("OTHER"),  UnicodeString("currentlog") , UnicodeString("0") );
 		f->e_autoanswerlimit->Text    = INI->ReadString( UnicodeString("OTHER"),  UnicodeString("autoanswerlimit") , UnicodeString("0") );
+        f_od_import_robot_model       = INI->ReadString( UnicodeString("IODIALOGS"), UnicodeString("import_robot_models"), UnicodeString("") );
+		f_od_import_robots 			  = INI->ReadString( UnicodeString("IODIALOGS"), UnicodeString("import_robots"), UnicodeString("") );
 	}
 
 	delete INI;
@@ -478,8 +485,11 @@ void c_main::conf_robots(int index, bool save)
 		TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath + "Conf.ini"), TEncoding::UTF8 );
 		INI->WriteString( UnicodeString("MAIN"),       UnicodeString("owner"),     UnicodeString(Trim(f->LV_CONF_GROUPS->Items->Item[index]->Caption)) );
 		INI->WriteString( UnicodeString("MAIN"),       UnicodeString("name"),      UnicodeString(f->e_conf_robots_create_name->Text) );
+        INI->WriteBool(   UnicodeString("MAIN"),       UnicodeString("freeze"),     false );
 		INI->WriteString( UnicodeString("ACCOUNT"),    UnicodeString("login"),     UnicodeString(f->e_conf_robots_create_login->Text) );
 		INI->WriteString( UnicodeString("ACCOUNT"),    UnicodeString("password"),  UnicodeString(f->e_conf_robots_create_password->Text) );
+        INI->WriteString( UnicodeString("ACCOUNT"),    UnicodeString("online"),    UnicodeString(IntToStr( f->ch_robot_online->ItemIndex )) );
+		INI->WriteString( UnicodeString("ACCOUNT"),    UnicodeString("lastonline"),UnicodeString("1970"));
 		INI->WriteString( UnicodeString("CONNECTION"), UnicodeString("activity"),  UnicodeString("NULL") );
 		INI->WriteString( UnicodeString("CONNECTION"), UnicodeString("client_id"), UnicodeString("NULL") );
 		INI->WriteString( UnicodeString("CONNECTION"), UnicodeString("token"),     UnicodeString("NULL") );
@@ -491,24 +501,28 @@ void c_main::conf_robots(int index, bool save)
 		f->e_conf_robots_create_name->Clear();
 		f->e_conf_robots_create_login->Clear();
 		f->e_conf_robots_create_password->Clear();
+		f->ch_robot_online->ItemIndex = 1;
 
 		createStandartDataHello(L);
-		L->SaveToFile(UnicodeString(robotpath+"Hello.txt"), TEncoding::UTF8);
+		L->SaveToFile(robotpath+"Hello.txt");
+
+		createGlobalDataModel(L);
+		L->SaveToFile(robotpath+"Global.txt");
 
 		createStandartDataModel(L);
-		L->SaveToFile(UnicodeString(robotpath+"Model.txt"), TEncoding::UTF8);
+		L->SaveToFile(robotpath+"Model.txt");
 
 		createStandartDataAutoAnsRules(L);
-		L->SaveToFile(UnicodeString(robotpath+"AutoAnsRules.txt"), TEncoding::UTF8);
+		L->SaveToFile(robotpath+"AutoAnsRules.txt");
 
 		createStandartDataAutoAnsDefault(L);
-		L->SaveToFile(UnicodeString(robotpath+"AutoAnsDefault.txt"), TEncoding::UTF8);
+		L->SaveToFile(robotpath+"AutoAnsDefault.txt");
 
 		createStandartDataAutoStopKeys(L);
-		L->SaveToFile(UnicodeString(robotpath+"AutoStopKeys.txt"), TEncoding::UTF8);
+		L->SaveToFile(robotpath+"AutoStopKeys.txt");
 
 		createStandartDataAutoStopPosts(L);
-		L->SaveToFile(UnicodeString(robotpath+"AutoStopPosts.txt"), TEncoding::UTF8);
+		L->SaveToFile(robotpath+"AutoStopPosts.txt");
 
         conf_models(false);
 	}
@@ -518,39 +532,112 @@ void c_main::conf_robots(int index, bool save)
 		str NeededGroupName = Trim(f->LV_CONF_GROUPS->Items->Item[index]->Caption);
 		g.GetFiles( p_robots, L );
 
-		for ( int c = 0; c < L->Count; c++ )
+        for ( int c = 0; c < L->Count; c++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity;
-			get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity );
+			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline; 
+            bool freeze;
+			get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 			if ( GroupName == NeededGroupName )
 			{
-				if ( Token == "NULL" )
-                { 
+				if ( Token == "NULL" ) 
+                {
                     Token = "-"; 
                 }
-                else
-                { 
+                else 
+                {
                     Token = g.GetMD5(Token);
                 }
-				if ( Server_ID == "NULL" )
-                { 
+				if ( Server_ID == "NULL" ) 
+                {
                     Server_ID = "-";
                 }
-				if ( Activity == "NULL" )
-                { 
+				if ( Activity == "NULL" ) 
+                {
                     Activity = "-";
                 }
+				if ( Online == "0" ) 
+                {
+                    Online = "Äà"; 
+                }
+                else 
+                {
+                    Online = "-";
+                }
+
+
 
 				TListItem *ListItem;
 				ListItem = f->LV_CONF_ROBOTS->Items->Add();
 				ListItem->Caption = " " + RobotName;
+				ListItem->SubItems->Add( Online );
 				ListItem->SubItems->Add( Server_ID );
 				ListItem->SubItems->Add( Token );
 				ListItem->SubItems->Add( Activity );
-            }
+
+				if ( freeze ) 
+                {
+                    ListItem->Data = Pointer(clGray);
+                }
+				else         
+                {
+                    ListItem->Data = Pointer(clBlack);
+                }
+			}
 		}
 	}
+
+	delete L;
+}
+void c_main::conf_robots_import(int groupindex, str name, str login, str pass)
+{
+	TStringList *L = new TStringList;
+    str robotpath = p_robots + IntToStr(RobotPathID) + "_" + g.GetMD5(RobotPathID) + "\\";
+    CreateDir( robotpath );
+    RobotPathID++;
+    conf_ini( true );
+
+    TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath + "Conf.ini"), TEncoding::UTF8 );
+    INI->WriteString( UnicodeString("MAIN"),    UnicodeString("owner"), UnicodeString(Trim(f->LV_CONF_GROUPS->Items->Item[groupindex]->Caption)) );
+    INI->WriteString( UnicodeString("MAIN"),    UnicodeString("name"),  UnicodeString(name) );
+    INI->WriteString( UnicodeString("ACCOUNT"), UnicodeString("login"),     UnicodeString(login) );
+    INI->WriteString( UnicodeString("ACCOUNT"), UnicodeString("password"),  UnicodeString(pass) );
+    INI->WriteString( UnicodeString("ACCOUNT"), UnicodeString("online"),  UnicodeString("1") );
+    INI->WriteString( UnicodeString("ACCOUNT"), UnicodeString("lastonline"),  UnicodeString("1970") );
+    INI->WriteString( UnicodeString("CONNECTION"), UnicodeString("activity"),  UnicodeString("NULL") );
+    INI->WriteString( UnicodeString("CONNECTION"), UnicodeString("client_id"), UnicodeString("NULL") );
+    INI->WriteString( UnicodeString("CONNECTION"), UnicodeString("token"),     UnicodeString("NULL") );
+    delete INI;
+
+    conf_robots( groupindex, false );
+
+    f->e_conf_robots_create_name->Clear();
+    f->e_conf_robots_create_login->Clear();
+    f->e_conf_robots_create_password->Clear();
+    f->ch_robot_online->ItemIndex = 1;
+
+    createStandartDataHello(L);
+    L->SaveToFile(UnicodeString(robotpath+"Hello.txt"), TEncoding::UTF8);
+
+    createGlobalDataModel(L);
+    L->SaveToFile(UnicodeString(robotpath+"Global.txt"), TEncoding::UTF8);
+
+    createStandartDataModel(L);
+    L->SaveToFile(UnicodeString(robotpath+"Model.txt"), TEncoding::UTF8);
+
+    createStandartDataAutoAnsRules(L);
+    L->SaveToFile(UnicodeString(robotpath+"AutoAnsRules.txt"), TEncoding::UTF8);
+
+    createStandartDataAutoAnsDefault(L);
+    L->SaveToFile(UnicodeString(robotpath+"AutoAnsDefault.txt"), TEncoding::UTF8);
+
+    createStandartDataAutoStopKeys(L);
+    L->SaveToFile(UnicodeString(robotpath+"AutoStopKeys.txt"), TEncoding::UTF8);
+
+    createStandartDataAutoStopPosts(L);
+    L->SaveToFile(UnicodeString(robotpath+"AutoStopPosts.txt"), TEncoding::UTF8);
+
+    conf_models(false);
 
 	delete L;
 }
@@ -639,10 +726,11 @@ void c_main::conf_models(bool save)
 
         TStringList *L = new TStringList;
     	g.GetFiles( p_robots, L );
-		for ( int c = 0; c < L->Count; c++ )
+        for ( int c = 0; c < L->Count; c++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity;
-			get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity );
+			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+            bool freeze;
+			get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
             f->CB_MODELS_ROBOTS->Items->Add( RobotName );
     	}
 		delete L;
@@ -652,50 +740,12 @@ void c_main::conf_models(bool save)
             index = 0;
         }
 
-        f->PAGES_SPEECH->Pages[1]->Enabled = false;
-		if ( f->CB_MODELS_ROBOTS->Items->Count > 0 )
+        if ( f->CB_MODELS_ROBOTS->Items->Count > 0 )
 		{
-			f->PAGES_SPEECH->Pages[1]->Enabled = true;
 			f->CB_MODELS_ROBOTS->ItemIndex = index;
 			LoadModel(index);
 		}
     }
-}
-void c_main::conf_dialogs_test(bool save)
-{
-	TStringList *L = new TStringList;
-	TStringList *X = new TStringList;
-
-	if ( ! save )
-	{
-		f->LV_DIALOGS_TEST->Items->Clear();
-		g.GetFiles( p_dialogs_test, L );
-
-		for ( int c = 0; c < L->Count; c++ )
-		{
-			str id = L->Strings[c];
-            if(FileExists(p_dialogs_test + id))
-            {
-			    X->LoadFromFile( p_dialogs_test + id );
-
-			    TListItem *ListItem;
-			    ListItem = f->LV_DIALOGS_TEST->Items->Add();
-			    ListItem->Caption = " " + id;
-			    ListItem->SubItems->Add( getCountOfMesages(X->Text) );
-                ListItem->SubItems->Add( " " + X->Strings[0] );
-                ListItem->SubItems->Add( getLastStage(X->Text) );
-            }
-		}
-
-		f->LV_DIALOGS_TEST->Visible = true;
-		f->LV_DIALOGS_TEST->Refresh();
-		f->LV_DIALOGS_TEST->Repaint();
-
-        f->vcl->GetAllRobots( f->CB_DIALOGS_TEST_ROBOTS );
-	}
-
-	delete L;
-	delete X;
 }
 void c_main::show_current_server()
 {
@@ -754,6 +804,25 @@ void c_main::GlobalUsersCache_Delete(str id)
 
     }
 }
+void c_main::GlobalUsersCache_DublicatesDelete()
+{
+	int acount = GLOBAL_USERS_CACHE->Count;
+	TStringList *L = new TStringList;
+	for ( int c = 0; c < GLOBAL_USERS_CACHE->Count; c++ )
+	{
+		str a = GLOBAL_USERS_CACHE->Strings[c];
+		if ( Pos(a,L->Text) == 0 ) 
+        {
+            L->Add(a);
+        }
+	}
+
+	GLOBAL_USERS_CACHE->Text = L->Text;
+	delete L;
+	GLOBAL_USERS_CACHE->SaveToFile( f_globaluserscache );
+    
+	ShowMessage(L"Выполнено.\n\nДо очистки: "+IntToStr(acount)+L"\nПосле очистки: "+IntToStr(GLOBAL_USERS_CACHE->Count));
+}
 void c_main::log( str data )
 {
 	try
@@ -793,12 +862,13 @@ void c_main::checkDirectoryExisting(str directoryPath)
         }
     }
 }
-
-void c_main::iSleep(int index)
+void c_main::iSleep(int index, str token)
 {
 	str a;
-	int x;
+    int x;
 
+    f->online->addtobuffer(token);
+    
 	// 1 : Api Request, 2 : Add To Friends, 3 : Send Message, 4 : Confirm Friend
 
 	if ( index == 1 ) { a = f->e_int_api->Text; x = StrToInt(f->e_int_api->Text); }
@@ -876,7 +946,7 @@ void c_main::buffer_write( str data )
 		}
 	}
 }
-void c_main::get_robotdata( int index, str *GroupName, str *RobotName, str *Server_ID, str *Login, str *Password, str *Token, str *Activity )
+void c_main::get_robotdata( int index, str *GroupName, str *RobotName, str *Server_ID, str *Login, str *Password, str *Token, str *Activity, str *Online, str *LastOnline, bool *freeze )
 {
 	TStringList *L = new TStringList;
 	g.GetFiles( p_robots, L );
@@ -884,10 +954,13 @@ void c_main::get_robotdata( int index, str *GroupName, str *RobotName, str *Serv
 
 	TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath + "Conf.ini"),TEncoding::UTF8 );
 
+    *freeze     = INI->ReadBool(   UnicodeString("MAIN"), 		UnicodeString("freeze"),    true );
 	*GroupName 	= INI->ReadString( UnicodeString("MAIN"),       UnicodeString("owner"),     UnicodeString("0") );
 	*RobotName  = INI->ReadString( UnicodeString("MAIN"),       UnicodeString("name"),  	UnicodeString("0") );
 	*Login 		= INI->ReadString( UnicodeString("ACCOUNT"),    UnicodeString("login"),     UnicodeString("0") );
 	*Password  	= INI->ReadString( UnicodeString("ACCOUNT"),    UnicodeString("password"),  UnicodeString("0") );
+    *Online     = INI->ReadString( UnicodeString("ACCOUNT"),     UnicodeString("online"),   UnicodeString("0") );
+	*LastOnline = INI->ReadString( UnicodeString("ACCOUNT"),     UnicodeString("lastonline"),UnicodeString("0") );
 	*Activity 	= INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("activity"),  UnicodeString("0") );
 	*Server_ID 	= INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("client_id"), UnicodeString("0") );
 	*Token     	= INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("token"),     UnicodeString("0") );
@@ -903,23 +976,30 @@ int  c_main::get_robotnext( str GroupName )
 	g.GetFiles(p_robots,L);
 	for ( int c = 0; c < L->Count; c++ )
 	{
-		str CurGroupName, RobotName, Server_ID, Login, Password, Token, Activity;
-		get_robotdata( c, &CurGroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity );
+		str CurGroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+        bool freeze;
+		get_robotdata( c, &CurGroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 		if ( CurGroupName == GroupName ) 
         {
             CNT++;
         }
 	}
 
+    delete L;
+
 	if ( TGC >= CNT ) 
     {
         TGC = 0;
     }
+    
 	int RET = TGC;
 	TGC++;
 
-	delete L;
 	return RET;
+}
+long int c_main::getUnix()
+{
+	return Dateutils::DateTimeToUnix(Now());
 }
 void c_main::search_request( str RequestUrl, str OffSet, str Count, int iteration )
 {
@@ -929,10 +1009,11 @@ void c_main::search_request( str RequestUrl, str OffSet, str Count, int iteratio
 	log("OFFSET:    "+OffSet);
 	log("COUNT:     "+Count);
 
-	str GroupName, RobotName, Server_ID, Login, Password, Token, Activity;
+	str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline; 
+    bool freeze;
 	TStringList *L = new TStringList;
 	g.GetFiles( p_robots, L );
-	get_robotdata( Random(L->Count), &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity );
+	get_robotdata( Random(L->Count), &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 	if ( f->proc->Establish(RobotName,&Token) )
 	{
@@ -954,6 +1035,9 @@ void c_main::search_request( str RequestUrl, str OffSet, str Count, int iteratio
 		str Company  			= get_vkurl_param( "company",RequestUrl );
 		str Position  			= get_vkurl_param( "position",RequestUrl );
 		str MilitaryCountry  	= get_vkurl_param( "mil_country",RequestUrl );
+		str birth_year  		= get_vkurl_param( "byear",RequestUrl );
+		str birth_month  	    = get_vkurl_param( "bmonth",RequestUrl );
+		str birth_day  		    = get_vkurl_param( "bday",RequestUrl );
 
 		str request = "q="+q +
 		"&offset="+OffSet+
@@ -969,94 +1053,137 @@ void c_main::search_request( str RequestUrl, str OffSet, str Count, int iteratio
 		"&religion="+Religion+
 		"&company="+Company+
 		"&position="+Position+
-		"&group_id="+Group;
+		"&group_id="+Group+
+		"&birth_year="+birth_year+
+		"&birth_month="+birth_month+
+		"&birth_day="+birth_day;
 
 		str response;
 
-		bool success = false;
-		while ( ! success )
+        if ( f->ch_dynamic_userbdata->Checked == false )
 		{
-			response = vk.users_search_from_url(&success,request,Token);
-			f->main->iSleep(1);
-			if ( ! success ) 
+            bool success = false;
+            while ( ! success )
             {
-                log(L"Сервер не ответил на запрос. Повтор..");
+                response = vk.users_search_from_url(&success,request,Token);
+                f->main->iSleep(1, Token);
+                if ( ! success ) 
+                {
+                    log(L"Сервер не ответил на запрос. Повтор..");
+                }
             }
-		}
 
-		if ( Pos("items\":[]",response) == 0 )
+            Application->ProcessMessages();
+            response_read(response,L,Count,OffSet,RequestUrl,iteration);
+        }
+        else
 		{
-			if(FileExists(f_users))
-            {
-			    L->LoadFromFile( f_users );
-            }
-            // JSON //////////////////////////////////////////////////////////////////////////////
-			std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
-			TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
-			str allcount = obj_response->GetValue("count")->ToString();
-
-			TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
-			for ( int c = 0; c < obj_items->Count; c++ )
+			for ( int cur_M = 1; cur_M <= 12; cur_M++ )
 			{
-				TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Get(c));
-
-				str uid 			= x_obj_items->GetValue("id")->ToString();
-				str uname 			= x_obj_items->GetValue("first_name")->ToString();
-				str usurname 	   	= x_obj_items->GetValue("last_name")->ToString();
-
-				uname 	 = jsonfix(uname);
-				usurname = jsonfix(usurname);
-
-				if ( ! GlobalUsersCache_Exist( uid ) )
+				for ( int cur_D = 1; cur_D <= 31; cur_D++ )
 				{
-					TDateTime D = Date();
-					TDateTime T = Time();
-					str DT = DateToStr(D) + " - " + TimeToStr(T);
-					L->Add( Trim(f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption)+"#"+uid+"#"+uname+"#"+usurname+"#"+DT );
+                    log(L"Поисковый запрос : Месяц рождения [ "+IntToStr(cur_M)+L" ], Число рождения [ "+IntToStr(cur_D)+" ]");
+                    request = include_actual_bdata(cur_M,cur_D,request);
 
-					GlobalUsersCache_Add( uid );
-					log(L"В очередь добавлен пользователь: [ "+uid+" ] [ "+uname+" "+usurname+" ]" );
-					countOfprocessed++;
-
-					if ( countOfprocessed >= StrToInt(Count) ) 
+                    bool success = false;
+                    while ( ! success )
                     {
-                        break;
+                        response = vk.users_search_from_url(&success,request,Token);
+                        f->main->iSleep(1, Token);
+                        if ( ! success ) 
+                        {
+                            log(L"Сервер не ответил на запрос. Повтор..");
+                        }
                     }
-				}
-				else
-				{
-					log( L"Пользователь [ " +uid+ L" ] уже в очереди или обрабатывался ранее. Global.Users.Cache." );
-				}
-			}
 
-			// //////////////////////////////////////////////////////////////////////////////////
-
-			L->SaveToFile( UnicodeString(f_users), TEncoding::UTF8 );
-			conf_users(f->LV_CONF_GROUPS->ItemIndex,false);
-			f->vcl->groupechoReadUsers();
-
-			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-			int newOffSet = StrToInt(OffSet)+StrToInt(Count);
-			if ( countOfprocessed < StrToInt(Count) )
-			{
-				search_request(RequestUrl, IntToStr(newOffSet), Count, iteration+1);
-			}
-			else
-			{
-				f->e_conf_users_Count->Text = IntToStr( countOfprocessed );
-				conf_ini(true);
-			}
-		}
-		else 
-        {
-            log(L"VK API ВЕРНУЛ [ 0 ] РЕЗУЛЬТАТОВ ПРИ [ OFFSET:"+OffSet+", COUNT:"+Count+" ]");
+                    Application->ProcessMessages();
+                    response_read(response,L,Count,OffSet,RequestUrl,iteration);
+                }
+            }
         }
 	}
 
 	delete L;
 
 	logline( "" );
+}
+str  c_main::include_actual_bdata(int m, int d, str request)
+{
+	str fx = "&birth_month=";
+	int pos = Pos(fx,request);
+	str a = request.SubString(1,pos-1);
+    return a + "&birth_month=" + IntToStr(m) + "&birth_day=" + IntToStr(d);
+}
+void c_main::response_read(str response, TStringList *L, str Count, str OffSet, str RequestUrl, int iteration)
+{
+    if ( Pos("items\":[]",response) == 0 )
+    {
+        if(FileExists(f_users))
+        {
+            L->LoadFromFile( f_users );
+        }
+        // JSON //////////////////////////////////////////////////////////////////////////////
+        std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
+        TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
+        str allcount = obj_response->GetValue("count")->ToString();
+
+        TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
+        for ( int c = 0; c < obj_items->Count; c++ )
+        {
+            TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Get(c));
+
+            str uid 			= x_obj_items->GetValue("id")->ToString();
+            str uname 			= x_obj_items->GetValue("first_name")->ToString();
+            str usurname 	   	= x_obj_items->GetValue("last_name")->ToString();
+
+            uname 	 = jsonfix(uname);
+            usurname = jsonfix(usurname);
+
+            if ( ! GlobalUsersCache_Exist( uid ) )
+            {
+                TDateTime D = Date();
+                TDateTime T = Time();
+                str DT = DateToStr(D) + " - " + TimeToStr(T);
+                L->Add( Trim(f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption)+"#"+uid+"#"+uname+"#"+usurname+"#"+DT );
+
+                GlobalUsersCache_Add( uid );
+                log(L"В очередь добавлен пользователь: [ "+uid+" ] [ "+uname+" "+usurname+" ]" );
+                countOfprocessed++;
+
+                if ( countOfprocessed >= StrToInt(Count) ) 
+                {
+                    break;
+                }
+            }
+            else
+            {
+                log( L"Пользователь [ " +uid+ L" ] уже в очереди или обрабатывался ранее. Global.Users.Cache." );
+            }
+        }
+
+        // //////////////////////////////////////////////////////////////////////////////////
+
+        L->SaveToFile( UnicodeString(f_users), TEncoding::UTF8 );
+        conf_users(f->LV_CONF_GROUPS->ItemIndex,false);
+        f->vcl->groupechoReadUsers();
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        int newOffSet = StrToInt(OffSet)+StrToInt(Count);
+        if ( countOfprocessed < StrToInt(Count) )
+        {
+            search_request(RequestUrl, IntToStr(newOffSet), Count, iteration+1);
+        }
+        else
+        {
+            f->e_conf_users_Count->Text = IntToStr( countOfprocessed );
+            conf_ini(true);
+        }
+    }
+    else 
+    {
+        log(L"VK API ВЕРНУЛ [ 0 ] РЕЗУЛЬТАТОВ ПРИ [ OFFSET:"+OffSet+", COUNT:"+Count+" ]");
+    }
 }
 str  c_main::get_vkurl_param(str ParamName, str Data)
 {
@@ -1217,24 +1344,32 @@ void c_main::SetAsRead(TStringList *DIALOG)
 }
 void c_main::WriteInboxList(str Token)
 {
-	if ( ! INBOX_WRITED )
+	bool ex = false;
+	for ( int c = 0; c < INBOX->Count; c++ )
+	{
+		str _token = g.Encrypt(1,6,"#", INBOX->Strings[c] );
+		if ( Token == _token )
+		{
+			ex = true;
+			break;
+        }
+    }
+
+	if ( ! ex )
 	{
 		log(L"Получение входящих сообщений и заполнение буффера..");
 		g.ProcessMessages();
 
-		INBOX->Clear();
-
 		int max_count_of = 0;
 		int current_offset_of = 0;
-
 		while ( true )
 		{
 			str response;
 			bool success = false;
 			while ( ! success )
 			{
-				response = vk.messages_get(&success,false,current_offset_of,200,Token);
-				iSleep(1);
+				response = vk.messages_get(&success,current_offset_of,200,Token);
+				iSleep(1,Token);
 				if ( ! success ) 
                 {
                     log(L"Сервер не ответил на запрос. Повтор..");
@@ -1250,41 +1385,81 @@ void c_main::WriteInboxList(str Token)
 			str vUid = "user_id";
 			if ( Pos(vUid,response) == 0 ) 
             { 
-                vMid = "mid"; vUid = "uid"; 
+                vMid = "mid"; 
+                vUid = "uid"; 
             }
 			// JSON //////////////////////////////////////////////////////////////////////////////
+			str messcount = "0";
 
-			std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
-			TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
-			str messcount = obj_response->GetValue("count")->ToString();
-			TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
-			for ( int c = 0; c < obj_items->Count; c++ )
+			try
 			{
-				TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Get(c));
+				std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
+				TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
+				messcount = obj_response->GetValue("count")->ToString();
+				TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
+				for ( int c = 0; c < obj_items->Count; c++ )
+				{
+					TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Get(c));
 
-				str mid 			= x_obj_items->GetValue(vMid)->ToString();
-				str uid 			= x_obj_items->GetValue(vUid)->ToString();
-				str read_state 		= x_obj_items->GetValue("read_state")->ToString();
-				str title 	   		= x_obj_items->GetValue("title")->ToString();
-				str body 			= x_obj_items->GetValue("body")->ToString();
+					str mid 			= x_obj_items->GetValue(vMid)->ToString();
+					str uid 			= x_obj_items->GetValue(vUid)->ToString();
+					str read_state 		= x_obj_items->GetValue("read_state")->ToString();
+					str title 	   		= x_obj_items->GetValue("title")->ToString();
+					str body 			= x_obj_items->GetValue("body")->ToString();
 
-				INBOX->Add( Token+"#"+mid+"#"+uid+"#"+read_state+"#"+title+"#"+body );
+					INBOX->Add( Token+"#"+mid+"#"+uid+"#"+read_state+"#"+title+"#"+body );
+
+					if ( ! GlobalUsersCache_Exist(uid) ) 
+                    { 
+                        GlobalUsersCache_Add(uid); 
+                    }
+				}
 			}
+			catch (...)
+			{
+				try
+				{
+					std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
+					TJSONArray *obj_response = static_cast<TJSONArray*>(json->Get("response")->JsonValue);
+					messcount = IntToStr( obj_response->Count - 1 );
+					for ( int c = 1; c < obj_response->Count; c++ )
+					{
+						TJSONObject* x_arr_item = static_cast<TJSONObject*>(obj_response->Get(c));
+
+						str mid 			= x_arr_item->GetValue(vMid)->ToString();
+						str uid 			= x_arr_item->GetValue(vUid)->ToString();
+						str read_state 		= x_arr_item->GetValue("read_state")->ToString();
+						str title 	   		= x_arr_item->GetValue("title")->ToString();
+						str body 			= x_arr_item->GetValue("body")->ToString();
+
+						INBOX->Add( Token+"#"+mid+"#"+uid+"#"+read_state+"#"+title+"#"+body );
+
+						if ( ! GlobalUsersCache_Exist(uid) ) 
+                        { 
+                            GlobalUsersCache_Add(uid); 
+                        }
+					}
+				}
+				catch (...) 
+                { 
+                }
+			}
+			// //////////////////////////////////////////////////////////////////////////////////
 
 			if ( max_count_of == 0 ) 
             {
-                max_count_of = StrToInt(messcount);
+                max_count_of = StrToInt(messcount);  
             }
-
-		    log(L"Смещение: [ "+IntToStr(current_offset_of)+L" ] Количество в стеке: [ "+obj_items->Count+" ]");
+            
+			log(L"Смещение: [ "+IntToStr(current_offset_of)+L" ] Количество в стеке: [ "+messcount+" ]");
 
 			current_offset_of = current_offset_of + 200;
-			if (  max_count_of == 0 || 
-                  max_count_of < current_offset_of ) 
+			if ( max_count_of == 0 || 
+                 max_count_of < current_offset_of ) 
+            {
                 break;
+            }
 		}
-
-		INBOX_WRITED = true;
 
 		log(L"Список сообщений получен. Буффер наполнен. Общее количество: [ "+IntToStr(f->main->INBOX->Count)+" ]");
 	}
@@ -1293,77 +1468,228 @@ void c_main::WriteInboxList(str Token)
 		log(L"Список сообщений был получен ранее. Буффер наполнен.");
 	}
 }
-void c_main::WriteOutboxList(str Token, str RobotName)
+void c_main::WriteOutboxAutoAnsList(str Token, str RobotName)
 {
-	if ( Pos(Token,OUTBOX->Text) == 0 )
+    str PX = f->main->PREFIX;
+	f->main->PREFIX = L"Автоответчик : [ "+RobotName+" ] ";
+
+	if ( Pos(Token,AUTOANSOUTBOX->Text) == 0 )
 	{
-		str PX = f->main->PREFIX;
-		f->main->PREFIX = L"Автоответчик : [ "+RobotName+" ] ";
+		TStringList *UIDS = new TStringList;
+		GetDialogs( UIDS, 0, 0, Token, RobotName );
 
-		log(L"Получение исходящих сообщений и заполнение буффера..");
-		g.ProcessMessages();
-
-		int max_count_of = 0;
-		int current_offset_of = 0;
-
-		while ( true )
+		for ( int c = 0; c < UIDS->Count; c++ )
 		{
-			str response;
-
-			bool success = false;
-			while ( ! success )
-			{
-				response = vk.messages_get(&success,true,current_offset_of,200,Token);
-				iSleep(1);
-				if ( ! success ) 
-                    log(L"Сервер не ответил на запрос. Повтор..");
-			}
-
-			if ( f->CH_APIRET->Checked )
-                f->main->log(L"Ответ сервера: ["+response+"]");
-
-			str vMid = "id";
-			str vUid = "user_id";
-			if ( Pos(vUid,response) == 0 ) { vMid = "mid"; vUid = "uid"; }
-
-			// JSON //////////////////////////////////////////////////////////////////////////////
-			std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
-			TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
-			str messcount = obj_response->GetValue("count")->ToString();
-
-			TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
-			for ( int c = 0; c < obj_items->Count; c++ )
-			{
-				TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Get(c));
-
-				str mid 			= x_obj_items->GetValue(vMid)->ToString();
-				str uid 			= x_obj_items->GetValue(vUid)->ToString();
-				str read_state 		= x_obj_items->GetValue("read_state")->ToString();
-				str title 	   		= x_obj_items->GetValue("title")->ToString();
-				str body 			= x_obj_items->GetValue("body")->ToString();
-
-				OUTBOX->Add( Token+"#"+mid+"#"+uid+"#"+read_state+"#"+title+"#"+body );
-			}
-
-
-			if ( max_count_of == 0 ) 
-                max_count_of = StrToInt(messcount);
-
-			log(L"Смещение: [ "+IntToStr(current_offset_of)+L" ] Количество в стеке: [ "+obj_items->Count+" ]");
-
-			current_offset_of = current_offset_of + 200;
-			if (  max_count_of == 0 || 
-                  max_count_of < current_offset_of ) 
-                break;
+			str UID = UIDS->Strings[c];
+			GetHistory( AUTOANSOUTBOX, UID, 1, 10, Token, RobotName );
 		}
-
-		log(L"Список сообщений получен. Буффер наполнен.");
-		f->main->PREFIX = PX;
+		delete UIDS;
 	}
 	else
 	{
-		log(L"Список сообщений был получен ранее. Буффер наполнен.");
+		log(L"Список диалогов и сообщений был получен ранее. Буффер наполнен.");
 	}
+
+	f->main->PREFIX = PX;
+}
+void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, str Token, str RobotName)
+{
+	log(L"Получение диалогов..");
+	g.ProcessMessages();
+
+	int max_count_of = 0;
+	int current_offset_of = 0;
+
+	while ( true )
+	{
+		str response;
+		bool success = false;
+		while ( ! success )
+		{
+			response = vk.messages_getDialogs(&success,current_offset_of,200,Token);
+			iSleep(1,Token);
+			if ( ! success ) 
+            {
+                log(L"Сервер не ответил на запрос. Повтор..");
+            }
+		}
+
+		if ( f->CH_APIRET->Checked ) 
+        {
+            f->main->log(L"Ответ сервера: ["+response+"]");
+        }
+
+		// JSON //////////////////////////////////////////////////////////////////////////////
+		std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
+		TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
+		str messcount = obj_response->GetValue("count")->ToString();
+		TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
+		for ( int c = 0; c < obj_items->Count; c++ )
+		{
+			TJSONObject *obj_root = static_cast<TJSONObject*>(obj_items->Get(c));
+			str unread          = "0"; 
+            try 
+            { 
+                unread = obj_root->GetValue("unread")->ToString(); 
+            } 
+            catch (...) 
+            { 
+            }
+
+			TJSONObject *obj_message = static_cast<TJSONObject*>(obj_root->Get("message")->JsonValue);
+			str mid 	     = obj_message->GetValue("id")->ToString();
+			str date 	     = obj_message->GetValue("date")->ToString();
+			str out 	     = obj_message->GetValue("out")->ToString();
+			str user_id 	 = obj_message->GetValue("user_id")->ToString();
+			str read_state 	 = obj_message->GetValue("read_state")->ToString();
+			str title 	     = obj_message->GetValue("title")->ToString();
+			str body 	     = obj_message->GetValue("body")->ToString();
+
+			bool go1 = false; // OUT_3
+			if ( OUT_3 == 0 && out == "0" ) 
+            {
+                go1 = true;
+            }
+			if ( OUT_3 == 1 && out == "1" )
+            {
+                go1 = true;
+            }
+			if ( OUT_3 == 2 ) 
+            {
+                go1 = true;
+            }
+
+			bool go2 = false; // READSTATE_3
+			if ( READSTATE_3 == 0 && read_state == "0" ) 
+            {
+                go2 = true;
+            }
+			if ( READSTATE_3 == 1 && read_state == "1" ) 
+            {
+                go2 = true;
+            }
+			if ( READSTATE_3 == 2                      ) 
+            {
+                go2 = true;
+            }
+
+			if ( go1 && go2 )
+			{
+				UIDS->Add( user_id );
+			}
+		}
+
+		if ( max_count_of == 0 ) 
+        {
+            max_count_of = StrToInt(messcount);
+        }
+
+		log(L"Смещение: [ "+IntToStr(current_offset_of)+L" ] Количество в стеке: [ "+obj_items->Count+" ]");
+
+		current_offset_of = current_offset_of + 200;
+
+		if (  max_count_of == 0 || 
+              max_count_of < current_offset_of ) 
+        {
+            break;
+        }
+	}
+
+	log(L"Список диалогов получен.");
+}
+void c_main::GetHistory(TStringList *LIST, str UID, int OUT_3, int Count, str Token, str RobotName)
+{
+	log(L"Получение истории сообщений пользователя [ "+UID+L" ] .. Макс [ "+IntToStr( Count )+" ] шт.");
+	g.ProcessMessages();
+
+	int max_count_of = 0;
+	int current_offset_of = 0;
+
+	int gotch_cnt = 0;
+	bool breaked = false;
+
+	while ( true )
+	{
+		str response;
+		bool success = false;
+		while ( ! success )
+		{
+			response = vk.messages_getHistory(&success,current_offset_of,200,UID,Token);
+			iSleep(1,Token);
+			if ( ! success ) 
+            {
+                log(L"Сервер не ответил на запрос. Повтор..");
+            }
+		}
+
+		if ( f->CH_APIRET->Checked ) 
+        {
+            f->main->log(L"Ответ сервера: ["+response+"]");
+        }
+
+		// JSON //////////////////////////////////////////////////////////////////////////////
+		std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
+		TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
+		str messcount = obj_response->GetValue("count")->ToString();
+		TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
+
+		for ( int c = 0; c < obj_items->Count; c++ )
+		{
+			TJSONObject *obj_root = static_cast<TJSONObject*>(obj_items->Get(c));
+			str mid 		= obj_root->GetValue("id")->ToString();
+			str body  		= obj_root->GetValue("body")->ToString();
+			str user_id 	= obj_root->GetValue("user_id")->ToString();
+			str from_id 	= obj_root->GetValue("from_id")->ToString();
+			str date 		= obj_root->GetValue("date")->ToString();
+			str read_state 	= obj_root->GetValue("read_state")->ToString();
+			str out 		= obj_root->GetValue("out")->ToString();
+
+			bool go = false; // OUT_3
+			if ( OUT_3 == 0 && out == "0" ) 
+            {
+                go = true;
+            }
+			if ( OUT_3 == 1 && out == "1" ) 
+            {
+                go = true;
+            }
+			if ( OUT_3 == 2               ) 
+            {
+                go = true;
+            }
+
+			if ( go )
+			{
+				AUTOANSOUTBOX->Add( Token+"#"+mid+"#"+UID+"#"+read_state+"#NULL#"+body );
+                gotch_cnt++;
+				if ( gotch_cnt >= Count ) 
+                { 
+                    breaked = true; 
+                    break; 
+                }
+			}
+		}
+		if ( breaked ) 
+        {
+            break;
+        }
+		if ( max_count_of == 0 ) 
+        {
+            max_count_of = StrToInt(messcount);
+        }
+
+		log(L"Смещение: [ "+IntToStr(current_offset_of)+L" ] Количество в стеке: [ "+obj_items->Count+" ]");
+
+		current_offset_of = current_offset_of + 200;
+
+		if (  max_count_of == 0 || 
+              max_count_of < current_offset_of ) 
+        {
+            break;
+        }
+	}
+
+	log(L"Получено от [ "+UID+" ] сообщений [ "+IntToStr( gotch_cnt )+L" ] по заданному фильтру.");
 }
 str  c_main::GetLastStageName(TStringList *DIALOG)
 {
@@ -1423,7 +1749,7 @@ void c_main::GetOnlyOneStage(TStringList *MODEL, str StageName)
 		MODEL->Text = "NULL";
     }
 
-	delete A;                                                                                //log("GetOnlyOneStage - stop");
+	delete A;                                                                                
 }
 int  c_main::GetMaxLevelsOfStages()
 {
@@ -1625,6 +1951,10 @@ void c_main::createStandartDataHello(TStringList *L)
 	L->Add(UnicodeString(L"Здравствуй!"));
 	L->Add(UnicodeString(L"Здравствуйте!"));
 	L->Add(UnicodeString(L"Доброго времени суток!"));
+}
+void c_main::createGlobalDataModel(TStringList *L)
+{
+	L->Text = UnicodeString(f->me_createGlobalDataModel->Lines->Text);
 }
 void c_main::createStandartDataModel(TStringList *L)
 {
@@ -1834,13 +2164,65 @@ bool c_main::if_imbanned(str Token, str uid)
 	while ( ! success )
 	{
 		imbanned = vk.robot_in_ban(&success,uid,Token);
-		f->main->iSleep(1);
+		f->main->iSleep(1, Token);
 		if ( ! success ) 
         {
             log(L"Сервер не ответил на запрос. Повтор..");
         }
 	}
 	return imbanned;
+}
+void c_main::sended_count_add(str robotname)
+{
+	int cnt = 0;
+	for ( int c = 0; c < AUTOANS_LIMIT->Count; c++ )
+	{
+		str line = AUTOANS_LIMIT->Strings[c];
+		str cr = g.Encrypt(1,2,"#",line);
+		str cc = g.Encrypt(2,2,"#",line);
+
+		if ( robotname == cr )
+		{
+			AUTOANS_LIMIT->Delete(c);
+			cnt = StrToInt(cc);
+			break;
+		}
+	}
+
+	cnt++;
+	AUTOANS_LIMIT->Add( robotname+"#"+IntToStr(cnt) );
+}
+bool c_main::sended_count_iflimit(str robotname)
+{
+	int cnt = 0;
+	for ( int c = 0; c < AUTOANS_LIMIT->Count; c++ )
+	{
+		str line = AUTOANS_LIMIT->Strings[c];
+		str cr = g.Encrypt(1,2,"#",line);
+		str cc = g.Encrypt(2,2,"#",line);
+
+		if ( robotname == cr )
+		{
+			cnt = StrToInt(cc);
+			break;
+		}
+	}
+
+	bool j = false;
+
+	if ( f->e_autoanswerlimit->Text != "0" && 
+         cnt >= StrToInt(f->e_autoanswerlimit->Text) )
+	{
+		j = true;
+
+		str me = f->ME_LOG->Lines->Strings[ f->ME_LOG->Lines->Count-1 ];
+		if ( Pos("Достигнут лимит отправки сообщений [",me) == 0 ) 
+        {
+            f->main->log(L"Достигнут лимит отправки сообщений [ "+f->e_autoanswerlimit->Text+" ]");
+        }
+	}
+
+    return j;
 }
 void c_main::LoadModel(int index)
 {
@@ -2233,6 +2615,276 @@ void c_main::ModelSaveAndReloadInterface()
 	f->vcl->ModelStageClear();
 	conf_models( false );
 }
+void c_main::Robot_Freeze(int index)
+{
+	str iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
+	str iName  = Trim( f->LV_CONF_ROBOTS->Items->Item[f->LV_CONF_ROBOTS->ItemIndex]->Caption );
+
+	TStringList *L = new TStringList;
+	g.GetFiles( p_robots, L );
+
+	bool breaked = false;
+	for ( int c = 0; c < L->Count; c++ )
+	{
+		str robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
+		TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 );
+		str xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
+		str xName  = INI->ReadString( UnicodeString("MAIN"), UnicodeString("name"), UnicodeString("") );
+
+		if ( iGroup == xGroup && iName == xName )
+		{
+			INI->WriteBool( UnicodeString("MAIN"), UnicodeString("freeze"), true );
+            INI->UpdateFile();
+			breaked = true;
+		}
+		delete INI;
+
+		if ( breaked ) 
+        {
+            break;
+        }
+	}
+
+	delete L;
+	conf_robots( f->LV_CONF_GROUPS->ItemIndex, false);
+	f->vcl->groupechoReadRobots();
+}
+void c_main::Robot_UnFreeze(int index)
+{
+	str iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
+	str iName  = Trim( f->LV_CONF_ROBOTS->Items->Item[f->LV_CONF_ROBOTS->ItemIndex]->Caption );
+
+	TStringList *L = new TStringList;
+	g.GetFiles( p_robots, L );
+
+	bool breaked = false;
+	for ( int c = 0; c < L->Count; c++ )
+	{
+		str robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
+		TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 );
+		str xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
+		str xName  = INI->ReadString( UnicodeString("MAIN"), UnicodeString("name"), UnicodeString("") );
+
+		if ( iGroup == xGroup && iName == xName )
+		{
+			INI->WriteBool( UnicodeString("MAIN"), UnicodeString("freeze"), false );
+            INI->UpdateFile();
+			breaked = true;
+		}
+
+		delete INI;
+
+		if ( breaked ) 
+        {
+            break;
+        }
+	}
+
+	delete L;
+	conf_robots( f->LV_CONF_GROUPS->ItemIndex, false);
+	f->vcl->groupechoReadRobots();
+}
+void c_main::Robots_Freeze()
+{
+	str iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
+
+	TStringList *L = new TStringList;
+	g.GetFiles( p_robots, L );
+
+	for ( int c = 0; c < L->Count; c++ )
+	{
+		str robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
+		TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 );
+		str xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
+
+		if ( iGroup == xGroup ) 
+        {
+            INI->WriteBool( UnicodeString("MAIN"), UnicodeString("freeze"), true );
+            INI->UpdateFile();
+        }
+		delete INI;
+	}
+
+	delete L;
+	conf_robots( f->LV_CONF_GROUPS->ItemIndex, false);
+	f->vcl->groupechoReadRobots();
+}
+void c_main::Robots_UnFreeze()
+{
+	str iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
+
+	TStringList *L = new TStringList;
+	g.GetFiles( p_robots, L );
+
+	for ( int c = 0; c < L->Count; c++ )
+	{
+		str robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
+        TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 );
+		str xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
+
+		if ( iGroup == xGroup ) 
+        {
+            INI->WriteBool( UnicodeString("MAIN"), UnicodeString("freeze"), false );
+            INI->UpdateFile();
+        }
+		delete INI;
+	}
+
+	delete L;
+	conf_robots( f->LV_CONF_GROUPS->ItemIndex, false);
+	f->vcl->groupechoReadRobots();
+}
+void c_main::import_robots(str file)
+{
+	try
+	{
+		TStringList *L = new TStringList;
+        if(FileExists(file))
+        {
+		    L->LoadFromFile(file);
+        }
+
+		for ( int c = 0; c < L->Count; c++ )
+		{
+			str dataline = Trim( L->Strings[c] );
+
+			str r_name   = get_fromfile(1,dataline);
+			str r_login  = get_fromfile(2,dataline);
+			str r_pass   = get_fromfile(3,dataline);
+
+			conf_robots_import( f->LV_CONF_GROUPS->ItemIndex, r_name, r_login, r_pass );
+		}
+
+		f->vcl->groupechoReadRobots();
+
+		delete L;
+	}
+	catch (...)
+	{
+		ShowMessage(L"Ошибка импорта роботов из файла.");
+    }
+}
+
+str  c_main::get_fromfile(int i, str data)
+{
+	str j = "NULL";
+
+	int p1 = Pos(" ",data);
+	int p2 = Pos("	",data);
+	int p  = p1;
+	if ( p2 > p1 ) p = p2;
+	if ( p == 0 )
+	{
+		for ( int cc = 1; cc <= data.Length(); cc++ )
+		{
+			int code = data[cc];
+			if ( code == 9 )
+			{
+				p = cc;
+				break;
+            }
+        }
+	}
+
+	str A = Trim( data.SubString(1,p-1) );
+	data = Trim( data.SubString(p+1,data.Length()) );
+	p = Pos(" ",data);
+    if ( p == 0 )
+	{
+		for ( int cc = 1; cc <= data.Length(); cc++ )
+		{
+			int code = data[cc];
+			if ( code == 9 )
+			{
+				p = cc;
+				break;
+            }
+        }
+	}
+
+	str B = Trim( data.SubString(1,p-1) );
+	str C = Trim( data.SubString(p+1,data.Length()) );
+
+	if ( i == 1 ) j = A;
+	if ( i == 2 ) j = B;
+	if ( i == 3 ) j = C;
+
+    return j;
+}
+str  c_main::ConvertErrors(str edata)
+{
+	str j = edata;
+	if ( Pos("Can't send messages to this user due to their privacy settings",edata) != 0 ) 
+    {
+        j = L"Этот пользователь принимает сообщения только от друзей";
+    }
+	if ( Pos("Permission to perform this action is denied",edata) != 0 ) 
+    {
+        j = L"Действие не выполнено.";
+    }
+
+	return " "+j+" ";
+}
+str  c_main::GetPHPLINE(str data)
+{
+	int p = Pos("{",data);
+	data = data.SubString(p+1,data.Length());
+	p = Pos("}",data);
+	data = data.SubString(1,p-1);
+	return data;
+}
+void c_main::GetServersFromNET(TStringList *L)
+{
+	try
+	{
+		TIdHTTP *HTTP = new TIdHTTP(NULL);
+		HTTP->HandleRedirects = true;
+		HTTP->ConnectTimeout 	= 10000;
+		HTTP->ReadTimeout 		= 10000;
+
+		str URL = HTTPDOMAIN + "API/get_servers.php";
+		str J = HTTP->Get( URL );
+
+		delete HTTP;
+
+		J = GetPHPLINE( J );
+
+		TStringList *A = new TStringList;
+		A->Text = g.EncryptToList("~",J);
+		A->Delete(A->Count-1);
+
+        for ( int c = 0; c < A->Count; c++ ) 
+        {
+            L->Add( UnicodeString(A->Strings[c])+L"#Тест#Тест" );
+        }
+	}
+	catch ( ... )
+	{
+        ShowMessage(L"Ошибка!\n\nНевозможно получить список серверов.\n\nПроверьте подключение к интернету и перезапустите программу.");
+	}
+}
+void c_main::asplit(TStringList* lout, str s, str separator)
+{
+	str buff = "";
+	for ( int c = 1; c <= s.Length(); c++ )
+	{
+		str ch = s[c];
+		if ( ch == separator )
+		{
+			lout->Add( buff );
+			buff = "";
+		}
+		else
+		{
+			buff = buff + ch;
+		}
+	}
+
+	if ( buff.Length() > 0 ) 
+    {
+        lout->Add( buff );
+    }
+}
 
 // C_PROCESS
 c_process::c_process()
@@ -2241,13 +2893,14 @@ c_process::c_process()
 }
 bool c_process::Establish( str RobotName, str *Token )
 {
-	str IniFile, GroupName, CurRobotName, Server_ID, Login, Password, Activity, token;
+	str IniFile, GroupName, CurRobotName, Server_ID, Login, Password, Activity, token, Online, LastOnline;  
+    bool freeze;
 
 	TStringList *L = new TStringList;
 	g.GetFiles( f->main->p_robots, L );
 	for ( int c = 0; c < L->Count; c++ )
 	{
-		f->main->get_robotdata( c, &GroupName, &CurRobotName, &Server_ID, &Login, &Password, &token, &Activity );
+		f->main->get_robotdata( c, &GroupName, &CurRobotName, &Server_ID, &Login, &Password, &token, &Activity, &Online, &LastOnline, &freeze );
 		if ( CurRobotName == RobotName )
 		{
 			IniFile = f->main->p_robots + L->Strings[c] + "\\Conf.ini";
@@ -2259,7 +2912,7 @@ bool c_process::Establish( str RobotName, str *Token )
 	str client_id = f->LV_SERVERS->Items->Item[ f->main->CurrentServer ]->SubItems->Strings[0];
 	bool WasConnectedEarly;
 	bool ESTABLISH = vk.Establish(client_id,Login,Password,&token,f->main->APIV,&WasConnectedEarly);
-	f->main->iSleep(1);
+	f->main->iSleep(1, token);
 
 	if ( ESTABLISH )
 	{
@@ -2312,7 +2965,7 @@ str  c_process::SendMessage( str UserID, str Message, str Token )
 		f->main->log( L"Запрашивается каптча: [ " + CaptchaSID + " ] [ " + f->captcha->FixURL(CaptchaIMG) + " ]" );
 		str CaptchaANS = f->captcha->GetAnswer( CaptchaIMG );
 		f->main->log( L"Каптча решена: [ " + CaptchaANS + " ]" );
-		f->main->iSleep(1);
+		f->main->iSleep(1, Token);
 
 		success = false;
         while ( ! success )
@@ -2325,7 +2978,7 @@ str  c_process::SendMessage( str UserID, str Message, str Token )
 		}
 	}
 
-	f->main->iSleep(3);
+	f->main->iSleep(3, Token);
 
 	if ( Pos("error",response) > 0 ) 
     {
@@ -2358,7 +3011,7 @@ str  c_process::AddToFriends( str UserID, str Message, str Token )
 		f->main->log( L"Запрашивается каптча: [ " + CaptchaSID + " ] [ " + f->captcha->FixURL(CaptchaIMG) + " ]" );
 		str CaptchaANS = f->captcha->GetAnswer( CaptchaIMG );
 		f->main->log( L"Каптча решена: [ " + CaptchaANS + " ]" );
-		f->main->iSleep(1);
+		f->main->iSleep(1, Token);
 
         success = false;
 		while ( ! success )
@@ -2371,7 +3024,7 @@ str  c_process::AddToFriends( str UserID, str Message, str Token )
 		}
 	}
 
-	f->main->iSleep(2);
+	f->main->iSleep(2, Token);
 	if ( Pos("error",response) > 0 ) 
     {   
         f->main->log(L"Сервер сообщает об ошибке: ["+response+"]");
@@ -2390,7 +3043,7 @@ str  c_process::RequestsFriends( str Token )
 	while ( ! success )
 	{
 		response = vk.friends_request(&success,Token);
-		f->main->iSleep(1);
+		f->main->iSleep(1, Token);
 		if ( ! success ) 
         {
             f->main->log(L"Сервер не ответил на запрос. Повтор..");
@@ -2414,16 +3067,18 @@ void c_process::ProcessTwoOpen()
 	f->main->logline(L"[ ПРОЦЕСС ЗАПУЩЕН ]");
 
 	f->main->AUTOANSBUFF->Clear();
-	f->main->OUTBOX->Clear();
+	f->main->AUTOANSOUTBOX->Clear();
+
+	f->main->INBOX->Clear();
 
 	for ( int c = 0; c < f->LV_WORKGROUPS->Items->Count; c++ )
 	{
         if ( f->LV_WORKGROUPS->Items->Item[c]->Checked )
 		{
-			str NeededGroup = Trim(f->LV_WORKGROUPS->Items->Item[c]->Caption);
+			str ActiveGroup = Trim(f->LV_WORKGROUPS->Items->Item[c]->Caption);
 
 			f->main->logline(L"");
-			f->main->log(L"ГРУППА : [ "+NeededGroup+" ]");
+			f->main->log(L"ГРУППА : [ "+ActiveGroup+" ]");
 			f->main->logline(L"");
 			f->main->logline(L"");
 
@@ -2432,7 +3087,7 @@ void c_process::ProcessTwoOpen()
 				if ( f->LV_WORKTASKS->Items->Item[0]->Checked )
 				{
 					f->main->PREFIX = L"Приветствия : ";
-					ProcessHello(NeededGroup);
+					ProcessHello(ActiveGroup);
 				}
 				if ( f->main->TERMINATED ) 
                 {
@@ -2446,15 +3101,21 @@ void c_process::ProcessTwoOpen()
 
 			TStringList *L = new TStringList;
 			g.GetFiles( f->main->p_robots, L );
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelFile;
+			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelFile, Online, LastOnline;  
+            bool freeze;
 			for ( int x = 0; x < L->Count; x++ )
 			{
 				ModelFile             = f->main->p_robots + L->Strings[x] + "\\Model.txt";
 				str AutoStopKeysFile  = f->main->p_robots + L->Strings[x] + "\\AutoStopKeys.txt";
 				str AutoStopPostsFile = f->main->p_robots + L->Strings[x] + "\\AutoStopPosts.txt";
-				f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity );
+				f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
-				if ( GroupName == NeededGroup )
+				if ( freeze ) 
+                { 
+                    continue; 
+                }
+
+				if ( GroupName == ActiveGroup )
 				{
 					if ( f->LV_WORKTASKS->Items->Item[1]->Checked ||
 						 f->LV_WORKTASKS->Items->Item[2]->Checked ||
@@ -2464,7 +3125,6 @@ void c_process::ProcessTwoOpen()
 						f->main->logline(L"");
 					}
 
-					f->main->INBOX_WRITED = false;
 					f->main->PREFIX = "[ "+RobotName+L" ] Соединение : ";
 
 					if ( Establish(RobotName,&Token) )
@@ -2505,10 +3165,10 @@ void c_process::ProcessTwoOpen()
 
 						try
 						{
-							if ( f->LV_WORKTASKS->Items->Item[3]->Checked )
+							if ( f->LV_WORKTASKS->Items->Item[6]->Checked )
 							{
-								f->main->PREFIX = "[ "+RobotName+L" ] Общение : ";
-								ProcessSpeech(GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelFile, AutoStopKeysFile, AutoStopPostsFile);
+								f->main->PREFIX = "[ "+RobotName+L" ] Сообщ -> GlobalUsersCache : ";
+								ProcessMessages_UIDS_To_GlobalUsersCache(RobotName, Token);
 							}
 							if ( f->main->TERMINATED ) 
                             {
@@ -2517,9 +3177,13 @@ void c_process::ProcessTwoOpen()
 						}
 						catch ( Exception *ex ) 
                         { 
-                            f->main->log(L"FATAL ERROR: [ МОДУЛЬ : ОБЩЕНИЕ ]"); 
+                            f->main->log(L"FATAL ERROR: [ МОДУЛЬ : Сообщ -> GlobalUsersCache ]"); 
                         }
 					}
+                    else 
+                    {
+                        f->main->log("ProcessTwoOpen::Establish return FALSE");
+                    }
 				}
 
 				if ( f->main->TERMINATED ) 
@@ -2598,22 +3262,22 @@ void c_process::ProcessHello(str GroupName)
 }
 void c_process::ProcessHelloDo(str Group, str UserID, str UserName, str UserSurname)
 {
-	int robotIndex = f->main->get_robotnext( Group );
-
 	TStringList *XL = new TStringList;
 	TStringList *L = new TStringList;
 	g.GetFiles(f->main->p_robots,L);
     
 	for ( int c = 0; c < L->Count; c++ )
 	{
-		str CurGroupName, RobotName, Server_ID, Login, Password, Token, Activity;
-		f->main->get_robotdata( c, &CurGroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity );
+		str CurGroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+        bool freeze;
+		f->main->get_robotdata( c, &CurGroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 		if ( CurGroupName == Group ) 
         {
             XL->Add(L->Strings[c]);
         }
 	}
 
+    int robotIndex = f->main->get_robotnext( Group );
 	str RobotPath   = f->main->p_robots + XL->Strings[robotIndex] + "\\";
 	str RobotConfig = RobotPath + "Conf.ini";
 
@@ -2724,7 +3388,7 @@ void c_process::ProcessFriendConfirm(str GroupName, str RobotName, str Server_ID
 						while ( ! success )
 						{
 							response = vk.account_ban_user(&success,UserID,Token);
-							f->main->iSleep(1);
+							f->main->iSleep(1, Token);
 							if ( ! success ) 
                             {
                                 f->main->log(L"Сервер не ответил на запрос. Повтор..");
@@ -2750,7 +3414,7 @@ void c_process::ProcessFriendConfirm(str GroupName, str RobotName, str Server_ID
 						while ( ! success )
 						{
 							response = vk.account_ban_user(&success,UserID,Token);
-							f->main->iSleep(1);
+							f->main->iSleep(1, Token);
 							if ( ! success ) 
                             {
                                 f->main->log(L"Сервер не ответил на запрос. Повтор..");
@@ -2777,7 +3441,7 @@ void c_process::ProcessFriendConfirm(str GroupName, str RobotName, str Server_ID
                         f->main->log(L"Ответ сервера: ["+response+"]");
                     }
 					f->main->log(L"Заявка подтверждена.");
-					f->main->iSleep(4);
+					f->main->iSleep(4, Token);
 				}
 
 				f->main->CNT_CONFIRMFRIEND++;
@@ -2967,14 +3631,14 @@ void c_process::ProcessAutoAnswerRunBuffer()
 	TStringList *L = new TStringList;
 	while ( f->main->AUTOANSBUFF->Count > 0 )
 	{
-		int indexToAdd = 0; int indexToAddLevel = 999999999;
+		int indexToAdd = 0; 
+        int indexToAddLevel = 999999999;
 
 		for ( int c = 0; c < f->main->AUTOANSBUFF->Count; c++ )
 		{
 			str robot = g.Encrypt(1,2,"|",f->main->AUTOANSBUFF->Strings[c]);
 
 			int thisIndex = f->main->getrobotindex(robot,L);
-
 			if ( thisIndex < indexToAddLevel )
 			{
 				indexToAddLevel = thisIndex;
@@ -2986,7 +3650,7 @@ void c_process::ProcessAutoAnswerRunBuffer()
 		f->main->AUTOANSBUFF->Delete( indexToAdd );
     }
 
-	int sendedcount = 0;
+	f->main->AUTOANS_LIMIT->Clear();
 	for ( int c = 0; c < L->Count; c++ )
 	{
         TStringList *MESSAGEDATA 	= new TStringList;
@@ -3000,77 +3664,107 @@ void c_process::ProcessAutoAnswerRunBuffer()
 		str uid 		= g.Encrypt(6,7,"|",L->Strings[c]);
 		str lastmid  	= g.Encrypt(7,7,"|",L->Strings[c]);
 
-		str responsedatax;
-
-		bool asuccess = false;
-		while ( ! asuccess )
+		if ( ! f->main->sended_count_iflimit(RobotName) )
 		{
-			responsedatax = vk.users_get(&asuccess,uid,Token,false);
-			f->main->iSleep(1);
-			if ( ! asuccess ) 
-            {
-                f->main->log(L"Сервер не ответил на запрос. Повтор..");
-            }
-		}
+			str responsedatax;
 
-		bool rec;
-		str uname    = vk.GetParameter("first_name",&responsedatax,false,false,&rec);
-		str usurname = vk.GetParameter("last_name",&responsedatax,false,false,&rec);
-
-		DIALOG->Text 		= g.EncryptToList("~",dialog);
-		MESSAGEDATA->Text 	= g.EncryptToList("~",message);
-
-		DIALOG->Strings[1] = uname;
-		DIALOG->Strings[2] = usurname;
-
-		f->main->PREFIX = L"Автоответчик : [ "+RobotName+ " - " + uname + " " + usurname + " ] ";
-
-		bool success = true;
-		SendAutoAns(RobotName,uid,MESSAGEDATA->Text,Token,DIALOG,&success);
-		if ( success )
-		{
-			DIALOG->SaveToFile(file);
-			sendedcount++;
-		}
-		else
-		{
-			f->main->log(L"Файл диалога создан не был.(");
-
-			if ( f->main->if_imbanned(Token,uid) )
+			bool asuccess = false;
+			while ( ! asuccess )
 			{
-				f->main->log(L"Пользователь занёс робота в ЧС.(");
+				responsedatax = vk.users_get(&asuccess,uid,Token,false);
+				f->main->iSleep(1,Token);
+				if ( ! asuccess ) 
+                {
+                    f->main->log(L"Сервер не ответил на запрос. Повтор..");
+                }
+			}
 
-				bool bsuccess = false;
-				while ( ! bsuccess )
+			bool rec;
+			str uname    = vk.GetParameter("first_name",&responsedatax,false,false,&rec);
+			str usurname = vk.GetParameter("last_name",&responsedatax,false,false,&rec);
+
+			DIALOG->Text 		= g.EncryptToList("~",dialog);
+			MESSAGEDATA->Text 	= g.EncryptToList("~",message);
+
+			DIALOG->Strings[1] = uname;
+			DIALOG->Strings[2] = usurname;
+
+			f->main->PREFIX = L"Автоответчик : [ "+RobotName+ " - " + uname + " " + usurname + " ] ";
+
+			bool success = true;
+			bool e900 = false;
+			bool e902 = false;
+			SendAutoAns(RobotName,uid,MESSAGEDATA->Text,Token,DIALOG,&success,&e900,&e902);
+			if ( success )
+			{
+				DIALOG->SaveToFile(file);
+				f->main->sended_count_add(RobotName);
+			}
+			else
+			{
+				f->main->log(L"Файл диалога создан не был.(");
+				if ( f->main->if_imbanned(Token,uid) )
 				{
-					vk.messages_markAsRead(&bsuccess,lastmid,Token);
-					f->main->iSleep(1);
-					if ( ! bsuccess ) 
-                    {
-                        f->main->log(L"Сервер не ответил на запрос. Повтор..");
-                    }
+					f->main->log(L"Пользователь занёс робота в ЧС.(");
+
+					bool bsuccess = false;
+					while ( ! bsuccess )
+					{
+						vk.messages_markAsRead(&bsuccess,lastmid,Token);
+						f->main->iSleep(1,Token);
+						if ( ! bsuccess ) 
+                        {
+                            f->main->log(L"Сервер не ответил на запрос. Повтор..");
+                        }
+					}
+				}
+
+				if ( e900 )
+				{
+					f->main->log(L"Ошибка 900.(");
+
+					bool jsuccess = false;
+					while ( ! jsuccess )
+					{
+						vk.messages_markAsRead(&jsuccess,lastmid,Token);
+						f->main->iSleep(1,Token);
+						if ( ! jsuccess ) 
+                        {
+                            f->main->log(L"Сервер не ответил на запрос. Повтор..");
+                        }
+					}
+				}
+
+				if ( e902 )
+				{
+					f->main->log(L"Ошибка 902.(");
+
+					bool jsuccess = false;
+					while ( ! jsuccess )
+					{
+						vk.messages_markAsRead(&jsuccess,lastmid,Token);
+						f->main->iSleep(1,Token);
+						if ( ! jsuccess ) 
+                        {
+                            f->main->log(L"Сервер не ответил на запрос. Повтор..");
+                        }
+					}
 				}
 			}
+
+			delete MESSAGEDATA;
+			delete DIALOG;
+
+			if ( f->main->TERMINATED ) 
+            {
+                break;
+            }
 		}
-
-		delete MESSAGEDATA;
-		delete DIALOG;
-
-		if ( f->e_autoanswerlimit->Text != "0" && sendedcount >= StrToInt(f->e_autoanswerlimit->Text) )
-		{
-			f->main->log(L"Достигнут лимит отправки сообщений [ "+f->e_autoanswerlimit->Text+" ]");
-			break;
-		}
-
-		if ( f->main->TERMINATED ) 
-        {
-            break;
-        }
 	}
 
 	delete L;
 }
-void c_process::ProcessSpeech(str GroupName, str RobotName, str Server_ID, str Login, str Password, str Token, str Activity, str ModelFile, str AutoStopKeysFile, str AutoStopPostsFile)
+void c_process::ProcessSpeech(str GroupName, str RobotName, str Server_ID, str Login, str Password, str Token, str Activity, str ModelGlobalFile, str ModelFile, str AutoStopKeysFile, str AutoStopPostsFile)
 {
 	f->main->WriteInboxList(Token);
 
@@ -3096,17 +3790,15 @@ void c_process::ProcessSpeech(str GroupName, str RobotName, str Server_ID, str L
 		{
 			if ( Pos("#STAGEDATA=FIN",DIALOG->Text) == 0 )
 			{
-
 				bool SaveDialog = true;
-
-				ProcessSpeechUser(ROBOTGID,NAME,SURNAME,USERID,DIALOG,Token,ModelFile,&SaveDialog,AutoStopKeysFile,AutoStopPostsFile);
+				ProcessSpeechUser(ROBOTGID,NAME,SURNAME,USERID,DIALOG,Token,ModelGlobalFile,ModelFile,&SaveDialog,AutoStopKeysFile,AutoStopPostsFile);
 
 				if ( SaveDialog ) 
                 {
-                    DIALOG->SaveToFile( UnicodeString(DialogFile), TEncoding::UTF8 );
+                    DIALOG->SaveToFile( DialogFile );
                 }
 				else 			  
-                {
+                {   
                     f->main->log(L"Сообщение не было сохранено.(");
                 }
 			}
@@ -3122,17 +3814,19 @@ void c_process::ProcessSpeech(str GroupName, str RobotName, str Server_ID, str L
 		g.ProcessMessages();
 
 		if ( f->main->TERMINATED ) 
-        {
+        {   
             break;
         }
 	}
 
 	delete DIALOGS;
-	f->main->logline(L"");
+
+	f->main->logline("");
 }
-void c_process::ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserID, TStringList *DIALOG, str Token, str RobotModelFile, bool *SaveDialog, str AutoStopKeysFile, str AutoStopPostsFile)
+void c_process::ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserID, TStringList *DIALOG, str Token, str RobotModelGlobalFile, str RobotModelFile, bool *SaveDialog, str AutoStopKeysFile, str AutoStopPostsFile)
 {
 	f->main->log(L"Обработка диалога [ "+Name+" "+SurName+" ] [ "+UserID+" ]");
+    
 	TStringList *NEWSTACK = new TStringList;
 	str inboxIDS = "";
 
@@ -3145,7 +3839,8 @@ void c_process::ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserI
 		str title           = g.Encrypt(5,6,"#",f->main->INBOX->Strings[c]);
 		str body            = g.Encrypt(6,6,"#",f->main->INBOX->Strings[c]);
 
-		if ( utoken == Token && uid == UserID && Pos("#ID="+mid,DIALOG->Text) == 0 )
+		if ( utoken == Token && uid == UserID && 
+             Pos("#ID="+mid,DIALOG->Text) == 0 )
 		{
 			f->main->log(L"Новое входящее сообщение: [ ID:" + mid + L" ] Текст: [ "+body+" ]");
 
@@ -3162,7 +3857,6 @@ void c_process::ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserI
 			DIALOG->Add("#ID="+mid);
 			DIALOG->Add("#STAGEDATA=INC");
 			DIALOG->Add("#BEGIN");
-            
 			TStringList *INCDATA = new TStringList; 
             INCDATA->Text = body;
 			for ( int i = 0; i < INCDATA->Count; i++ ) 
@@ -3178,8 +3872,9 @@ void c_process::ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserI
 	bool makereaded = false;
 	if ( inboxIDS.Length() != 0 ) 
     {
-        ProcessSpeechUserDo(UserID,DIALOG,NEWSTACK->Text,Token,RobotModelFile,SaveDialog,AutoStopKeysFile,AutoStopPostsFile,&makereaded);
+        ProcessSpeechUserDo(UserID,DIALOG,NEWSTACK->Text,Token,RobotModelGlobalFile,RobotModelFile,SaveDialog,AutoStopKeysFile,AutoStopPostsFile,&makereaded);
     }
+
 	if ( *SaveDialog )
 	{
 		if ( inboxIDS.Length() > 0 )
@@ -3190,7 +3885,7 @@ void c_process::ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserI
 			while ( ! csuccess )
 			{
 				vk.messages_markAsRead(&csuccess,tidmsgs,Token);
-				f->main->iSleep(1);
+				f->main->iSleep(1,Token);
 				if ( ! csuccess ) 
                 {
                     f->main->log(L"Сервер не ответил на запрос. Повтор..");
@@ -3206,11 +3901,12 @@ void c_process::ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserI
 		if ( inboxIDS.Length() > 0 )
 		{
 			str tidmsgs = inboxIDS.SubString(1,inboxIDS.Length()-1);
+
 			bool csuccess = false;
 			while ( ! csuccess )
 			{
 				vk.messages_markAsRead(&csuccess,tidmsgs,Token);
-				f->main->iSleep(1);
+				f->main->iSleep(1,Token);
 				if ( ! csuccess ) 
                 {
                     f->main->log(L"Сервер не ответил на запрос. Повтор..");
@@ -3223,10 +3919,13 @@ void c_process::ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserI
 
 	delete NEWSTACK;
 }
-void c_process::ProcessSpeechUserDo(str UserID, TStringList *DIALOG, str STACK, str Token, str RobotModelFile, bool *SaveDialog, str AutoStopKeysFile, str AutoStopPostsFile, bool *MakeReaded)
+void c_process::ProcessSpeechUserDo(str UserID, TStringList *DIALOG, str STACK, str Token, str RobotGlobalModelFile, str RobotModelFile, bool *SaveDialog, str AutoStopKeysFile, str AutoStopPostsFile, bool *MakeReaded)
 {
+	TStringList *GLOBALMODEL = new TStringList;
 	TStringList *MODEL = new TStringList;
 	TStringList *STAGE = new TStringList;
+    
+	GLOBALMODEL->LoadFromFile(RobotGlobalModelFile);
 	MODEL->LoadFromFile(RobotModelFile);
 	STAGE->Text = MODEL->Text;
 
@@ -3243,28 +3942,36 @@ void c_process::ProcessSpeechUserDo(str UserID, TStringList *DIALOG, str STACK, 
 		if ( STAGE->Strings[0] != "NULL" )
 		{
 			str TARGET_STAGE = f->ii->GetStage(STACK,STAGE);
-
-			if ( TARGET_STAGE == "NULL" || Pos("FIN",TARGET_STAGE) != 0 )
+			if ( TARGET_STAGE == "NULL" || 
+                 Pos("FIN",TARGET_STAGE) != 0 )
 			{
 				*SaveDialog = false;
 
-				if ( TARGET_STAGE == "NULL" ) 			
+				if ( TARGET_STAGE == "NULL" ) 		
                 {
                     f->main->log(L"Критическая ошибка: Цель [ "+TARGET_STAGE+L" ] не найдена.");
                 }
 				if ( Pos("FIN",TARGET_STAGE) != 0 )
 				{
-                    *MakeReaded = true;
-                    f->main->log(f->main->PREFIX + L"Пропуск диалога [ "+UserID+L" ] : [ Диалог достиг конечной точки ]");
+					*MakeReaded = true;
+					f->main->log(f->main->PREFIX + L"Пропуск диалога [ "+UserID+L" ] : [ Диалог достиг конечной точки ]");
 				}
 			}
 			else
 			{
-				if ( ! f->ii->IfAutoStop(STACK,AutoStopKeysFile) ) 
-                {
-                    SendStageX(UserID,DIALOG,STACK,Token,MODEL,TARGET_STAGE);
-                }
-				else                                              
+				if ( ! f->ii->IfAutoStop(STACK,AutoStopKeysFile) )
+				{
+					str GLOGALPOST = f->ii->GetGlobalPostText(STACK,GLOBALMODEL,DIALOG);
+					if ( GLOGALPOST == "NULL" ) 
+                    {
+                        SendStageX(UserID,DIALOG,STACK,Token,MODEL,TARGET_STAGE);
+                    }
+					else                        
+                    {
+                        SendGlobalPost(UserID,DIALOG,GLOGALPOST,Token,MODEL,CURRENT_STAGE);
+                    }
+				}
+				else 
                 {
                     SendAutoStop(UserID,DIALOG,STACK,Token,AutoStopPostsFile);
                 }
@@ -3272,8 +3979,22 @@ void c_process::ProcessSpeechUserDo(str UserID, TStringList *DIALOG, str STACK, 
 		}
 	}
 
+	delete GLOBALMODEL;
 	delete MODEL;
 	delete STAGE;
+}
+void c_process::ProcessMessages_UIDS_To_GlobalUsersCache( str RobotName, str Token )
+{
+	TStringList *UIDS = new TStringList;
+	f->main->GetDialogs(UIDS, 2, 2, Token, RobotName);
+	for ( int c = 0; c < UIDS->Count; c++ )
+	{
+		str UID = UIDS->Strings[c];
+		if ( ! f->main->GlobalUsersCache_Exist( UID ) )
+		{
+			f->main->GlobalUsersCache_Add( UID );
+        }
+    }
 }
 void c_process::ProcessTwoClose()
 {
@@ -3394,15 +4115,23 @@ void c_process::SendStageX(str UserID, TStringList *DIALOG, str STACK, str Token
 		f->main->log(L"Невозможно отправить сообщение.. (");
 	}
 }
-void c_process::SendAutoAns(str RobotName, str UserID, str MessageData, str Token, TStringList *DIALOG, bool *success)
+void c_process::SendAutoAns(str RobotName, str UserID, str MessageData, str Token, TStringList *DIALOG, bool *success, bool *e900, bool *e902)
 {
-	f->main->WriteOutboxList(Token,RobotName);
+	f->main->WriteOutboxAutoAnsList(Token,RobotName);
 	f->main->log(L"Входящий текст: [ "+ Trim( MessageData.SubString(1,MessageData.Length()-3) ) +" ]");
+
 	str TARGETSTAGE = "NULL";
 	f->ii->GetAutoAns(&MessageData,&TARGETSTAGE,Token,UserID);
 	f->main->log(L"Отправка stage: [ "+TARGETSTAGE+" ]");
-    
+
+    TStringList *IMAGELIST = new TStringList;
+	TStringList *AUDIOLIST = new TStringList;
+	TStringList *RECORDLIST = new TStringList;
+
+	f->ii->WritePostDataIn(IMAGELIST,AUDIOLIST,RECORDLIST,&MessageData);
+	MessageData = f->ii->MakePostLine(MessageData);
 	str MESSID = SendMessage( UserID, MessageData, Token );
+
 	if ( Pos("error",MESSID) == 0 )
 	{
 		f->main->log(L"Исходящий текст: [ " + MessageData + " ]" );
@@ -3424,12 +4153,30 @@ void c_process::SendAutoAns(str RobotName, str UserID, str MessageData, str Toke
 
         f->main->CNT_MESSAGES++;
 		f->vcl->EchoStatistic();
+
+        SendImage(UserID,IMAGELIST,Token);
+		SendAudio(UserID,AUDIOLIST,Token);
+		SendAudioRec(UserID,RECORDLIST,Token);
 	}
 	else
 	{
 		*success = false;
+
 		f->main->log(L"Невозможно отправить сообщение.. (");
+
+		if ( Pos("900",MESSID) != 0 ) 
+        {
+            *e900 = true;
+        }
+		if ( Pos("902",MESSID) != 0 ) 
+        {
+            *e902 = true;
+        }
 	}
+
+    delete IMAGELIST;
+	delete AUDIOLIST;
+	delete RECORDLIST;
 }
 void c_process::SendAutoStop(str UserID, TStringList *DIALOG, str STACK, str Token, str AutoStopPostsFile)
 {
@@ -3465,11 +4212,333 @@ void c_process::SendAutoStop(str UserID, TStringList *DIALOG, str STACK, str Tok
 		f->main->log(L"Невозможно отправить сообщение.. (");
 	}
 }
+void c_process::SendImage(str UserID, TStringList *IMAGELIST, str Token)
+{
+	try
+	{
+		if ( IMAGELIST->Count > 0 )
+		{
+			str x = IMAGELIST->Strings[ Random( IMAGELIST->Count ) ];
+			str afx = "[IMAGE="; 
+            x = x.SubString(afx.Length()+1,x.Length()); 
+            x = x.SubString(1,x.Length()-1);
+			str fullpath = f->main->p_resources_images + x;
 
+			bool success;
+			str uploadurl = vk.photos_getUploadServer( &success, Token );
+
+			// JSON //////////////////////////////////////////////////////////////////////////////
+			try
+			{
+				std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(uploadurl)));
+				TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
+				uploadurl    = obj_response->GetValue("upload_url")->ToString();
+				str album_id = obj_response->GetValue("album_id")->ToString();
+				str user_id  = obj_response->GetValue("user_id")->ToString();
+			}
+			catch (...) 
+            { 
+                f->main->log("TJSONObject 1"); 
+            }
+			///////////////////////////////////////////////////////////////////////////////
+
+			if ( success )
+			{
+				f->main->log(L"Загрузка изображения на сервер.. [ "+x+" ]");
+				str RETURN = vk.UploadToServer( &success, fullpath, sa.cut_kk(uploadurl) );
+				f->main->log(L"Загрузка завершена.");
+				f->main->log(L"Обработка..");
+
+                // JSON //////////////////////////////////////////////////////////////////////////////
+				try
+				{
+					std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(RETURN)));
+
+					str server    = json->GetValue("server")->ToString();
+					str hash      = json->GetValue("hash")->ToString();      hash = sa.cut_kk( hash );
+
+					str photo  = sa.StripSlashes( RETURN );
+					photo      = sa.cut_photo( photo );
+
+					str RETURN2 = vk.photos_saveMessagesPhoto( &success, photo, server, hash, Token );
+					f->main->log(L"Отправка Media Image..");
+
+                    // JSON //////////////////////////////////////////////////////////////////////////////
+					try
+					{
+						std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(RETURN2)));
+
+						TJSONArray *obj_items = static_cast<TJSONArray*>(json->Get("response")->JsonValue);
+
+						TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Get(0));
+
+						str xid    = x_obj_items->GetValue("id")->ToString();
+						str ownerid = x_obj_items->GetValue("owner_id")->ToString();
+
+						vk.messages_send2( &success, UserID, "photo"+ownerid+"_"+xid, Token );
+					}
+					catch (...) 
+                    { 
+                        f->main->log("TJSONObject 3"); 
+                    }
+				}
+				catch (...) 
+                { 
+                    f->main->log("TJSONObject 2"); 
+                }
+			}
+		}
+	}
+	catch (...)
+	{
+		f->main->log("error in: c_process::SendImage(catch);");
+	}
+}
+void c_process::SendAudio(str UserID, TStringList *AUDIOLIST, str Token)
+{
+	try
+	{
+		if ( AUDIOLIST->Count > 0 )
+		{
+			str x = AUDIOLIST->Strings[ Random( AUDIOLIST->Count ) ];
+			str afx = "[AUDIO="; 
+            x = x.SubString(afx.Length()+1,x.Length()); 
+            x = x.SubString(1,x.Length()-1);
+			str fullpath = f->main->p_resources_audio + x;
+
+            bool success;
+			str uploadurl = vk.audio_getUploadServer( &success, Token );
+
+			// JSON //////////////////////////////////////////////////////////////////////////////
+			try
+			{
+				std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(uploadurl)));
+				TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
+				uploadurl    = obj_response->GetValue("upload_url")->ToString();
+			}
+			catch (...) 
+            {
+                f->main->log("TJSONObject 1");
+            }
+
+			if ( success )
+			{
+				f->main->log(L"Загрузка аудиофайла на сервер.. [ "+x+" ]");
+				str RETURN = vk.audioUploadToServer( &success, fullpath, sa.cut_kk(uploadurl) );
+				f->main->log(L"Загрузка завершена.");
+				f->main->log(L"Обработка..");
+
+				// JSON //////////////////////////////////////////////////////////////////////////////
+				try
+				{
+					std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(RETURN)));
+					str redirect    = json->GetValue("redirect")->ToString();
+					str server      = json->GetValue("server")->ToString();
+					str audio       = json->GetValue("audio")->ToString();
+					str hash        = json->GetValue("hash")->ToString();
+
+					redirect = sa.cut_kk( redirect );
+					audio = sa.cut_kk( audio );
+					hash = sa.cut_kk( hash );
+
+                    str RETURN2 = vk.audio_Save( &success, audio, server, hash, Token );
+					f->main->log(L"Отправка Media Audio..");
+
+                    // JSON //////////////////////////////////////////////////////////////////////////////
+					try
+					{
+						std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(RETURN2)));
+						TJSONObject *obj_items = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
+
+						str xid      = obj_items->GetValue("id")->ToString();
+						str ownerid = obj_items->GetValue("owner_id")->ToString();
+
+						vk.messages_send2( &success, UserID, "audio"+ownerid+"_"+xid, Token );
+					}
+					catch (...) 
+                    {
+                        f->main->log("TJSONObject 3"); 
+                    }
+				}
+				catch (...) 
+                { 
+                    f->main->log("TJSONObject 1"); 
+                }
+			}
+		}
+	}
+	catch (...)
+	{
+		f->main->log("error in: c_process::SendAudio(catch);");
+	}
+}
+void c_process::SendAudioRec(str UserID, TStringList *AUDIOLIST, str Token)
+{
+	try
+	{
+		if ( AUDIOLIST->Count > 0 )
+		{
+			str x = AUDIOLIST->Strings[ Random( AUDIOLIST->Count ) ];
+			str afx = "[RECORD="; 
+            x = x.SubString(afx.Length()+1,x.Length()); 
+            x = x.SubString(1,x.Length()-1);
+			str fullpath = f->main->p_resources_records + x;
+
+            bool success;
+			str uploadurl = vk.docs_getMessagesUploadServer( &success, Token );
+			// JSON //////////////////////////////////////////////////////////////////////////////
+			try
+			{
+				std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(uploadurl)));
+				TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
+				uploadurl    = obj_response->GetValue("upload_url")->ToString();
+			}
+			catch (...) 
+            {
+                f->main->log("TJSONObject 1"); 
+            }
+			if ( success )
+			{
+				f->main->log(L"Загрузка аудиозаписи на сервер.. [ "+x+" ]");
+				str RETURN = vk.audioUploadToServer( &success, fullpath, sa.cut_kk(uploadurl) );
+				f->main->log(L"Загрузка завершена.");
+				f->main->log(L"Обработка..");
+
+				try
+				{
+					RETURN = RETURN.SubString(8,RETURN.Length());
+					str FILE = sa.cut_kk( RETURN );
+					FILE = sa.cut_kk( FILE );
+
+					str RETURN2 = vk.docs_save( &success, FILE, "MyFile1", "Socionic", Token );
+					f->main->log(L"Отправка Media Record..");
+
+					// JSON //////////////////////////////////////////////////////////////////////////////
+					try
+					{
+						std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(RETURN2)));
+						TJSONArray *obj_items = static_cast<TJSONArray*>(json->Get("response")->JsonValue);
+						TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Get(0));
+						str xid    = x_obj_items->GetValue("id")->ToString();
+						str ownerid = x_obj_items->GetValue("owner_id")->ToString();
+						vk.messages_send2( &success, UserID, "doc"+ownerid+"_"+xid, Token );
+					}
+					catch (...) 
+                    { 
+                        f->main->log("TJSONObject 3"); 
+                    }
+				}
+				catch (...) 
+                { 
+                    f->main->log("TJSONObject 1"); 
+                }
+			}
+		}
+	}
+	catch (...)
+	{
+		f->main->log("error in: c_process::SendRecoed(catch);");
+	}
+}
 // C_II
 c_ii::c_ii()
 {
 
+}
+str  c_ii::GetGlobalPostText(str STACK, TStringList *GLOBALMODEL, TStringList *DIALOG)
+{
+	str j = "NULL";
+
+	if ( ! LastMessageIsGlobal(DIALOG) )
+	{
+		TStringList *IFS   = new TStringList;
+		TStringList *POSTS = new TStringList;
+
+		for ( int c = 0; c < GLOBALMODEL->Count; c++ )
+		{
+			str dataline = GLOBALMODEL->Strings[c];
+
+			if ( Pos("#",dataline) != 0 || c == GLOBALMODEL->Count-1 )
+			{
+				if ( IFS->Count > 0 && POSTS->Count > 0 )
+				{
+					for ( int c = 0; c < IFS->Count; c++ )
+					{
+						str LINE_IF = IFS->Strings[c];
+						TStringList *ARR = new TStringList;
+						f->main->asplit(ARR, LINE_IF, "'");
+						TStringList *ARRC = new TStringList;
+						for ( int x = 0; x < ARR->Count; x++ )
+						{
+							if (  ARR->Strings[x] != "IF" && ARR->Strings[x] != "OR" ) 
+                            {
+                                ARRC->Add( ARR->Strings[x] );
+                            }
+						}
+
+						for ( int x = 0; x < ARRC->Count; x++ )
+						{
+							if ( Pos( ARRC->Strings[x].LowerCase(), STACK.LowerCase() ) != 0 )
+							{
+								f->main->log(L"GLOBAL IF : найден ключ: [ "+ARRC->Strings[x]+L" ] в [ "+Trim(STACK)+" ]");
+
+								str rc = POSTS->Strings[ Random( POSTS->Count ) ];
+								j = rc.SubString(6,rc.Length());
+							}
+						}
+						delete ARR;
+						delete ARRC;
+					}
+				}
+
+				IFS->Clear();
+				POSTS->Clear();
+			}
+			else
+			{
+				if ( Pos("IF'",dataline)   != 0 ) 
+                {
+                    IFS->Add(dataline);
+                }
+				if ( Pos("POST'",dataline) != 0 ) 
+                {
+                    POSTS->Add(dataline);
+                }
+			}
+		}
+
+		delete IFS;
+		delete POSTS;
+	}
+
+	return j;
+}
+bool c_ii::LastMessageIsGlobal(TStringList *DIALOG)
+{
+	bool j = false;
+	int mc = 0;
+	TStringList *X = new TStringList;
+
+	for ( int c = DIALOG->Count-1; c >= 0; c-- )
+	{
+		str l = DIALOG->Strings[c];
+		if ( l == "#MESSAGE" ) 
+        {
+            mc++;
+        }
+        if ( mc > 1 ) 
+        {
+            break;
+        }
+		if ( l == "#ITISGLOBAL" )
+		{
+			j = true;
+			break;
+        }
+	}
+
+	delete X;
+	return j;
 }
 str  c_ii::GetStage(str STACK, TStringList *STAGE)
 {
@@ -3477,36 +4546,22 @@ str  c_ii::GetStage(str STACK, TStringList *STAGE)
 
 	try
 	{
-		bool CHANGED = false;
-		TStringList *VARIANTS = new TStringList;
-		MakeVariantMass(STAGE,VARIANTS);
-		WriteVariantTarget(&CHANGED,STAGE,VARIANTS,STACK);
+		TStringList *LinesIF = new TStringList;
+		MakeMass(STAGE,LinesIF);
 
-		bool EXTENDED = false;
-		if ( CHANGED ) 
-        {
-            CheckExtended(&EXTENDED,STAGE,VARIANTS,&J);
-        }
+		J = GetTarget(LinesIF,STACK);
 
-		if (  EXTENDED )
+		if ( J != "NULL" )
 		{
-			f->main->log(L"Определён extended. Цель: [ #"+J+" ]");
+			f->main->log(L"Определён IF. Цель: [ #"+J+" ]");
 		}
 		else
 		{
-			if ( CHANGED )
-			{
-				GetChanged(STAGE,VARIANTS,&J);
-				f->main->log(L"Определён variant. Цель: [ #"+J+" ]");
-			}
-			else
-			{
-				GetDefault(STAGE,&J);
-				f->main->log(L"Variant не найден. Цель по умолчанию: [ #"+J+" ]");
-			}
-        }
+			GetDefault(STAGE,&J);
+			f->main->log(L"IF не найден. Цель по умолчанию: [ #"+J+" ]");
+		}
 
-		delete VARIANTS;
+		delete LinesIF;
 	}
 	catch ( Exception *ex )
 	{
@@ -3516,124 +4571,49 @@ str  c_ii::GetStage(str STACK, TStringList *STAGE)
 
 	return J;
 }
-void c_ii::MakeVariantMass(TStringList *STAGE, TStringList *VARIANTS)
+void c_ii::MakeMass(TStringList *STAGE, TStringList *LinesIF)
 {
 	for ( int c = 0; c < STAGE->Count; c++ )
 	{
 		str dataline = STAGE->Strings[c];
-		if ( Pos("VARIANT'",dataline) != 0 )
+		if ( Pos("IF'",dataline) != 0 )
 		{
-			str StageVariant = g.Encrypt(2,3,"'",dataline);
-
-			bool ex = false;
-			for ( int x = 0; x < VARIANTS->Count; x++ )
-			{
-				str LocalVariant = g.Encrypt(1,2,"#",VARIANTS->Strings[x]);
-				if ( LocalVariant == StageVariant ) 
-                {
-                    ex = true;
-                }
-			}
-
-			if ( ! ex ) 
-            {
-                VARIANTS->Add( StageVariant+"#0" );
-            }
-        }
-    }
-}
-void c_ii::WriteVariantTarget(bool *changed, TStringList *STAGE, TStringList *VARIANTS, str STACK)
-{
-	for ( int c = 0; c < VARIANTS->Count; c++ )
-	{
-		str VARIANT = g.Encrypt(1,2,"#",VARIANTS->Strings[c]);
-
-		for ( int x = 0; x < STAGE->Count; x++ )
-		{
-			str dataline = STAGE->Strings[x];
-			if ( Pos("VARIANT'"+VARIANT+"'",dataline) != 0 )
-			{
-				str STAGEVARIANTDATA = g.Encrypt(3,3,"'",dataline);
-
-				if ( Pos( STAGEVARIANTDATA.LowerCase(), STACK.LowerCase() ) != 0 )
-				{
-					*changed = true;
-					VARIANTS->Strings[c] = VARIANT+"#1";
-					break;
-                }
-			}
-		}
-    }
-}
-void c_ii::CheckExtended(bool *extended, TStringList *STAGE, TStringList *VARIANTS, str *TARGETSTAGE)
-{
-	str STAGENAME;
-
-	for ( int c = 0; c < STAGE->Count; c++ )
-	{
-		str dataline = STAGE->Strings[c];
-		if ( Pos("EXTENDED'",dataline) != 0 )
-		{
-			STAGENAME = g.Encrypt(3,3,"'",dataline);
-			TStringList *EXTLIST = new TStringList;
-			EXTLIST->Text = g.EncryptToList(",", g.Encrypt(2,3,"'",dataline) );
-            EXTLIST->Delete( EXTLIST->Count-1 );
-
-			int EqualCount = 0;
-			for ( int x = 0; x < EXTLIST->Count; x++ )
-			{
-				for ( int y = 0; y < VARIANTS->Count; y++ )
-				{
-					str ExtParam = EXTLIST->Strings[x];
-					str VarParam = g.Encrypt(1,2,"#",VARIANTS->Strings[y]);
-					str Value    = g.Encrypt(2,2,"#",VARIANTS->Strings[y]);
-
-					if ( ExtParam == VarParam )
-					{
-						if ( Value == "1" ) 
-                        {
-                            EqualCount++;
-                        }
-                    }
-                }
-			}
-
-			if ( EqualCount == EXTLIST->Count )
-			{
-				*extended = true;
-				*TARGETSTAGE = STAGENAME;
-            }
-
-			delete EXTLIST;
-        }
-    }
-}
-void c_ii::GetChanged(TStringList *STAGE, TStringList *VARIANTS, str *TARGETSTAGE)
-{
-	str TARGET;
-
-	for ( int i = 0; i < VARIANTS->Count; i++ )
-	{
-		str A = g.Encrypt(1,2,"#",VARIANTS->Strings[i]);
-		str B = g.Encrypt(2,2,"#",VARIANTS->Strings[i]);
-
-		if ( B == "1" )
-		{
-			TARGET = A;
-			break;
-		}
-    }
-
-	for ( int c = 0; c < STAGE->Count; c++ )
-	{
-		str dataline = STAGE->Strings[c];
-		if ( Pos("IF'"+TARGET+"'",dataline) != 0 )
-		{
-			str j = g.Encrypt(3,3,"'",dataline);
-			*TARGETSTAGE = j;
-			break;
+			LinesIF->Add( dataline );
         }
 	}
+}
+str  c_ii::GetTarget(TStringList *LinesIF, str STACK)
+{
+	str J = "NULL";
+
+	for ( int c = 0; c < LinesIF->Count; c++ )
+	{
+		str LINE_IF = LinesIF->Strings[c];
+		TStringList *ARR = new TStringList;
+		f->main->asplit(ARR, LINE_IF, "'");
+
+		TStringList *ARRC = new TStringList;
+		for ( int x = 0; x < ARR->Count; x++ )
+		{
+			if (  ARR->Strings[x] != "IF" && ARR->Strings[x] != "OR" ) 
+            {
+                ARRC->Add( ARR->Strings[x] );
+            }
+        }
+
+		for ( int x = 0; x < ARRC->Count-1; x++ )
+		{
+			if ( Pos( ARRC->Strings[x].LowerCase(), STACK.LowerCase() ) != 0 )
+			{
+				J = ARRC->Strings[ARRC->Count-1];
+            }
+		}
+
+		delete ARR;
+		delete ARRC;
+	}
+
+	return J;
 }
 void c_ii::GetDefault(TStringList *STAGE, str *TARGETSTAGE)
 {
@@ -3652,10 +4632,11 @@ str  c_ii::GetOldStage(str uid, str token, TStringList *RobotModel, str Message)
 {
 	str J = "NULL";                                                                            
 	str MYPOST = "NULL";
-
-	for ( int c = 0; c < f->main->OUTBOX->Count; c++ )
+	str WASSTAGE = "NULL";
+																
+	for ( int c = 0; c < f->main->AUTOANSOUTBOX->Count; c++ )
 	{
-		str line = f->main->OUTBOX->Strings[c];
+		str line = f->main->AUTOANSOUTBOX->Strings[c];           
 
 		str xToken  = g.Encrypt(1,6,"#",line);
 		str xMid    = g.Encrypt(2,6,"#",line);
@@ -3664,76 +4645,85 @@ str  c_ii::GetOldStage(str uid, str token, TStringList *RobotModel, str Message)
 		str xTitle  = g.Encrypt(5,6,"#",line);
 		str xBody 	= g.Encrypt(6,6,"#",line);
 
+		xBody = xBody.SubString(2,xBody.Length());
+        xBody = xBody.SubString(1,xBody.Length()-1);
+
 		if ( xToken == token && uid == xUid )
 		{
-			MYPOST = xBody;
-			break;
-		}
-	}
-
-	if ( MYPOST != "NULL" )
-	{
-		f->main->log(L"Обнаружена предыдущая переписка с пользователем.");
-
-		str WASSTAGE = "NULL";
-		bool xbreaked = false;
-		for ( int c = 0; c < RobotModel->Count; c++ )
-		{
-			str l = RobotModel->Strings[c];
-			if ( Pos("POST'",l) != 0 )
-			{
-				str text = g.Encrypt(2,2,"'",l);
-				if ( Pos(text,MYPOST) != 0 )
-				{
-					int C = c;
-					while ( true )
-					{
-						C--;
-						if ( Pos("#",RobotModel->Strings[C]) != 0 )
-						{
-							WASSTAGE = RobotModel->Strings[C].SubString(2,RobotModel->Strings[C].Length());
-							f->main->log("Stage [ #"+WASSTAGE+L" ] инициализирован.");
-							xbreaked = true;
-							break;
-						}
-                    }
-				}
-			}
-			if ( xbreaked ) 
-            {
-                break;
+			if ( WASSTAGE != "NULL" ) 
+            { 
+                f->main->log(L"Итерации поиска предыдущего STAGE завершены."); 
+                break; 
             }
-		}
 
-		if ( WASSTAGE != "NULL" )
-		{
-			TStringList *AAA = new TStringList;
-			AAA->Text = RobotModel->Text;
-			f->main->GetOnlyOneStage(AAA,WASSTAGE);
-			J = "#"+f->ii->GetStage(Message,AAA);
-			delete AAA;
+			MYPOST = xBody;
+
+			f->main->log(L"Обнаружена предыдущая переписка с пользователем. Сообщение №"+IntToStr(c+1));
+			f->main->log(L"Сообщение робота: [ "+MYPOST+" ]");
+
+			bool xbreaked = false;
+			for ( int c = 0; c < RobotModel->Count; c++ )
+			{
+				str l = RobotModel->Strings[c];
+				if ( Pos("POST'",l) != 0 )
+				{
+					str ModelPost = g.Encrypt(2,2,"'",l);
+					if ( if_EqualPosts(ModelPost,MYPOST) )
+					{
+						int C = c;
+						while ( true )
+						{
+							C--;
+							if ( Pos("#",RobotModel->Strings[C]) != 0 )
+							{
+								WASSTAGE = RobotModel->Strings[C].SubString(2,RobotModel->Strings[C].Length());
+								f->main->log("Stage [ #"+WASSTAGE+L" ] инициализирован.");
+								xbreaked = true;
+								break;
+							}
+						}
+					}
+				}
+
+				if ( xbreaked ) 
+                {
+                    break;
+                }
+			}
+
+			if ( WASSTAGE != "NULL" )
+			{
+				TStringList *AAA = new TStringList;
+				AAA->Text = RobotModel->Text;
+				f->main->GetOnlyOneStage(AAA,WASSTAGE);
+				J = "#"+f->ii->GetStage(Message,AAA);
+				delete AAA;
+			}
+			else
+			{
+				f->main->log("Stage [ #"+WASSTAGE+L" ] не найден в модели общения.");
+			}
 		}
-		else
-		{
-			f->main->log("Stage [ #"+WASSTAGE+L" ] не найден в модели общения.");
-        }
 	}
+
 	return J;                                                                                                  
 }
 void c_ii::GetAutoAns(str *iodata, str *targetstage, str Token, str uid)
 {
-	str data = *iodata;
-    
+	str data = *iodata;                        
+    str DEF;                                  
+
 	TStringList *ANSMODEL = new TStringList;
-	TStringList *DEFAULT = new TStringList;    str DEF;
+	TStringList *DEFAULT = new TStringList;    
 	TStringList *ROBOTMODEL = new TStringList;
 
 	TStringList *L = new TStringList;
 	g.GetFiles( f->main->p_robots, L );
-	str GroupName, RobotName, Server_ID, Login, Password, xToken, Activity, ModelFile;
+	str GroupName, RobotName, Server_ID, Login, Password, xToken, Activity, ModelFile, Online, LastOnline;  bool freeze;
 	for ( int x = 0; x < L->Count; x++ )
 	{
-		f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &xToken, &Activity );
+		f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &xToken, &Activity, &Online, &LastOnline, &freeze );
+
 		if ( Token == xToken )
 		{
 			ANSMODEL->LoadFromFile( f->main->p_robots + L->Strings[x] + "\\AutoAnsRules.txt" );
@@ -3743,18 +4733,25 @@ void c_ii::GetAutoAns(str *iodata, str *targetstage, str Token, str uid)
 			break;
 		}
 	}
+
 	delete DEFAULT;
 
+	f->main->log(L"Попытка определить прежний Stage." );
 	str target = GetOldStage(uid,xToken,ROBOTMODEL,data);
+	if ( target == "NULL" ) 
+    {
+        f->main->log( L"Прежний Stage не найден. (" );
+    }
+
 	if ( target == "NULL" )
 	{
 		for ( int c = 0; c < ANSMODEL->Count; c++ )
 		{
 			str key = g.Encrypt(1,2,"~",ANSMODEL->Strings[c]);
-
-			if ( Pos(key.LowerCase(),data.LowerCase()) > 0 )
+			if ( Pos(get_alpha_keys(key),data) > 0 )
 			{
 				target = g.Encrypt(2,2,"~",ANSMODEL->Strings[c]);
+				f->main->log( L"В сообщении найден ключ [ "+get_alpha_keys(key)+" ]" );
 				break;
 			}
 		}
@@ -3765,12 +4762,11 @@ void c_ii::GetAutoAns(str *iodata, str *targetstage, str Token, str uid)
 	if ( target == "NULL" ) 
     {
         target = DEF;
-    }
+	}
 
 	*targetstage = target;
 	TStringList *CLEAR = new TStringList;
 	bool breaked = false;
-
 	for ( int i = 0; i < ROBOTMODEL->Count; i++ )
 	{
 		str l = ROBOTMODEL->Strings[i];
@@ -3802,24 +4798,25 @@ void c_ii::GetAutoAns(str *iodata, str *targetstage, str Token, str uid)
 
 	str J = CLEAR->Strings[ Random( CLEAR->Count ) ];
 	J = g.Encrypt(2,2,"'",J);
-
-	delete CLEAR;
 	*iodata = J;
-	delete ROBOTMODEL;                                                                             
+    
+    delete CLEAR;
+	delete ROBOTMODEL;                                                                             //f->main->plog("GetAutoAns - stop");
 }
 bool c_ii::IfAutoStop(str message, str file)
 {
 	bool stop = false;
+
 	if ( f->LV_WORKTASKS->Items->Item[4]->Checked )
 	{
 		TStringList *L = new TStringList;
 		L->LoadFromFile(file);
 
-		message = message.LowerCase();
+		message = message;
 		for ( int c = 0; c < L->Count; c++ )
 		{
 			str key = Trim(L->Strings[c]);
-			key = key.LowerCase();
+			key = get_alpha_keys(key);
 
 			if ( Pos(key,message) != 0 )
 			{
@@ -3830,7 +4827,6 @@ bool c_ii::IfAutoStop(str message, str file)
 		}
 		delete L;
 	}
-
 	return stop;
 }
 str  c_ii::GetAutoStopMessage(str file)
@@ -3846,6 +4842,504 @@ str  c_ii::GetAutoStopMessage(str file)
 
 	delete L;
 	return Trim(j);
+}
+str  c_ii::do_randomize(str text)
+{
+	str j = "";
+
+	if ( f->ch_RANDOMIZE->Checked )
+	{
+		for ( int c = 1; c <= text.Length(); c++ )
+		{
+			str ch = text[c];
+
+			int x = Random(2);
+			if ( x == 1 )
+			{
+				if ( ch == L"А" ) ch = L"A";
+				if ( ch == L"В" ) ch = L"B";
+				if ( ch == L"Е" ) ch = L"E";
+				if ( ch == L"К" ) ch = L"K";
+				if ( ch == L"М" ) ch = L"M";
+				if ( ch == L"Н" ) ch = L"H";
+				if ( ch == L"О" ) ch = L"O";
+				if ( ch == L"Р" ) ch = L"P";
+				if ( ch == L"С" ) ch = L"C";
+				if ( ch == L"Т" ) ch = L"T";
+				if ( ch == L"Х" ) ch = L"X";
+
+				if ( ch == L"а" ) ch = L"a";
+				if ( ch == L"е" ) ch = L"e";
+				if ( ch == L"о" ) ch = L"o";
+				if ( ch == L"р" ) ch = L"p";
+				if ( ch == L"с" ) ch = L"c";
+				if ( ch == L"у" ) ch = L"y";
+				if ( ch == L"х" ) ch = L"x";
+			}
+
+			j = j + ch;
+		}
+	}
+    else 
+    {
+        j = text;
+    }
+    return j;
+}
+str  c_ii::get_alpha_keys(str text)
+{
+	text = text.LowerCase();
+	str j = "";
+
+	if ( f->ch_ALPHAKEYS->Checked )
+	{
+		for ( int c = 1; c <= text.Length(); c++ )
+		{
+			str ch = text[c];
+
+			if ( ch == L"а" ) ch = L"a";
+			if ( ch == L"е" ) ch = L"e";
+			if ( ch == L"о" ) ch = L"o";
+			if ( ch == L"р" ) ch = L"p";
+			if ( ch == L"с" ) ch = L"c";
+			if ( ch == L"у" ) ch = L"y";
+			if ( ch == L"х" ) ch = L"x";
+
+			j = j + ch;
+		}
+	}
+	else 
+    {
+        j = text;
+    }
+
+	return j;
+}
+str  c_ii::MakePostLine(str post_variables_line)
+{
+	f->main->log("POST : [ "+post_variables_line+" ]");
+
+	str j = "";
+
+	int long_memory_index = 0;
+	int long_upper_count  = 0;
+
+	bool w = false;
+	str  buff = "";
+	for ( int c = 1; c <= post_variables_line.Length(); c++ )
+	{
+		str ch = post_variables_line[c];
+
+		if ( w )
+		{
+			if ( ch == ")" )
+			{
+				w = false;
+				j = j + MakePostLineGetOne(buff,long_upper_count,&long_memory_index);
+				long_upper_count--;
+                if ( long_upper_count == 0 ) 
+                {
+                    long_memory_index = 0;
+                }
+
+				try
+				{
+					str chn = post_variables_line[c+1];
+					int chc = StrToInt(post_variables_line[c+2]);
+					if ( chn == "^" )
+					{
+						long_upper_count = chc;
+						c++; 
+                        c++;
+					}
+				}
+				catch (...) 
+                { 
+                }
+			}
+			else
+			{
+				buff = buff + ch;
+			}
+		}
+		else
+		{
+			if ( ch == "(" )
+			{
+				w = true;
+                buff = "";
+			}
+			else
+			{
+				j = j + ch;
+			}
+		}
+    }
+	return j;
+}
+str  c_ii::MakePostLineGetOne(str buffer, int uppercount, int *memory_j)
+{
+	int sc = 0;
+	for ( int c = 1; c < buffer.Length(); c++ )
+	{
+		str ch = buffer[c];
+		if ( ch == "|" ) sc++;
+	}
+
+	int parts = sc + 1;
+	str j = "NULL";
+
+	if ( uppercount > 0 && *memory_j > 0 )
+	{
+		j = g.Encrypt(*memory_j,parts,"|",buffer);
+	}
+	else
+	{
+		int r = Random( parts ) + 1;
+		*memory_j = r;
+		j = g.Encrypt(r,parts,"|",buffer);
+    }
+
+	return j;
+}
+bool c_ii::if_EqualPosts(str ModelPost, str MyPost)
+{                                                                        
+	bool eq = false;
+
+	TStringList *JPOSTVARIABLES = new TStringList;
+	JPOSTVARIABLES->Add("");
+
+	str  buff = "";
+
+	bool w = false;
+	for ( int c = 1; c <= ModelPost.Length(); c++ )
+	{
+		str ch = ModelPost[c];
+
+		if ( w )
+		{
+			if ( ch == ")" )
+			{
+				w = false;
+				MakePostLineGetAll(buff,JPOSTVARIABLES);
+
+				try
+				{
+					str chn = ModelPost[c+1];
+					if ( chn == "^" ) 
+                    { 
+                        c++; 
+                        c++;
+                    }
+				}
+				catch (...) 
+                { 
+                }
+			}
+			else
+			{
+				buff = buff + ch;
+			}
+		}
+		else
+		{
+			if ( ch == "(" )
+			{
+				w = true;
+                buff = "";
+			}
+			else
+			{
+				for ( int x = 0; x < JPOSTVARIABLES->Count; x++ )
+				{
+                    JPOSTVARIABLES->Strings[x] = JPOSTVARIABLES->Strings[x] + ch;
+                }
+			}
+		}
+	}
+
+	for ( int i = 0; i < JPOSTVARIABLES->Count; i++ )
+	{
+		str l = JPOSTVARIABLES->Strings[i];
+		str f1 = CutMediaTags( l );
+        f1 = f1.LowerCase();
+		str f2 = MyPost.LowerCase();
+
+		if ( f1.Length() > 0 && f2.Length() > 0 )
+		{
+			if ( f1 == f2 )
+			{
+				eq = true;
+				f->main->log(L"Найдено соответствие [ "+MyPost+" ]");
+				break;
+			}
+		}
+    }
+
+	delete JPOSTVARIABLES;
+	return eq;
+}
+void c_ii::MakePostLineGetAll(str buffer, TStringList *JPOSTVARIABLES_A)
+{
+	int sc = 0;
+	for ( int c = 1; c < buffer.Length(); c++ )
+	{
+		str ch = buffer[c];
+		if ( ch == "|" ) 
+        {
+            sc++;
+        }
+	}
+	int parts = sc + 1;
+
+	TStringList *JPOSTVARIABLES_D = new TStringList;
+
+	for ( int r = 1;  r <= parts; r++ )
+	{
+		str j = g.Encrypt(r,parts,"|",buffer);
+
+		for ( int c = 0; c < JPOSTVARIABLES_A->Count; c++ )
+		{
+			JPOSTVARIABLES_D->Add( JPOSTVARIABLES_A->Strings[c] + j );
+        }
+	}
+
+	JPOSTVARIABLES_A->Text = JPOSTVARIABLES_D->Text;
+	delete JPOSTVARIABLES_D;
+}
+void c_ii::WritePostDataIn(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStringList *RECORDLIST, str *postline)
+{
+	str pl = *postline; str fx; int p;
+
+	try
+	{
+		fx = "[IMAGE=";
+		p = Pos(fx,pl);
+		if ( p != 0 )
+		{
+			str L = pl.SubString(1,p-1);
+			str R = pl.SubString(p,pl.Length());
+			p = Pos("]",R);
+			str M = R.SubString(1,p);
+			str X = R.SubString(p+1,R.Length());
+			pl = L + X;
+			IMAGELIST->Add(M);
+		}
+	}
+	catch (...) 
+    { 
+        f->main->log("c_ii::WritePostDataIn(catch:IMAGE)"); 
+    }
+
+	try
+	{
+		fx = "[AUDIO=";
+		p = Pos(fx,pl);
+		if ( p != 0 )
+		{
+			str L = pl.SubString(1,p-1);
+			str R = pl.SubString(p,pl.Length());
+			p = Pos("]",R);
+			str M = R.SubString(1,p);
+			str X = R.SubString(p+1,R.Length());
+			pl = L + X;
+			AUDIOLIST->Add(M);
+		}
+    }
+	catch (...) 
+    { 
+        f->main->log("c_ii::WritePostDataIn(catch:AUDIO)"); 
+    }
+
+	try
+	{
+		fx = "[RECORD=";
+		p = Pos(fx,pl);
+		if ( p != 0 )
+		{
+			str L = pl.SubString(1,p-1);
+			str R = pl.SubString(p,pl.Length());
+			p = Pos("]",R);
+			str M = R.SubString(1,p);
+			str X = R.SubString(p+1,R.Length());
+			pl = L + X;
+			RECORDLIST->Add(M);
+		}
+    }
+	catch (...) 
+    { 
+        f->main->log("c_ii::WritePostDataIn(catch:RECORD)"); 
+    }
+
+	*postline = pl;
+}
+void c_ii::ShowDataLNS(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStringList *RECORDLIST,TStringList *POSTS)
+{
+	for ( int c = 0; c < POSTS->Count; c++ )
+	{
+		f->main->log( "POSTS_"+POSTS->Strings[c]+"_" );
+	}
+
+	for ( int c = 0; c < IMAGELIST->Count; c++ )
+	{
+		f->main->log( "IMAGELIST_"+IMAGELIST->Strings[c]+"_" );
+	}
+
+	for ( int c = 0; c < AUDIOLIST->Count; c++ )
+	{
+		f->main->log( "AUDIOLIST_"+AUDIOLIST->Strings[c]+"_" );
+	}
+
+	for ( int c = 0; c < RECORDLIST->Count; c++ )
+	{
+		f->main->log( "RECORDLIST_"+RECORDLIST->Strings[c]+"_" );
+	}
+}
+void c_ii::ShowDataLNS(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStringList *RECORDLIST)
+{
+
+	for ( int c = 0; c < IMAGELIST->Count; c++ )
+	{
+		f->main->log( "IMAGELIST_"+IMAGELIST->Strings[c]+"_" );
+	}
+
+	for ( int c = 0; c < AUDIOLIST->Count; c++ )
+	{
+		f->main->log( "AUDIOLIST_"+AUDIOLIST->Strings[c]+"_" );
+	}
+
+	for ( int c = 0; c < RECORDLIST->Count; c++ )
+	{
+		f->main->log( "RECORDLIST_"+RECORDLIST->Strings[c]+"_" );
+	}
+}
+str  c_ii::CutMediaTags(str data)
+{
+	str fx1 = "[IMAGE=";
+	str fx2 = "[AUDIO=";
+	str fx3 = "[RECORD=";
+
+	int p1 = Pos( fx1, data );
+	int p2 = Pos( fx2, data );
+	int p3 = Pos( fx3, data );
+
+	if ( p1 != 0 || p2 != 0 || p3 != 0 )
+	{
+		int x = 99999999;
+
+		if ( p1 > 0 && p1 < x ) 
+        {
+            x = p1;
+        }
+		if ( p2 > 0 && p2 < x ) 
+        {
+            x = p2;
+        }
+		if ( p3 > 0 && p3 < x ) 
+        {
+            x = p3;
+        }
+
+		data = data.SubString(1,x-1);
+	}
+
+	return data;
+}
+// C_ONLINE
+c_online::c_online()
+{
+	APIBUFFER = new TStringList;
+}
+void c_online::addtobuffer(str token)
+{
+	long int unix = f->main->getUnix();
+	str s = unix;
+	APIBUFFER->Add( token + "#" + s );
+}
+void c_online::processing()
+{
+	long int UNIX  = f->main->getUnix();
+	int      IUNIX = UNIX;
+
+	buffer_clear(IUNIX);
+
+	TStringList *L = new TStringList;
+	g.GetFiles( f->main->p_robots, L );
+
+	for ( int c = 0; c < L->Count; c++ )
+	{
+		str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  bool freeze;
+		f->main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
+
+		if ( Online == "0" && Token != "NULL" )
+		{
+			if ( StrToInt(LastOnline)+540+Random(60) < IUNIX )
+			{
+				bool success = false;
+
+				make_online(RobotName,Token,&success);
+
+				if ( success )
+				{
+					str tprefix = f->main->PREFIX;
+					f->main->PREFIX = L"Вечный онлайн : [ "+RobotName+" ] ";
+					f->main->log(L"Статус 'online' установлен.");
+					f->main->PREFIX = tprefix;
+
+					str robotpath = f->main->p_robots + L->Strings[c] + "\\" + "Conf.ini";
+                    TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 );
+			        INI->WriteInteger(UnicodeString("ACCOUNT"), UnicodeString("lastonline"),  IUNIX);
+                    INI->UpdateFile();
+			        delete INI;
+				}
+				else
+				{
+					str tprefix = f->main->PREFIX;
+					f->main->PREFIX = L"Вечный онлайн : [ "+RobotName+" ] ";
+					f->main->log(L"Не удалось установить статус 'online'. ((");
+					f->main->PREFIX = tprefix;
+				}
+
+				Sleep(400);
+            }
+		}
+
+		if ( Online == "0" && Token == "NULL" )
+		{
+            str tprefix = f->main->PREFIX;
+			f->main->PREFIX = L"Вечный онлайн : [ "+RobotName+" ] ";
+			f->main->log(L"Необходимо получить токен!");
+			f->main->PREFIX = tprefix;
+		}
+	}
+
+	delete L;
+}
+void c_online::make_online(str robotname, str token, bool *success)
+{
+	str j = vk.set_online(success,token);
+	if ( *success )
+	{
+		if ( Pos("error",j) != 0 ) 
+        {
+            *success = false;
+        }
+	}
+}
+void c_online::buffer_clear(int unix)
+{
+	TStringList *L = new TStringList;
+	for ( int c = 0; c < APIBUFFER->Count; c++ )
+	{
+		str lastapi = g.Encrypt(2,2,"#",APIBUFFER->Strings[c]);
+		if ( StrToInt(lastapi)+5 < unix ) 
+        {
+            L->Add( APIBUFFER->Strings[c] );
+        }
+	}
+
+	APIBUFFER->Text = L->Text;
+	delete L;
 }
 // C_VCL
 c_vcl::c_vcl()
@@ -3869,6 +5363,7 @@ void c_vcl::obj_draw()
 	g.SetColorToLabel( f->Label17, "0x0095640D" );
 
 	g.SetColorToLabel( f->l_NextClientID, "0x0095640D" );
+    g.SetColorToLabel( f->lbl_DATAFROM, "0x0095640D" );
 	g.SetColorToLabel( f->l_GID, "0x0095640D" );
 }
 void c_vcl::set()
@@ -3905,6 +5400,7 @@ void c_vcl::set_enabled_conf_robots( bool enable )
 	f->e_conf_robots_edit_login->Enabled = enable;
 	f->e_conf_robots_edit_password->Enabled = enable;
 	f->cb_conf_robots_edit_groups->Enabled = enable;
+	f->ch_robot_online_edit->Enabled = enable;
 
 	f->b_CONF_ROBOTS_EDIT_APPLY->Enabled = enable;
 
@@ -3912,12 +5408,15 @@ void c_vcl::set_enabled_conf_robots( bool enable )
 	f->Label41->Enabled = enable;
 	f->Label42->Enabled = enable;
 	f->Label11->Enabled = enable;
+	f->Label23->Enabled = enable;
 
 	f->e_conf_robots_edit_name->Clear();
 	f->e_conf_robots_edit_login->Clear();
 	f->e_conf_robots_edit_password->Clear();
 
 	f->cb_conf_robots_edit_groups->ItemIndex = -1;
+
+	f->ch_robot_online_edit->ItemIndex = -1;
 }
 void c_vcl::set_enabled_dialogs( bool enable )
 {
@@ -3932,11 +5431,6 @@ void c_vcl::set_enabled_dialogs( bool enable )
     f->ME_DIALOG->Lines->Add("");
 	f->ME_INPUT->Lines->Clear();
 }
-void c_vcl::set_enabled_test_dialogs( bool enable )
-{
-	f->ME_DIALOG_TEST->Lines->Clear();       
-    f->ME_DIALOG_TEST->Lines->Add("");
-}
 void c_vcl::groupechoReadRobots()
 {
 	for ( int c = 0; c < f->LV_CONF_GROUPS->Items->Count; c++ )
@@ -3948,8 +5442,9 @@ void c_vcl::groupechoReadRobots()
 		g.GetFiles( f->main->p_robots, L );
 		for ( int x = 0; x < L->Count; x++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity;
-			f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity );
+			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+            bool freeze;
+			f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 			if ( GroupName == NeededGroupName ) 
             {
@@ -3964,19 +5459,16 @@ void c_vcl::groupechoReadRobots()
 void c_vcl::groupechoReadUsers()
 {
     TStringList *L = new TStringList;
-    if(FileExists(f->main->f_users))
-    {
-	    L->LoadFromFile( f->main->f_users );
-    }
+	L->LoadFromFile( f->main->f_users );
 
 	for ( int c = 0; c < f->LV_CONF_GROUPS->Items->Count; c++ )
 	{
 		str NeededGroupName = Trim(f->LV_CONF_GROUPS->Items->Item[c]->Caption);
-
 		int Count = 0;
 		for ( int x = 0; x < L->Count; x++ )
 		{
 			str UserGroup = g.Encrypt(1,5,"#",L->Strings[x]);
+
 			if ( UserGroup == NeededGroupName ) 
             {
                 Count++;
@@ -3985,6 +5477,7 @@ void c_vcl::groupechoReadUsers()
 
 		f->LV_CONF_GROUPS->Items->Item[c]->SubItems->Strings[1] = IntToStr(Count);
 	}
+
 	delete L;
 }
 void c_vcl::Dialog_Add_User(str User)
@@ -3996,6 +5489,7 @@ void c_vcl::Dialog_Add_User(str User)
 	f->ME_DIALOG->SelAttributes->Color = StringToColor("0x0095640D");
 
 	f->ME_DIALOG->Lines->Add( User );
+
 	::SendMessage(f->ME_DIALOG->Handle,WM_VSCROLL,SB_BOTTOM,0);
 }
 void c_vcl::Dialog_Add_Text(TStringList *TEXT)
@@ -4022,6 +5516,7 @@ void c_vcl::Dialog_Add_Date(str Date)
 	f->ME_DIALOG->SelAttributes->Color = StringToColor("0x00777777");
 
 	f->ME_DIALOG->Lines->Add( "- - - - - - -  "+Date+"  - - - - - -" );
+
 	f->ME_DIALOG->Lines->Add( "" );
 
 	::SendMessage(f->ME_DIALOG->Handle,WM_VSCROLL,SB_BOTTOM,0);
@@ -4042,6 +5537,7 @@ str  c_vcl::FixInbox(str data)
     {
         data = data.SubString(1,x-1);
     }
+
 	return Trim(data);
 }
 void c_vcl::ModelsSET(bool set)
@@ -4085,8 +5581,7 @@ void c_vcl::ModelsSET(bool set)
 }
 void c_vcl::GoToModels(str RobotName, int PositionView)
 {
-    f->PAGES->ActivePageIndex = 1;
-	f->PAGES_SPEECH->ActivePageIndex = 1;
+	f->PAGES->ActivePageIndex = 6;
 	if ( PositionView == 0 ) 
     { 
         f->RB_MODELS_A->Checked = true; 
@@ -4105,7 +5600,7 @@ void c_vcl::GoToModels(str RobotName, int PositionView)
     { 
         f->RB_MODELS_A->Checked = false; 
         f->RB_MODELS_B->Checked = false; 
-        f->RB_MODELS_C->Checked = true; 
+        f->RB_MODELS_C->Checked = true;
         f->RB_MODELS_D->Checked = false; 
     }
 	if ( PositionView == 3 ) 
@@ -4122,8 +5617,9 @@ void c_vcl::GoToModels(str RobotName, int PositionView)
     g.GetFiles( f->main->p_robots, L );
     for ( int c = 0; c < L->Count; c++ )
     {
-    	str GroupName, cRobotName, Server_ID, Login, Password, Token, Activity;
-        f->main->get_robotdata( c, &GroupName, &cRobotName, &Server_ID, &Login, &Password, &Token, &Activity );
+		str GroupName, cRobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+        bool freeze;
+		f->main->get_robotdata( c, &GroupName, &cRobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
         if ( RobotName == cRobotName )
 		{
@@ -4154,6 +5650,7 @@ void c_vcl::ModelStageClear()
 void c_vcl::GetAllStages(TsComboBox *CB)
 {
     CB->Clear();
+
     for ( int c = 0; c < f->main->MODEL_LOGICAL->Count; c++ )
     {
         str data = f->main->MODEL_LOGICAL->Strings[c];
@@ -4166,17 +5663,31 @@ void c_vcl::GetAllStages(TsComboBox *CB)
 void c_vcl::GetAllRobots(TsComboBox *CB)
 {
     CB->Items->Clear();
-    TStringList *L = new TStringList;
 
+    TStringList *L = new TStringList;
 	g.GetFiles( f->main->p_robots, L );
     for ( int c = 0; c < L->Count; c++ )
     {
-    	str GroupName, RobotName, Server_ID, Login, Password, Token, Activity;
-    	f->main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity );
+		str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+        bool freeze;
+		f->main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
         CB->Items->Add( RobotName );
     }
+
     delete L;
+}
+void c_vcl::InputCaptchaOpenForm(str file)
+{
+    f->PAGES->Enabled = false;
+	f->i_INPUTCAPCHA->Picture->LoadFromFile( file );
+    f->e_INPUTCAPCHA->Clear();
+	f->p_INPUTCAPTCHA->Left = 292;
+	f->p_INPUTCAPTCHA->Top  = 140;
+	f->p_INPUTCAPTCHA->Visible = true;
+	f->p_INPUTCAPTCHA->BringToFront();
+
+    Application->ProcessMessages();
 }
 // C_CAPTCHA
 c_captcha::c_captcha()
@@ -4309,6 +5820,13 @@ void __fastcall Tf::rg_CAPTCHA_SERVICEChange(TObject *Sender)
 		main->conf_captcha( true );
     }
 }
+void __fastcall Tf::ch_soundcaptchaClick(TObject *Sender)
+{
+	if ( LOADED )
+	{
+		main->conf_captcha( true );
+	}
+}
 void __fastcall Tf::b_SERVERS_ADDClick(TObject *Sender)
 {
 	if ( e_servers_client_id->Text.Length() > 0 && 
@@ -4377,8 +5895,7 @@ void __fastcall Tf::b_CONF_GROUPS_EDIT_APPLYClick(TObject *Sender)
 {
 	if ( e_conf_groups_edit_name->Text.Length() > 0 )
 	{
-		int index = LV_CONF_GROUPS->ItemIndex;
-		LV_CONF_GROUPS->Items->Item[index]->Caption = " "+e_conf_groups_edit_name->Text;
+		LV_CONF_GROUPS->Items->Item[LV_CONF_GROUPS->ItemIndex]->Caption = " "+e_conf_groups_edit_name->Text;
 		main->conf_groups( true );
         vcl->set_enabled_conf_groups( false );
 	}
@@ -4411,7 +5928,6 @@ void __fastcall Tf::LV_CONF_ROBOTSChange(TObject *Sender, TListItem *Item, TItem
 void __fastcall Tf::LV_CONF_ROBOTSClick(TObject *Sender)
 {
 	int index = LV_CONF_ROBOTS->ItemIndex;
-
 	if ( index != -1 )
 	{
 		int cbIndex = -1;
@@ -4434,19 +5950,36 @@ void __fastcall Tf::LV_CONF_ROBOTSClick(TObject *Sender)
 		g.GetFiles( main->p_robots, L );
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity;
-			main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity );
+			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+            bool freeze;
+			main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 			if ( RobotName == Trim(LV_CONF_ROBOTS->Items->Item[index]->Caption) )
 			{
 				e_conf_robots_edit_name->Text 		= RobotName;
 				e_conf_robots_edit_login->Text 		= Login;
 				e_conf_robots_edit_password->Text 	= Password;
+				ch_robot_online_edit->ItemIndex = StrToInt(Online);
 
+				if ( freeze )
+				{
+					N70->Enabled = false;   //g.Sm("1");
+					N71->Enabled = true;
+				}
+				else
+				{
+					N70->Enabled = true;   //g.Sm("2");
+					N71->Enabled = false;
+				}
 				break;
 			}
 		}
 		delete L;
+	}
+	else
+	{
+		N70->Enabled = false;
+		N71->Enabled = false;
     }
 }
 void __fastcall Tf::b_CONF_ROBOTS_CREATEClick(TObject *Sender)
@@ -4477,8 +6010,9 @@ void __fastcall Tf::b_CONF_ROBOTS_EDIT_APPLYClick(TObject *Sender)
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity;
-			main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity );
+			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+            bool freeze;
+			main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 			if ( RobotName == OldName )
 			{
@@ -4489,12 +6023,14 @@ void __fastcall Tf::b_CONF_ROBOTS_EDIT_APPLYClick(TObject *Sender)
 				INI->WriteString( UnicodeString("MAIN"),    UnicodeString("name"),    UnicodeString(f->e_conf_robots_edit_name->Text) );
 				INI->WriteString( UnicodeString("ACCOUNT"), UnicodeString("login"),   UnicodeString(f->e_conf_robots_edit_login->Text) );
 				INI->WriteString( UnicodeString("ACCOUNT"), UnicodeString("password"),UnicodeString(f->e_conf_robots_edit_password->Text) );
+                INI->WriteString( UnicodeString("ACCOUNT"), UnicodeString("online"),  UnicodeString(IntToStr( f->ch_robot_online_edit->ItemIndex) ) );
                 INI->UpdateFile();
 				delete INI;
 
 				main->conf_robots( LV_CONF_GROUPS->ItemIndex, false );
 				vcl->set_enabled_conf_robots(false);
 				main->conf_groups( false );
+                PAGES_CONFIGURATION->ActivePageIndex = 0;
             }
 		}
 	}
@@ -4580,44 +6116,7 @@ void __fastcall Tf::LV_DIALOGSClick(TObject *Sender)
 		LV_DIALOGS->Items->Item[index]->SubItems->Strings[2] = vcl->FixInbox( inc );
 	}
 }
-void __fastcall Tf::LV_DIALOGS_TESTClick(TObject *Sender)
-{
-	if ( LV_DIALOGS_TEST->ItemIndex == -1 ) 
-    {
-        vcl->set_enabled_test_dialogs(false);
-    }
-	else               				   		
-    {
-        vcl->set_enabled_test_dialogs(true);
-    }
 
-	int index = LV_DIALOGS_TEST->ItemIndex;
-#if 0
-	if ( index != -1 )
-	{
-		str id = Trim(LV_DIALOGS_TEST->Items->Item[index]->Caption);
-
-		TStringList *X = new TStringList;
-		X->LoadFromFile( main->p_dialogs_test + id );
-
-		str robot_gid 	 = X->Strings[0];
-		str name 		 = X->Strings[1];
-		str surname 	 = X->Strings[2];
-
-		f->l_GID->Caption = robot_gid;
-
-		main->DrawMessageBox(name,surname,robot_gid,X);
-
-		main->SetAsRead( X );
-
-		X->SaveToFile( main->p_dialogs + id );
-		delete X;
-
-		str inc = LV_DIALOGS->Items->Item[index]->SubItems->Strings[2];
-		LV_DIALOGS->Items->Item[index]->SubItems->Strings[2] = vcl->FixInbox( inc );
-	}
-#endif
-}
 void __fastcall Tf::B_SENDMESSAGEClick(TObject *Sender)
 {
 	B_SENDMESSAGE->Enabled = false; g.ProcessMessages();
@@ -4631,8 +6130,9 @@ void __fastcall Tf::B_SENDMESSAGEClick(TObject *Sender)
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity;
-			main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity );
+			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+            bool freeze;
+			main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 			if ( RobotName == Trim(l_GID->Caption) )
 			{
@@ -4653,12 +6153,9 @@ void __fastcall Tf::B_SENDMESSAGEClick(TObject *Sender)
 					X->Add("#ID="+MESSID);
 					X->Add("#STAGEDATA=MANUALSEND");
 					X->Add("#BEGIN");
-					for ( int i = 0; i < ME_INPUT->Lines->Count; i++ ) 
-                    {
-                        X->Add( ME_INPUT->Lines->Strings[i] );
-                    }
+					for ( int i = 0; i < ME_INPUT->Lines->Count; i++ ) X->Add( ME_INPUT->Lines->Strings[i] );
 					X->Add("#END");
-					X->SaveToFile( UnicodeString(main->p_dialogs + id), TEncoding::UTF8 );
+					X->SaveToFile(  main->p_dialogs + id );
 					delete X;
 
 					int DiaIndex = LV_DIALOGS->ItemIndex;
@@ -4668,6 +6165,7 @@ void __fastcall Tf::B_SENDMESSAGEClick(TObject *Sender)
 					TObject *Sender;
 					LV_DIALOGSClick(Sender);
 				}
+
 				break;
 			}
 		}
@@ -4690,13 +6188,6 @@ void __fastcall Tf::e_autoanswerlimitChange(TObject *Sender)
 	{
 		main->conf_ini( true );
 	}
-}
-void __fastcall Tf::e_conf_users_offSetChange(TObject *Sender)
-{
-	 if ( LOADED )
-     {
-         main->conf_ini( true );
-     }
 }
 void __fastcall Tf::LV_WORKGROUPSClick(TObject *Sender)
 {
@@ -5121,13 +6612,12 @@ void __fastcall Tf::sTabSheet9Show(TObject *Sender)
 }
 void __fastcall Tf::b_MODEL_IMPORTClick(TObject *Sender)
 {
-	str dir = "NULL";
-
-	SelectDirectory("Caption", "", dir);
-
-	if ( dir != "NULL" && Pos("\\",dir) != 0 )
+	SelectDirectory(L"Укажите папки с файлами модели.", "", main->f_od_import_robot_model);
+	main->conf_ini(true);
+	if ( main->f_od_import_robot_model != "NULL" && 
+         Pos("\\",main->f_od_import_robot_model) != 0 )
 	{
-		dir = dir + "\\";
+		str dir = main->f_od_import_robot_model + "\\";  // g.Sm(dir);
 		TStringList *SOURCEFILES = new TStringList;
 		g.GetFiles( dir, SOURCEFILES );
 
@@ -5139,12 +6629,12 @@ void __fastcall Tf::b_MODEL_IMPORTClick(TObject *Sender)
 
 				TStringList *L = new TStringList;
 				g.GetFiles( f->main->p_robots, L );
-				str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelFile;
+				str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelFile, Online, LastOnline;  
+                bool freeze;
 				for ( int x = 0; x < L->Count; x++ )
 				{
 					str CurrentRobotPath = f->main->p_robots + L->Strings[x] + "\\";
-
-					f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity );
+					f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 					if ( GroupName == NeededGroup )
 					{
@@ -5162,7 +6652,116 @@ void __fastcall Tf::b_MODEL_IMPORTClick(TObject *Sender)
 			}
 		}
 
-		PAGES->ActivePageIndex = 4;
+		PAGES->ActivePageIndex = 1;
+    }
+}
+void __fastcall Tf::b_INPUTCAPCHAClick(TObject *Sender)
+{
+	captcha->WAITMANUAL = false;
+	p_INPUTCAPTCHA->Visible = false;
+	f->PAGES->Enabled = true;
+	Application->ProcessMessages();
+}
+void __fastcall Tf::ch_dynamic_userbdataClick(TObject *Sender)
+{
+	if ( LOADED )
+	{
+		main->conf_ini(true);
+	}
+}
+void __fastcall Tf::b_GlobalUsersCacheDublicatesDELClick(TObject *Sender)
+{
+	main->GlobalUsersCache_DublicatesDelete();
+}
+void __fastcall Tf::i_about_b_1Click(TObject *Sender)
+{
+	try
+	{
+        str url = "http://www.youtube.com/channel/UCvNUz0gcIU5iEiPIiZ68P5g";
+		g.ShellExecute1( url );
+	}
+	catch (...)
+	{
+
+	}
+}
+void __fastcall Tf::i_about_b_2Click(TObject *Sender)
+{
+	try
+	{
+        str url = "http://jenya.in.ua/";
+		g.ShellExecute1( url );
+	}
+	catch (...)
+	{
+
+	}
+}
+void __fastcall Tf::i_about_b_3Click(TObject *Sender)
+{
+	try
+	{
+        str url = "http://vk.robots.jenya.in.ua/";
+		g.ShellExecute1( url );
+	}
+	catch (...)
+	{
+
+	}
+}
+void __fastcall Tf::ch_RANDOMIZEClick(TObject *Sender)
+{
+	if ( LOADED )
+	{
+		main->conf_ini(true);
+	}
+}
+void __fastcall Tf::N70Click(TObject *Sender)
+{
+	int index = LV_CONF_ROBOTS->ItemIndex;
+	if ( index != -1 )
+	{
+		main->Robot_Freeze(index);
+	}
+	else
+	{
+		g.Sm(L"Пожалуйста, выделите элемент.");
+	}
+}
+void __fastcall Tf::N71Click(TObject *Sender)
+{
+	int index = LV_CONF_ROBOTS->ItemIndex;
+	if ( index != -1 )
+	{
+		main->Robot_UnFreeze(index);
+	}
+	else
+	{
+		g.Sm(L"Пожалуйста, выделите элемент.");
+	}
+}
+void __fastcall Tf::N72Click(TObject *Sender)
+{
+	main->Robots_Freeze();
+}
+void __fastcall Tf::N73Click(TObject *Sender)
+{
+	main->Robots_UnFreeze();
+}
+void __fastcall Tf::LV_CONF_ROBOTSCustomDrawItem(TCustomListView *Sender, TListItem *Item, TCustomDrawState State, bool &DefaultDraw)
+{
+	Sender->Canvas->Font->Color = TColor(Item->Data);
+}
+void __fastcall Tf::LV_CONF_ROBOTSCustomDrawSubItem(TCustomListView *Sender, TListItem *Item, int SubItem, TCustomDrawState State, bool &DefaultDraw)
+{
+	Sender->Canvas->Font->Color = TColor(Item->Data);
+}
+void __fastcall Tf::b_ccleanerBrowseClick(TObject *Sender)
+{
+	if ( OpenDialog2->Execute() )
+	{
+		e_ccleanerpath->Text = OpenDialog2->FileName;
+		main->conf_ini( true );
     }
 }
 // PM
@@ -5273,7 +6872,6 @@ void __fastcall Tf::N18Click(TObject *Sender)
 	// CONF - ROBOTS - DELETE
 
 	int index = LV_CONF_ROBOTS->ItemIndex;
-
 	if ( index != -1 )
 	{
 		bool DialogsDelete = MessageDlg(L"Удалить все диалоги связанные с этим роботом?",mtWarning,TMsgDlgButtons() << mbCancel << mbOK , 0) == 1;
@@ -5285,8 +6883,9 @@ void __fastcall Tf::N18Click(TObject *Sender)
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity;
-			main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity );
+			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+            bool freeze;
+			main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 			if ( RobotName == NeededRobotName )
 			{
@@ -5294,14 +6893,13 @@ void __fastcall Tf::N18Click(TObject *Sender)
 				main->conf_robots( f->LV_CONF_GROUPS->ItemIndex, false);
 
 				vcl->groupechoReadRobots();
-
 				break;
             }
 		}
 
 		delete L;
-
 		main->conf_models(false);
+
 		if ( DialogsDelete ) 
         {
             main->deleteDialogsPerRobot(NeededRobotName);
@@ -5462,8 +7060,9 @@ void __fastcall Tf::N26Click(TObject *Sender)
 		g.GetFiles( main->p_robots, L );
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity;
-			main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity );
+			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+            bool freeze;
+			main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 			if ( RobotName == Trim(LV_CONF_ROBOTS->Items->Item[index]->Caption) )
 			{
@@ -5857,6 +7456,40 @@ void __fastcall Tf::N65Click(TObject *Sender)
     }
 	main->conf_worktasks(true);
 }
+void __fastcall Tf::N69Click(TObject *Sender)
+{
+	// PM GROUPS IMPORT ROBOTS FROM TXT
+
+	OpenDialog1->InitialDir = main->f_od_import_robots;
+	if ( OpenDialog1->Execute() )
+	{
+		main->f_od_import_robots = OpenDialog1->InitialDir;
+        main->conf_ini(true);
+		main->import_robots( OpenDialog1->FileName );
+    }
+}
+void __fastcall Tf::N75Click(TObject *Sender)
+{
+	TStringList *L = new TStringList;
+	g.GetFiles( main->p_robots, L );
+	for ( int c = 0; c < L->Count; c++ )
+	{
+		str robotpath = main->p_robots + L->Strings[c] + "\\" + "Conf.ini";
+        TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath),TEncoding::UTF8 );
+        INI->WriteBool( UnicodeString("MAIN"), UnicodeString("freeze"), true );
+        INI->UpdateFile();
+		delete INI;
+	}
+	delete L;
+	g.Sm(L"Готово");
+}
+void __fastcall Tf::e_conf_users_CountChange(TObject *Sender)
+{
+	if ( LOADED )
+	{
+		main->conf_ini(true);
+	}
+}
 // TEST
 void __fastcall Tf::BTEST1Click(TObject *Sender)
 {
@@ -5884,9 +7517,28 @@ void __fastcall Tf::BTEST2Click(TObject *Sender)
 {
 	ShowMessage("T2");
 }
+void __fastcall Tf::B_TEST_01Click(TObject *Sender)
+{
+	TStringList *IMAGELIST = new TStringList;
+	TStringList *AUDIOLIST = new TStringList;
+	TStringList *RECORDLIST = new TStringList;
 
+	str PostLine = L"POST'$25 сутки. Паспорт в залог обязателен![IMAGE=Demotivators\\Image1.jpg][RECORD=Voices-1\\ogg_sound_effect_56.ogg]";
 
+	PostLine = g.Encrypt(2,2,"'",PostLine);
 
+	f->ii->WritePostDataIn(IMAGELIST,AUDIOLIST,RECORDLIST,&PostLine);
+
+	ShowMessage("postline_"+PostLine+"_");
+
+	ShowMessage("IMAGELIST_"+IMAGELIST->Text+"_");
+	ShowMessage("AUDIOLIST_"+AUDIOLIST->Text+"_");
+	ShowMessage("RECORDLIST_"+RECORDLIST->Text+"_");
+
+	delete IMAGELIST;
+	delete AUDIOLIST;
+	delete RECORDLIST;
+}
 
 
 
