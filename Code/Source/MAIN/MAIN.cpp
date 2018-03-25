@@ -558,7 +558,7 @@ void c_main::conf_robots(int index, bool save)
                 }
 				if ( Online == "0" ) 
                 {
-                    Online = "Äà"; 
+                    Online = L"Да"; 
                 }
                 else 
                 {
@@ -607,6 +607,7 @@ void c_main::conf_robots_import(int groupindex, str name, str login, str pass)
     INI->WriteString( UnicodeString("CONNECTION"), UnicodeString("activity"),  UnicodeString("NULL") );
     INI->WriteString( UnicodeString("CONNECTION"), UnicodeString("client_id"), UnicodeString("NULL") );
     INI->WriteString( UnicodeString("CONNECTION"), UnicodeString("token"),     UnicodeString("NULL") );
+    INI->UpdateFile();
     delete INI;
 
     conf_robots( groupindex, false );
@@ -1039,24 +1040,69 @@ void c_main::search_request( str RequestUrl, str OffSet, str Count, int iteratio
 		str birth_month  	    = get_vkurl_param( "bmonth",RequestUrl );
 		str birth_day  		    = get_vkurl_param( "bday",RequestUrl );
 
-		str request = "q="+q +
-		"&offset="+OffSet+
-		"&count="+Count+
-		"&country="+Country+
-		"&city="+City+
-		"&age_from="+AgeFrom+
-		"&age_to="+AgeTo+
-		"&sex="+Sex+
-		"&status="+Status+
-		"&has_photo="+PhotoEX+
-		"&online="+OnlineEX+
-		"&religion="+Religion+
-		"&company="+Company+
-		"&position="+Position+
-		"&group_id="+Group+
-		"&birth_year="+birth_year+
-		"&birth_month="+birth_month+
-		"&birth_day="+birth_day;
+		str request = "q="+q;
+        request += "&offset="+OffSet;
+        request += "&count="+Count;
+        if(Country.IsEmpty() == false)
+        {
+           request += "&country="+Country;
+        }
+		if(City != NULL)
+        {
+            request += "&city="+City;
+        }
+        if(AgeFrom != NULL)
+        {
+            request += "&age_from="+AgeFrom;
+        }
+        if(AgeTo != NULL)
+        {
+            request += "&age_to="+AgeTo;
+        }
+        if(Sex != NULL)
+        {
+            request += "&sex="+Sex;
+        }
+        if(Status != NULL)
+        {
+            request += "&status="+Status;
+        }
+        if(PhotoEX != NULL)
+        {
+            request += "&has_photo="+PhotoEX;
+        }
+        if(OnlineEX != NULL)
+        {
+            request += "&online="+OnlineEX;
+        }
+        if(Religion != NULL)
+        {
+            request += "&religion="+Religion;
+        }
+        if(Company != NULL)
+        {
+            request += "&company="+Company;
+        }
+        if(Position != NULL)
+        {
+            request += "&position="+Position;
+        }
+        if(Group != NULL)
+        {
+            request += "&group_id="+Group;
+        }
+        if(birth_year != NULL)
+        {
+            request += "&birth_year="+birth_year;
+        }
+        if(birth_month != NULL)
+        {
+            request += "&birth_month="+birth_month;
+        }
+        if(birth_day != NULL)
+        {
+            request += "&birth_day="+birth_day;
+        }
 
 		str response;
 
