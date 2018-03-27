@@ -1047,59 +1047,59 @@ void c_main::search_request( str RequestUrl, str OffSet, str Count, int iteratio
         {
            request += "&country="+Country;
         }
-		if(City != NULL)
+		if(City.IsEmpty() == false)
         {
             request += "&city="+City;
         }
-        if(AgeFrom != NULL)
+        if(AgeFrom.IsEmpty() == false)
         {
             request += "&age_from="+AgeFrom;
         }
-        if(AgeTo != NULL)
+        if(AgeTo.IsEmpty() == false)
         {
             request += "&age_to="+AgeTo;
         }
-        if(Sex != NULL)
+        if(Sex.IsEmpty() == false)
         {
             request += "&sex="+Sex;
         }
-        if(Status != NULL)
+        if(Status.IsEmpty() == false)
         {
             request += "&status="+Status;
         }
-        if(PhotoEX != NULL)
+        if(PhotoEX.IsEmpty() == false)
         {
             request += "&has_photo="+PhotoEX;
         }
-        if(OnlineEX != NULL)
+        if(OnlineEX.IsEmpty() == false)
         {
             request += "&online="+OnlineEX;
         }
-        if(Religion != NULL)
+        if(Religion.IsEmpty() == false)
         {
             request += "&religion="+Religion;
         }
-        if(Company != NULL)
+        if(Company.IsEmpty() == false)
         {
             request += "&company="+Company;
         }
-        if(Position != NULL)
+        if(Position.IsEmpty() == false)
         {
             request += "&position="+Position;
         }
-        if(Group != NULL)
+        if(Group.IsEmpty() == false)
         {
             request += "&group_id="+Group;
         }
-        if(birth_year != NULL)
+        if(birth_year.IsEmpty() == false)
         {
             request += "&birth_year="+birth_year;
         }
-        if(birth_month != NULL)
+        if(birth_month.IsEmpty() == false)
         {
             request += "&birth_month="+birth_month;
         }
-        if(birth_day != NULL)
+        if(birth_day.IsEmpty() == false)
         {
             request += "&birth_day="+birth_day;
         }
