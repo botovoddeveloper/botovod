@@ -91,7 +91,7 @@ void __fastcall Tf::PAGESChange(TObject *Sender)
 {
 	if ( LOADED )
 	{
-		if ( PAGES->ActivePageIndex != 6 )
+		if ( PAGES->ActivePageIndex != 4 )
 		{
 			PAGEINDEX = PAGES->ActivePageIndex;
 		}
@@ -131,6 +131,7 @@ void __fastcall Tf::PAGES_CONFIGURATIONChange(TObject *Sender)
 // C_MAIN
 	 c_main::c_main()
 {
+    HTTPDOMAIN = "http://vk.robots.jenya.in.ua/";
 	TERMINATED = true;
 
 	clp = new TClipboard;
@@ -143,17 +144,26 @@ void __fastcall Tf::PAGES_CONFIGURATIONChange(TObject *Sender)
 	f_users             = g.GetDirectoryApplicationDatapath() + "Users.dat";
 	f_globaluserscache  = g.GetDirectoryApplicationDatapath() + "Global.Users.Cache";
 	f_currentlog        = g.GetDirectoryApplicationDatapath() + "Logs\\_Current.log";
+    f_soundcaptcha      = g.GetDirectoryApplicationDatapath() + "Sounds\\SoundCaptcha.wav";
 
 	p_robots 			= g.GetDirectoryApplicationDatapath() + "Robots\\";
 	p_dialogs           = g.GetDirectoryApplicationDatapath() + "Dialogs\\";
 	p_dialogs_test      = g.GetDirectoryApplicationDatapath() + "DialogsTest\\";
 	p_logs              = g.GetDirectoryApplicationDatapath() + "Logs\\";
 
+    checkDirectoryExisting(g.GetDirectoryApplicationDatapath() + "Resources\\");
+    p_resources_images  = g.GetDirectoryApplicationDatapath() + "Resources\\Images\\";
+	p_resources_audio   = g.GetDirectoryApplicationDatapath() + "Resources\\Audio\\";
+	p_resources_records = g.GetDirectoryApplicationDatapath() + "Resources\\Records\\";
+
     checkDirectoryExisting(g.GetDirectoryApplicationDatapath());
     checkDirectoryExisting(p_robots);
     checkDirectoryExisting(p_dialogs);
     checkDirectoryExisting(p_dialogs_test);
     checkDirectoryExisting(p_logs);
+    checkDirectoryExisting(p_resources_images);
+    checkDirectoryExisting(p_resources_audio);
+    checkDirectoryExisting(p_resources_records);
     
 	LOG = new TStringList;
     
@@ -194,6 +204,8 @@ void __fastcall Tf::PAGES_CONFIGURATIONChange(TObject *Sender)
     EXTENDED 	= new TStringList;
     DEFAULT 	= new TStringList;
 
+    AUTOANS_LIMIT = new TStringList;
+
 	MOD 		= false;
 	PREFIX = "";
 }
@@ -227,8 +239,13 @@ void c_main::conf_ini(bool save)
 		INI->WriteBool(   UnicodeString("OTHER"),  UnicodeString("logpauses"),   f->CH_LOG_PAUSES->Checked );
 		INI->WriteString( UnicodeString("OTHER"),  UnicodeString("currentlog"),    UnicodeString(BUFF_CURRENTLOG) );
 		INI->WriteString( UnicodeString("OTHER"),  UnicodeString("autoanswerlimit"), UnicodeString(f->e_autoanswerlimit->Text) );
+        INI->WriteString( UnicodeString("OTHER"),  UnicodeString("speechlimit"), f->e_speechlimit->Text );
+		INI->WriteBool(   UnicodeString("OTHER"),  UnicodeString("dynamicsearch"), f->ch_dynamic_userbdata->Checked );
+		INI->WriteBool(   UnicodeString("OTHER"),  UnicodeString("randomize_inc"), f->ch_RANDOMIZE->Checked );
+		INI->WriteBool(   UnicodeString("OTHER"),  UnicodeString("alphakeys_use"), f->ch_ALPHAKEYS->Checked );
         INI->WriteString( UnicodeString("IODIALOGS"), UnicodeString("import_robot_models"), f_od_import_robot_model );
 		INI->WriteString( UnicodeString("IODIALOGS"), UnicodeString("import_robots"), f_od_import_robots );
+        INI->WriteString( UnicodeString("OTHER"),   UnicodeString("ccleaner_path"), UnicodeString(Trim(f->e_ccleanerpath->Text)) );
         
         INI->UpdateFile();
 	}
@@ -246,8 +263,13 @@ void c_main::conf_ini(bool save)
 		f->CH_LOG_PAUSES->Checked     = INI->ReadBool(   UnicodeString("OTHER"),  UnicodeString("logpauses") , false );
 		BUFF_CURRENTLOG               = INI->ReadString( UnicodeString("OTHER"),  UnicodeString("currentlog") , UnicodeString("0") );
 		f->e_autoanswerlimit->Text    = INI->ReadString( UnicodeString("OTHER"),  UnicodeString("autoanswerlimit") , UnicodeString("0") );
+        f->e_speechlimit->Text        = INI->ReadString( UnicodeString("OTHER"),  UnicodeString("speechlimit"), UnicodeString("0") );
+		f->ch_dynamic_userbdata->Checked = INI->ReadBool( UnicodeString("OTHER"), UnicodeString("dynamicsearch"), false );
+		f->ch_RANDOMIZE->Checked          = INI->ReadBool( UnicodeString("OTHER"), UnicodeString("randomize_inc"), false );
+		f->ch_ALPHAKEYS->Checked          = INI->ReadBool( UnicodeString("OTHER"), UnicodeString("alphakeys_use"), false );
         f_od_import_robot_model       = INI->ReadString( UnicodeString("IODIALOGS"), UnicodeString("import_robot_models"), UnicodeString("") );
 		f_od_import_robots 			  = INI->ReadString( UnicodeString("IODIALOGS"), UnicodeString("import_robots"), UnicodeString("") );
+        f->e_ccleanerpath->Text       = INI->ReadString( UnicodeString("OTHER"),  UnicodeString("ccleaner_path"), UnicodeString("") );
 	}
 
 	delete INI;
@@ -295,14 +317,27 @@ void c_main::conf_captcha(bool save)
 	{
 		INI->WriteInteger( UnicodeString("CAPTCHA"),  UnicodeString("serviceindex"), f->rg_CAPTCHA_SERVICE->ItemIndex );
 		INI->WriteString(  UnicodeString("CAPTCHA"),  UnicodeString("key"),          UnicodeString(f->e_CAPTCHA_KEY->Text) );
+        INI->WriteBool( UnicodeString("CAPTCHA"),  UnicodeString("sound"),          f->ch_soundcaptcha->Checked );
         INI->UpdateFile();
 	}
 	else
 	{
 		f->rg_CAPTCHA_SERVICE->ItemIndex = INI->ReadInteger( UnicodeString("CAPTCHA"),  UnicodeString("serviceindex"),       0  );
 		f->e_CAPTCHA_KEY->Text           = INI->ReadString(  UnicodeString("CAPTCHA"),   UnicodeString("key"),               UnicodeString("0") );
+        f->ch_soundcaptcha->Checked      = INI->ReadBool( UnicodeString("CAPTCHA"),  UnicodeString("sound"),              false );
 	}
 
+    if ( f->rg_CAPTCHA_SERVICE->ItemIndex == 0 ) 
+    {   
+        f->GroupBox4->Visible = true; 
+        f->GroupBox3->Visible = false; 
+    }
+	if ( f->rg_CAPTCHA_SERVICE->ItemIndex == 1 ) 
+    { 
+        f->GroupBox4->Visible = false; 
+        f->GroupBox3->Visible = true; 
+    }
+    
 	delete INI;
 }
 void c_main::conf_servers(bool save)
@@ -466,6 +501,13 @@ void c_main::conf_worktasks(bool save)
 		f->LV_WORKTASKS->Items->Item[pos]->Checked = (L->Strings[pos] == "1");
 		pos = 4;
 		f->LV_WORKTASKS->Items->Item[pos]->Checked = (L->Strings[pos] == "1");
+        pos = 5;
+		f->LV_WORKTASKS->Items->Item[pos]->Checked = (L->Strings[pos] == "1");
+        if ( L->Count == 7 )
+		{
+            pos = 6;
+		    f->LV_WORKTASKS->Items->Item[pos]->Checked = (L->Strings[pos] == "1");
+        }
 	}
 
 	delete L;
@@ -5848,7 +5890,10 @@ void __fastcall Tf::b_PROCESS_TWO_STARTClick(TObject *Sender)
 	TINTERVAL->Enabled = false;
 	main->TINT_CURR = 0;
 
-	if ( CH_LOGGOTO->Checked ) PAGES->ActivePageIndex = 4;
+	if ( CH_LOGGOTO->Checked ) 
+    {
+        PAGES->ActivePageIndex = 4;
+    }
 
 	main->iMyTHREAD_TWO = new MyTHREAD_TWO(false);
 }
