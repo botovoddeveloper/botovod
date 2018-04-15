@@ -28,7 +28,9 @@
 
 
 Tf *f;
-bool LOADED = false; int PAGEINDEX = 0;
+bool DEMONSTRATION = false;
+bool LOADED = false; 
+int PAGEINDEX = 0;
 
 
 __fastcall Tf::Tf(TComponent* Owner) : TForm(Owner)
@@ -193,6 +195,7 @@ void __fastcall Tf::PAGES_CONFIGURATIONChange(TObject *Sender)
     NODE = new TTreeNode(NULL);
 
 	MODEL_HELLO	  			= new TStringList;
+    MODEL_GLOBAL            = new TStringList;
 	MODEL_LOGICAL 			= new TStringList;
 	MODEL_AUTOANS 			= new TStringList;
 	MODEL_AUTOSTOP_KEYS 	= new TStringList;
@@ -360,10 +363,26 @@ void c_main::conf_servers(bool save)
 	else
 	{
 		f->LV_SERVERS->Items->Clear();
-        if(FileExists(f_servers))
-        {
-		    L->LoadFromFile( f_servers );
-        }
+
+        if ( DEMONSTRATION )
+		{
+			f->b_SERVERS_ADD->Enabled 		= false;
+			f->e_servers_client_id->Enabled = false;
+			f->e_servers_login->Enabled 	= false;
+			f->e_servers_password->Enabled  = false;
+
+			GetServersFromNET( L );
+
+			f->lbl_DATAFROM->Caption = L"Данные были получены с сервера программы.";
+		}
+		else
+		{
+            if(FileExists(f_servers))
+            {
+                L->LoadFromFile( f_servers );
+            }
+            f->lbl_DATAFROM->Caption = L"Данные были загружены из локального файла.";
+		}
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
@@ -790,6 +809,14 @@ void c_main::conf_models(bool save)
 		}
     }
 }
+void c_main::soundplay_captha()
+{
+	wchar_t *wc = f_soundcaptcha.t_str();
+	char c[255];
+	wcstombs(c, wc, wcslen(wc)+1);
+
+	PlaySound( wc, 0, SND_FILENAME | SND_ASYNC );
+}
 void c_main::show_current_server()
 {
     if(f->LV_SERVERS->Items->Count > 0)
@@ -812,6 +839,7 @@ void c_main::GlobalUsersCache_Add(str id)
 {
 	GLOBAL_USERS_CACHE->Add( id );
 	GLOBAL_USERS_CACHE->SaveToFile( f_globaluserscache );
+    log(L"Добавлено в Global.users.cache [ "+id+" ]");
 }
 bool c_main::GlobalUsersCache_Exist(str id)
 {
@@ -1220,9 +1248,34 @@ void c_main::response_read(str response, TStringList *L, str Count, str OffSet, 
         {
             TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Get(c));
 
-            str uid 			= x_obj_items->GetValue("id")->ToString();
-            str uname 			= x_obj_items->GetValue("first_name")->ToString();
-            str usurname 	   	= x_obj_items->GetValue("last_name")->ToString();
+            str uid = "";
+            TJSONValue* uidObj = x_obj_items->GetValue("id");
+            if(uidObj != NULL)
+                uid = uidObj->ToString();
+                
+            TJSONValue* unameObj = x_obj_items->GetValue("first_name");
+            str uname = "";
+            if(unameObj != NULL)
+                uname = unameObj->ToString();
+                
+            TJSONValue* usurnameObj = x_obj_items->GetValue("last_name");
+            str usurname = "";
+            if(usurnameObj != NULL)
+                usurname = usurnameObj->ToString();
+                
+            TJSONValue* canwritepmObj = x_obj_items->GetValue("can_write_private_message");
+            str canwritepm = "";
+            if(canwritepmObj != NULL)
+                canwritepm = canwritepmObj->ToString();
+
+            if ( f->LV_WORKTASKS->Items->Item[5]->Checked && 
+                 canwritepm == "0" )
+            {
+                log(L"Запрет Друзей : Пользователь: [ "+uid+" ] [ "+uname+" "+usurname+L" ] не принимает сообщения." );
+                GlobalUsersCache_Delete( uid );
+                log(L"Запрет Друзей : Пользователь [ "+uid+L" ] удалён из Global.Users.Cache" );
+                continue;
+            }
 
             uname 	 = jsonfix(uname);
             usurname = jsonfix(usurname);
@@ -2323,6 +2376,7 @@ void c_main::LoadModel(int index)
 	str file_d = p_robots + L->Strings[index] + "\\AutoAnsDefault.txt";
 	str file_e = p_robots + L->Strings[index] + "\\AutoStopKeys.txt";
 	str file_f = p_robots + L->Strings[index] + "\\AutoStopPosts.txt";
+    str file_g = p_robots + L->Strings[index] + "\\Global.txt";
 
 	delete L;
     if(FileExists(file_a))
@@ -2347,6 +2401,10 @@ void c_main::LoadModel(int index)
     {
 	    MODEL_AUTOSTOP_POSTS->LoadFromFile(file_f);
     }
+    if(FileExists(file_g))
+    {
+	    MODEL_GLOBAL->LoadFromFile(file_g);
+    }
 
     LoadModelHello();
 	LoadModelLogical();
@@ -2357,6 +2415,7 @@ void c_main::LoadModel(int index)
     }
 	LoadModelAutoStopKeys();
 	LoadModelAutoStopPosts();
+    LoadModelGlobal();
 }
 void c_main::LoadModelHello()
 {
@@ -2409,6 +2468,10 @@ void c_main::LoadModelLogicalTree(int level)
             L->Delete(0);
         }
     }
+}
+void c_main::LoadModelGlobal()
+{
+	// UI FOR GLOBAL MODEL    L   MODEL_GLOBAL
 }
 void c_main::LoadModelAutoAnsRules()
 {
@@ -2532,20 +2595,26 @@ void c_main::LoadModelStageExtendeds()
 {
     for ( int c = 0; c < EXTENDED->Count; c++ )
     {
-        str j = "";
-        for ( int x = 0; x < VARIANTS->Count; x++ )
-        {
-            str data = VARIANTS->Strings[x];
-            data = data.SubString(9,data.Length());
-            int p = Pos("'",data);
-            data = data.SubString(1,p-1);
+        str xext = EXTENDED->Strings[c].SubString(10,EXTENDED->Strings[c].Length());
+		int xextpos = Pos("'",xext);
+		xext = xext.SubString(1,xextpos-1);
 
-            if ( Pos(data,EXTENDED->Strings[c]) != 0 ) 
+		str j = "";
+		for ( int x = 0; x < VARIANTS->Count; x++ )
+        {
+			str data = VARIANTS->Strings[x];
+			data = data.SubString(9,data.Length());
+			int p = Pos("'",data);
+			data = data.SubString(1,p-1);
+
+			if ( Pos(data,xext) != 0 ) 
+            {
                 j = j + g.Its(x+1) + ",";
+            }
         }
 
-        j = j.SubString(1,j.Length()-1);
-        f->LI_MODEL_LOGICAL_EXTENDED->Items->Add( j );
+		j = j.SubString(1,j.Length()-1);
+		f->LI_MODEL_LOGICAL_EXTENDED->Items->Add( j );
     }
 
     f->vcl->GetAllStages( f->CB_MODEL_LOGICAL_EXTENDED );
@@ -3187,15 +3256,15 @@ void c_process::ProcessTwoOpen()
                 f->main->log(L"FATAL ERROR: [ МОДУЛЬ : ПРИВЕТСТВИЯ ]"); 
             }
 
-			TStringList *L = new TStringList;
-			g.GetFiles( f->main->p_robots, L );
+			TStringList *L_ROBOTS = new TStringList;
+			g.GetFiles( f->main->p_robots, L_ROBOTS );
 			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelFile, Online, LastOnline;  
             bool freeze;
-			for ( int x = 0; x < L->Count; x++ )
+			for ( int x = 0; x < L_ROBOTS->Count; x++ )
 			{
-				ModelFile             = f->main->p_robots + L->Strings[x] + "\\Model.txt";
-				str AutoStopKeysFile  = f->main->p_robots + L->Strings[x] + "\\AutoStopKeys.txt";
-				str AutoStopPostsFile = f->main->p_robots + L->Strings[x] + "\\AutoStopPosts.txt";
+				ModelFile             = f->main->p_robots + L_ROBOTS->Strings[x] + "\\Model.txt";
+				str AutoStopKeysFile  = f->main->p_robots + L_ROBOTS->Strings[x] + "\\AutoStopKeys.txt";
+				str AutoStopPostsFile = f->main->p_robots + L_ROBOTS->Strings[x] + "\\AutoStopPosts.txt";
 				f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 				if ( freeze ) 
@@ -3279,6 +3348,25 @@ void c_process::ProcessTwoOpen()
                     break;
                 }
 			}
+
+            delete L_ROBOTS;
+
+            try
+            {
+                if ( f->LV_WORKTASKS->Items->Item[3]->Checked )
+                {
+                    ProcessSpeech( ActiveGroup );
+                }
+
+                if ( f->main->TERMINATED ) 
+                {
+                    break;
+                }
+            }
+            catch ( Exception *ex ) 
+            { 
+                f->main->log(L"FATAL ERROR: [ МОДУЛЬ : ОБЩЕНИЕ ]"); 
+            }
 		}
 
 		if ( f->main->TERMINATED ) 
@@ -3394,6 +3482,8 @@ void c_process::ProcessHelloDoSend(str Group, str UserID, str UserName, str User
 	if ( Establish(RobotName,&Token) )
 	{
 		f->main->log(L"Пользователь: [ " + UserID + " ] , [ " + UserName + " " + UserSurname + " ]");
+
+        LINE = f->ii->MakePostLine(LINE);
 		str response = SendMessage(UserID,LINE,Token);
 
 		if ( Pos("error",response) == 0 )
@@ -3412,7 +3502,7 @@ void c_process::ProcessHelloDoSend(str Group, str UserID, str UserName, str User
 
 			if ( Pos("response",response) != 0 )
 			{
-				f->main->log(L"Attach текст: [ " + LINE + " ]" );
+				f->main->log(L"Текстовая вставка: [ " + LINE + " ]" );
 				f->main->log(L"Запрос на добавление в друзья успешно подан.");
 				f->main->CNT_ADDFRIEND++;
 				f->main->DeleteUserFromQueueAndPutToDialogs(UserID,UserName,UserSurname,RobotName,false,LINE);
@@ -3447,7 +3537,7 @@ void c_process::ProcessFriendConfirm(str GroupName, str RobotName, str Server_ID
                 }
 				else                         
                 {
-                    f->main->log(L"От пользователя: [ " + UserID + " ] Attach òåêñò: [ " + UserMESSAGE +" ]" );
+                    f->main->log(L"От пользователя: [ " + UserID + L" ] Текстовая вставка: [ " + UserMESSAGE +" ]" );
                 }
 
 				str response;
@@ -3612,6 +3702,8 @@ void c_process::ProcessAutoAnswerCheckNew(str RobotName, str Token)
 	}
 
 	delete DIALOGS;
+
+    f->main->log(L"Новых сообщений от пользователей [ "+IntToStr( NEW->Count )+" ]");
 
 	if ( NEW->Count > 0 )
 	{
@@ -3851,6 +3943,37 @@ void c_process::ProcessAutoAnswerRunBuffer()
 	}
 
 	delete L;
+}
+void c_process::ProcessSpeech(str _GroupName)
+{
+	TStringList *L = new TStringList;
+	g.GetFiles( f->main->p_robots, L );
+	str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelGlobal, ModelFile, Online, LastOnline;  
+    bool freeze;
+	for ( int x = 0; x < L->Count; x++ )
+	{
+		ModelGlobal           = f->main->p_robots + L->Strings[x] + "\\Global.txt";
+		ModelFile             = f->main->p_robots + L->Strings[x] + "\\Model.txt";
+		str AutoStopKeysFile  = f->main->p_robots + L->Strings[x] + "\\AutoStopKeys.txt";
+		str AutoStopPostsFile = f->main->p_robots + L->Strings[x] + "\\AutoStopPosts.txt";
+		f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
+
+		if ( freeze ) 
+        { 
+            continue; 
+        }
+
+		if ( GroupName == _GroupName )
+		{
+			f->main->PREFIX = "[ "+RobotName+L" ] Общение : ";
+			ProcessSpeech(GroupName,RobotName,Server_ID,Login,Password,Token,Activity,ModelGlobal,ModelFile,AutoStopKeysFile,AutoStopPostsFile);
+		}
+
+		if ( f->main->TERMINATED ) 
+        {
+            break;
+        }
+	}
 }
 void c_process::ProcessSpeech(str GroupName, str RobotName, str Server_ID, str Login, str Password, str Token, str Activity, str ModelGlobalFile, str ModelFile, str AutoStopKeysFile, str AutoStopPostsFile)
 {
@@ -4097,8 +4220,12 @@ void c_process::SendStage1(str UserID, TStringList *DIALOG, str STACK, str Token
 
 	str STAGENAME;
 
-	TStringList *STAGE = new TStringList;                  STAGE->Text = MODEL->Text;
+	TStringList *STAGE = new TStringList;                  
+    STAGE->Text = MODEL->Text;
 	TStringList *POST = new TStringList;
+    TStringList *IMAGELIST = new TStringList;
+	TStringList *AUDIOLIST = new TStringList;
+	TStringList *RECORDLIST = new TStringList;
 
 	for ( int c = 0; c < MODEL->Count; c++ )
 	{
@@ -4113,17 +4240,32 @@ void c_process::SendStage1(str UserID, TStringList *DIALOG, str STACK, str Token
 				str ln = STAGE->Strings[x];
 				if ( Pos("POST'",ln) != 0 )
 				{
-					POST->Add( g.Encrypt(2,2,"'",ln) );
+					str PostLine = g.Encrypt(2,2,"'",ln);
+					f->ii->WritePostDataIn(IMAGELIST,AUDIOLIST,RECORDLIST,&PostLine);
+					POST->Add( PostLine );
+				}
+				else
+				{
+					if ( Pos("[IMAGE=",ln) != 0 )
+					{
+						IMAGELIST->Add( ln );
+					}
+					if ( Pos("[AUDIO=",ln) != 0 )
+					{
+						AUDIOLIST->Add( ln );
+					}
+					if ( Pos("[RECORD=",ln) != 0 )
+					{
+						RECORDLIST->Add( ln );
+					}
 				}
             }
 			break;
         }
 	}
 
-	delete STAGE;
-
 	str DATAPOST = POST->Strings[ Random( POST->Count ) ];
-	delete POST;
+	DATAPOST = f->ii->MakePostLine(DATAPOST);
 
 	str MESSID = SendMessage( UserID, DATAPOST, Token );
 	if ( Pos("error",MESSID) == 0 )
@@ -4152,6 +4294,49 @@ void c_process::SendStage1(str UserID, TStringList *DIALOG, str STACK, str Token
 	{
 		f->main->log(L"Невозможно отправить сообщение.. (");
 	}
+
+    SendImage(UserID,IMAGELIST,Token);
+	SendAudio(UserID,AUDIOLIST,Token);
+	SendAudioRec(UserID,RECORDLIST,Token);
+
+    delete STAGE;
+	delete POST;
+	delete IMAGELIST;
+	delete AUDIOLIST;
+	delete RECORDLIST;
+}
+void c_process::SendGlobalPost(str UserID, TStringList *DIALOG, str POSTTEXT, str Token, TStringList *MODEL, str CURRENT_STAGE)
+{
+	POSTTEXT = f->ii->MakePostLine(POSTTEXT);
+	str MESSID = SendMessage( UserID, POSTTEXT, Token );
+
+	if ( Pos("error",MESSID) == 0 )
+	{
+		f->main->log(L"Текст: [ " + POSTTEXT + " ]" );
+		f->main->log(L"Сообщение успешно отправлено. (^_^)");
+
+		TDateTime D = Date();
+		TDateTime T = Time();
+		str DT = DateToStr(D) + " - " + TimeToStr(T);
+		DIALOG->Add("");
+		DIALOG->Add("#MESSAGE");
+		DIALOG->Add("#OUT");
+		DIALOG->Add("#DATE:"+DT);
+		DIALOG->Add("#NEW=0");
+		DIALOG->Add("#ID="+MESSID);
+		DIALOG->Add("#STAGEDATA="+CURRENT_STAGE);
+		DIALOG->Add("#BEGIN");
+		DIALOG->Add( POSTTEXT );
+		DIALOG->Add("#END");
+		DIALOG->Add("#ITISGLOBAL");
+
+		f->main->CNT_MESSAGES++;
+		f->vcl->EchoStatistic();
+	}
+	else
+	{
+		f->main->log(L"Невозможно отправить сообщение.. (");
+	}
 }
 void c_process::SendStageX(str UserID, TStringList *DIALOG, str STACK, str Token, TStringList *MODEL, str TARGET_STAGE)
 {
@@ -4160,6 +4345,9 @@ void c_process::SendStageX(str UserID, TStringList *DIALOG, str STACK, str Token
 	TStringList *STAGE = new TStringList;
 	STAGE->Text = MODEL->Text;
 	TStringList *POST = new TStringList;
+    TStringList *IMAGELIST = new TStringList;
+	TStringList *AUDIOLIST = new TStringList;
+	TStringList *RECORDLIST = new TStringList;
 
 	f->main->GetOnlyOneStage(STAGE,TARGET_STAGE);
 	for ( int x = 0; x < STAGE->Count; x++ )
@@ -4167,13 +4355,29 @@ void c_process::SendStageX(str UserID, TStringList *DIALOG, str STACK, str Token
 		str ln = STAGE->Strings[x];
 		if ( Pos("POST'",ln) != 0 )
 		{
-			POST->Add( g.Encrypt(2,2,"'",ln) );
+			str PostLine = g.Encrypt(2,2,"'",ln);
+			f->ii->WritePostDataIn(IMAGELIST,AUDIOLIST,RECORDLIST,&PostLine);
+			POST->Add( PostLine );
+		}
+		else
+		{
+			if ( Pos("[IMAGE=",ln) != 0 )
+			{
+				IMAGELIST->Add( ln );
+			}
+			if ( Pos("[AUDIO=",ln) != 0 )
+			{
+				AUDIOLIST->Add( ln );
+			}
+			if ( Pos("[RECORD=",ln) != 0 )
+			{
+				RECORDLIST->Add( ln );
+			}
 		}
 	}
 
-	delete STAGE;
 	str DATAPOST = POST->Strings[ Random( POST->Count ) ];
-	delete POST;
+	DATAPOST = f->ii->MakePostLine(DATAPOST);
 
 	str MESSID = SendMessage( UserID, DATAPOST, Token );
     if ( Pos("error",MESSID) == 0 )
@@ -4202,6 +4406,16 @@ void c_process::SendStageX(str UserID, TStringList *DIALOG, str STACK, str Token
 	{
 		f->main->log(L"Невозможно отправить сообщение.. (");
 	}
+
+    SendImage(UserID,IMAGELIST,Token);
+	SendAudio(UserID,AUDIOLIST,Token);
+	SendAudioRec(UserID,RECORDLIST,Token);
+
+    delete STAGE;
+	delete POST;
+	delete IMAGELIST;
+	delete AUDIOLIST;
+	delete RECORDLIST;
 }
 void c_process::SendAutoAns(str RobotName, str UserID, str MessageData, str Token, TStringList *DIALOG, bool *success, bool *e900, bool *e902)
 {
@@ -4271,6 +4485,7 @@ void c_process::SendAutoStop(str UserID, TStringList *DIALOG, str STACK, str Tok
 	f->main->log(L"Отправка: [ Автостоп вариант ]");
 
 	str DATAPOST = f->ii->GetAutoStopMessage(AutoStopPostsFile);
+    DATAPOST = f->ii->MakePostLine(DATAPOST);
 	str MESSID = SendMessage( UserID, DATAPOST, Token );
 
     if ( Pos("error",MESSID) == 0 )
@@ -5007,23 +5222,23 @@ str  c_ii::MakePostLine(str post_variables_line)
 {
 	f->main->log("POST : [ "+post_variables_line+" ]");
 
-	str j = "";
+	str result = "";
 
 	int long_memory_index = 0;
 	int long_upper_count  = 0;
 
-	bool w = false;
-	str  buff = "";
+	bool tempBlockInProcess = false;
+	str  tempBufer = "";
 	for ( int c = 1; c <= post_variables_line.Length(); c++ )
 	{
 		str ch = post_variables_line[c];
-
-		if ( w )
+		if ( tempBlockInProcess == true )
 		{
 			if ( ch == ")" )
 			{
-				w = false;
-				j = j + MakePostLineGetOne(buff,long_upper_count,&long_memory_index);
+				tempBlockInProcess = false;
+				result = result + MakePostLineGetOne(tempBufer,long_upper_count,&long_memory_index);
+#if 0                
 				long_upper_count--;
                 if ( long_upper_count == 0 ) 
                 {
@@ -5033,37 +5248,38 @@ str  c_ii::MakePostLine(str post_variables_line)
 				try
 				{
 					str chn = post_variables_line[c+1];
-					int chc = StrToInt(post_variables_line[c+2]);
-					if ( chn == "^" )
-					{
-						long_upper_count = chc;
-						c++; 
-                        c++;
-					}
+                    int chc = 0;
+                    if(TryStrToInt(post_variables_line[c+2], chc) == true &&
+                       chn == "^")
+                    {
+                        long_upper_count = chc;
+                        c += 2; 
+                    }
 				}
 				catch (...) 
                 { 
                 }
+#endif
 			}
 			else
 			{
-				buff = buff + ch;
+				tempBufer = tempBufer + ch;
 			}
 		}
 		else
 		{
 			if ( ch == "(" )
 			{
-				w = true;
-                buff = "";
+				tempBlockInProcess = true;
+                tempBufer = "";
 			}
 			else
 			{
-				j = j + ch;
+				result = result + ch;
 			}
 		}
     }
-	return j;
+	return result;
 }
 str  c_ii::MakePostLineGetOne(str buffer, int uppercount, int *memory_j)
 {
@@ -5071,7 +5287,10 @@ str  c_ii::MakePostLineGetOne(str buffer, int uppercount, int *memory_j)
 	for ( int c = 1; c < buffer.Length(); c++ )
 	{
 		str ch = buffer[c];
-		if ( ch == "|" ) sc++;
+		if ( ch == "|" ) 
+        {
+            sc++;
+        }
 	}
 
 	int parts = sc + 1;
@@ -5780,7 +5999,7 @@ void c_vcl::InputCaptchaOpenForm(str file)
 // C_CAPTCHA
 c_captcha::c_captcha()
 {
-
+    WAITMANUAL = false;
 }
 str  c_captcha::GetAnswer( str CaptchaIMGURL )
 {
@@ -5791,7 +6010,7 @@ str  c_captcha::GetAnswer( str CaptchaIMGURL )
 		CaptchaIMGURL = FixURL( CaptchaIMGURL );
 		str CaptchaFILE = SaveToFile(CaptchaIMGURL);
 
-		if ( f->rg_CAPTCHA_SERVICE->ItemIndex == 0 )
+		if ( f->rg_CAPTCHA_SERVICE->ItemIndex == 1 ) // AUTO
 		{
 			ANS = g.GetCaptchaRucaptcha1(CaptchaFILE,f->e_CAPTCHA_KEY->Text);
 
@@ -5799,12 +6018,27 @@ str  c_captcha::GetAnswer( str CaptchaIMGURL )
 			{
 				f->main->log("ATTEMPT. RUCAPTCHA UNDER CYCLE. RET: "+ANS);
 				ANS = g.GetCaptchaRucaptcha1(CaptchaFILE,f->e_CAPTCHA_KEY->Text);
-            }
+			}
 		}
 
-		if ( f->rg_CAPTCHA_SERVICE->ItemIndex == 1 )
+		if ( f->rg_CAPTCHA_SERVICE->ItemIndex == 0 ) // MANUAL
 		{
-			g.Sm("FATAL ERROR! NOT ENOUGH CODE C++ ! USE RUCAPTCHA SERVICE!");
+			WAITMANUAL = true;
+
+			if ( f->ch_soundcaptcha->Checked ) 
+            {
+                f->main->soundplay_captha();
+            }
+
+			f->vcl->InputCaptchaOpenForm( CaptchaFILE );
+
+			while ( WAITMANUAL )
+			{
+				Sleep(100);
+				Application->ProcessMessages();
+			}
+
+			ANS = Trim( f->e_INPUTCAPCHA->Text );
 		}
 
 		DeleteFile( CaptchaFILE );
@@ -5892,7 +6126,7 @@ void __fastcall Tf::b_PROCESS_TWO_STARTClick(TObject *Sender)
 
 	if ( CH_LOGGOTO->Checked ) 
     {
-        PAGES->ActivePageIndex = 4;
+        PAGES->ActivePageIndex = 1;
     }
 
 	main->iMyTHREAD_TWO = new MyTHREAD_TWO(false);
