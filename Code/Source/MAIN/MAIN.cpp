@@ -949,7 +949,7 @@ void c_main::iSleep(int index, str token)
 
 	if ( x > 0 )
 	{
-		f->BARSMOOTH->Visible = true;
+		//f->BARSMOOTH->Visible = true;
 
 		if ( f->CH_LOG_PAUSES->Checked ) 
         {
@@ -964,7 +964,7 @@ void c_main::iSleep(int index, str token)
 			g.ProcessMessages();
         }
 
-		f->BARSMOOTH->Visible = false;
+		//f->BARSMOOTH->Visible = false;
 		g.ProcessMessages();
 	}
 }
