@@ -153,7 +153,6 @@ void __fastcall Tf::PAGES_CONFIGURATIONChange(TObject *Sender)
 	p_dialogs_test      = g.GetDirectoryApplicationDatapath() + "DialogsTest\\";
 	p_logs              = g.GetDirectoryApplicationDatapath() + "Logs\\";
 
-    checkDirectoryExisting(g.GetDirectoryApplicationDatapath() + "Resources\\");
     p_resources_images  = g.GetDirectoryApplicationDatapath() + "Resources\\Images\\";
 	p_resources_audio   = g.GetDirectoryApplicationDatapath() + "Resources\\Audio\\";
 	p_resources_records = g.GetDirectoryApplicationDatapath() + "Resources\\Records\\";
@@ -163,6 +162,7 @@ void __fastcall Tf::PAGES_CONFIGURATIONChange(TObject *Sender)
     checkDirectoryExisting(p_dialogs);
     checkDirectoryExisting(p_dialogs_test);
     checkDirectoryExisting(p_logs);
+    checkDirectoryExisting(g.GetDirectoryApplicationDatapath() + "Resources\\");
     checkDirectoryExisting(p_resources_images);
     checkDirectoryExisting(p_resources_audio);
     checkDirectoryExisting(p_resources_records);
@@ -1740,7 +1740,7 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, str Token
 }
 void c_main::GetHistory(TStringList *LIST, str UID, int OUT_3, int Count, str Token, str RobotName)
 {
-	log(L"Получение истории сообщений пользователя [ "+UID+L" ] .. Макс [ "+IntToStr( Count )+" ] шт.");
+	log(L"Получение истории сообщений пользователя [ "+UID+L" ] .. Макс [ "+IntToStr( Count )+L" ] шт.");
 	g.ProcessMessages();
 
 	int max_count_of = 0;
@@ -1830,7 +1830,7 @@ void c_main::GetHistory(TStringList *LIST, str UID, int OUT_3, int Count, str To
         }
 	}
 
-	log(L"Получено от [ "+UID+" ] сообщений [ "+IntToStr( gotch_cnt )+L" ] по заданному фильтру.");
+	log(L"Получено от [ "+UID+L" ] сообщений [ "+IntToStr( gotch_cnt )+L" ] по заданному фильтру.");
 }
 str  c_main::GetLastStageName(TStringList *DIALOG)
 {
@@ -2357,7 +2357,7 @@ bool c_main::sended_count_iflimit(str robotname)
 		j = true;
 
 		str me = f->ME_LOG->Lines->Strings[ f->ME_LOG->Lines->Count-1 ];
-		if ( Pos("Достигнут лимит отправки сообщений [",me) == 0 ) 
+		if ( Pos(L"Достигнут лимит отправки сообщений [",me) == 0 ) 
         {
             f->main->log(L"Достигнут лимит отправки сообщений [ "+f->e_autoanswerlimit->Text+" ]");
         }
@@ -2623,8 +2623,12 @@ void c_main::LoadModelStageDefault()
 {
     f->vcl->GetAllStages( f->CB_MODEL_LOGICAL_DEFAULT );
 
-    str fx = DEFAULT->Strings[0];
-    fx = fx.SubString(9,fx.Length());
+    str fx;
+    if(DEFAULT->Strings.GetCount() > 0)
+    {
+        fx = DEFAULT->Strings[0];
+        fx = fx.SubString(9,fx.Length());
+    }
 
     for ( int c = 0; c < f->CB_MODEL_LOGICAL_DEFAULT->Items->Count; c++ )
     {
@@ -5766,7 +5770,10 @@ void c_vcl::groupechoReadRobots()
 void c_vcl::groupechoReadUsers()
 {
     TStringList *L = new TStringList;
-	L->LoadFromFile( f->main->f_users );
+    if(FileExists(f->main->f_users))
+    {
+	    L->LoadFromFile( f->main->f_users );
+    }
 
 	for ( int c = 0; c < f->LV_CONF_GROUPS->Items->Count; c++ )
 	{
