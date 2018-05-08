@@ -256,7 +256,7 @@ void c_main::conf_ini(bool save)
 	{
 		CurrentServer = INI->ReadInteger( UnicodeString("SERVER"), UnicodeString("current"),     0  );
 		RobotPathID   = INI->ReadInteger( UnicodeString("OTHER"),  UnicodeString("robotpathid"), 0  );
-		APIV          = INI->ReadString(  UnicodeString("OAUTH2"), UnicodeString("api"),        UnicodeString("0") );
+		APIV          = INI->ReadString(  UnicodeString("OAUTH2"), UnicodeString("api"),        UnicodeString("5.0") );
 		f->e_conf_users_offSet->Text  = INI->ReadString( UnicodeString("OTHER"),  UnicodeString("offset"),     UnicodeString("0") );
 		f->e_conf_users_Count->Text   = INI->ReadString( UnicodeString("OTHER"),  UnicodeString("count"),      UnicodeString("0") );
 		f->e_conf_users_URL->Text	  = INI->ReadString( UnicodeString("OTHER"),  UnicodeString("search_url"), UnicodeString("0") );
@@ -2624,7 +2624,7 @@ void c_main::LoadModelStageDefault()
     f->vcl->GetAllStages( f->CB_MODEL_LOGICAL_DEFAULT );
 
     str fx;
-    if(DEFAULT->Strings.GetCount() > 0)
+    if(DEFAULT->Count > 0)
     {
         fx = DEFAULT->Strings[0];
         fx = fx.SubString(9,fx.Length());

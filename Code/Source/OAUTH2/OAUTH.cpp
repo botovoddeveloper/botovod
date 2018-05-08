@@ -84,7 +84,7 @@ void c_main::data_read()
 	str file = g.GetDirectoryApplicationDatapath() + "Global.Conf.ini";
 
 	TMemIniFile *INI = new TMemIniFile( UnicodeString(file), TEncoding::UTF8 );
-	API_V     = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("api"),       UnicodeString("0") );    
+	API_V     = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("api"),       UnicodeString("5.0") );    
 	CLIENT_ID = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("client_id"), UnicodeString("0") );    
 	SCOPE     = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("scope"),     UnicodeString("0") );    
 	LOGIN 	  = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("login"),     UnicodeString("0") );    
