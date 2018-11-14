@@ -1,6 +1,4 @@
-﻿#include <vcl.h>
-#pragma hdrstop
-#include "OAUTH.h"
+﻿#pragma hdrstop
 #pragma package(smart_init)
 #pragma link "sSkinManager"
 #pragma link "sPanel"
@@ -10,13 +8,15 @@
 #pragma link "sLabel"
 #pragma link "SHDocVw_OCX"
 #pragma resource "*.dfm"
-#include "SHDocVw_OCX.h"
+
+#include "OAUTH.h"
+#include <vcl.h>
 #include <mshtml.h>
 #include <mshtmcid.h>
 #include <OleCtnrs.hpp>
 #include <atl\atlbase.h>
 #include <Inifiles.hpp>
-#include <Grin.cpp>
+#include <Grin.h>
 
 
 Tf *f;
@@ -25,7 +25,7 @@ class c_main
 {
 	public:
 
-		str CLIENT_ID, SCOPE, API_V, LOGIN, PASSWORD, TOKEN;
+		String CLIENT_ID, SCOPE, API_V, LOGIN, PASSWORD, TOKEN;
 
 		c_main();
 
@@ -33,11 +33,11 @@ class c_main
 		void data_write();
 		void open_url();
 		void fill_submit();
-		void process_result(str data);
+		void process_result(String data);
 
-		str  get_token( str data );
+		String  get_token( String data );
 
-		void log( str data );          
+		void log( String data );          
         TStringList *LOG;
 
         void FillForm(String FieldName, String FieldText);
@@ -81,7 +81,7 @@ void c_main::data_read()
 {
 	log("DATAREAD:");
 
-	str file = g.GetDirectoryApplicationDatapath() + "Global.Conf.ini";
+	String file = g.GetDirectoryApplicationDatapath() + "Global.Conf.ini";
 
 	TMemIniFile *INI = new TMemIniFile( UnicodeString(file), TEncoding::UTF8 );
 	API_V     = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("api"),       UnicodeString("5.0") );    
@@ -100,7 +100,7 @@ void c_main::data_read()
 void c_main::data_write()
 {
 	log("DATAWRITE:");
-	str file = g.GetDirectoryApplicationDatapath() + "Global.Conf.ini";
+	String file = g.GetDirectoryApplicationDatapath() + "Global.Conf.ini";
     TMemIniFile *INI = new TMemIniFile( UnicodeString(file), TEncoding::UTF8 );
 	INI->WriteString( UnicodeString("OAUTH2"), UnicodeString("token"), UnicodeString(TOKEN) );     
     INI->UpdateFile();
@@ -113,7 +113,7 @@ void c_main::open_url()
 	try
 	{
 		log("OPENURL:");
-		str request = "https://oauth.vk.com/authorize?client_id="+CLIENT_ID+"&scope="+SCOPE+"&redirect_uri=https://oauth.vk.com/blank.html&display=popup&v="+API_V+"&response_type=token";
+		String request = "https://oauth.vk.com/authorize?client_id="+CLIENT_ID+"&scope="+SCOPE+"&redirect_uri=https://oauth.vk.com/blank.html&display=popup&v="+API_V+"&response_type=token";
 
 		log( request );
 		f->BROWSER->Navigate( request.w_str() );
@@ -154,7 +154,7 @@ void __fastcall Tf::T2Timer(TObject *Sender)
 	main->log("T2");
 	T2->Enabled = false;
 
-	str RETURN = BROWSER->LocationURL;
+	String RETURN = BROWSER->LocationURL;
 
 	if ( Pos("access_token=",RETURN) != 0 )
 	{
@@ -168,7 +168,7 @@ void __fastcall Tf::T2Timer(TObject *Sender)
         main->ClickButton(L"Разрешить");
 	}
 }
-void c_main::process_result(str data)
+void c_main::process_result(String data)
 {
 	if ( Pos("access_token",data) > 0 )
 	{
@@ -182,11 +182,11 @@ void c_main::process_result(str data)
         log("ACCESS TOKEN NOT FOUND ((((((((((");
     }
 }
-void c_main::log( str data )
+void c_main::log( String data )
 {
 	try
 	{
-		str file = g.GetDirectoryApplicationDatapath() + "Logs\\" + "OAUTH2.log";
+		String file = g.GetDirectoryApplicationDatapath() + "Logs\\" + "OAUTH2.log";
 		TDateTime T = Time();
 		LOG->Add( TimeToStr(T) + ": " + data );
 		LOG->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
@@ -198,7 +198,7 @@ void c_main::log( str data )
 
 	}
 }
-str  c_main::get_token( str data )
+String  c_main::get_token( String data )
 {
 	log("GETTOKEN:");
 	int p = Pos("access_token=",data);

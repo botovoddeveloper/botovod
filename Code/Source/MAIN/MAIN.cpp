@@ -1,5 +1,4 @@
-﻿#include <vcl.h>
-#pragma hdrstop
+﻿#pragma hdrstop
 #include "MAIN.h"
 #pragma package(smart_init)
 #pragma link "sSkinManager"
@@ -19,15 +18,38 @@
 #pragma link "sLabel"
 #pragma link "sRadioButton"
 #pragma link "sDialogs"
+#pragma link "acPNG"
+#pragma link "acPNG"
+#pragma link "acPNG"
+#pragma link "acPNG"
+#pragma link "acPNG"
 #pragma resource "*.dfm"
-#include "Grin.cpp"
+
+#include <IdThreadComponent.hpp>
+#include <IdComponent.hpp>
+#include <IdIOHandler.hpp>
+#include <IdIOHandlerSocket.hpp>
+#include <IdIOHandlerStack.hpp>
+#include <IdSSL.hpp>
+#include <IdSSLOpenSSL.hpp>
+#include <IdAntiFreeze.hpp>
+
+#include <System.JSON.hpp>
+#include <Data.DBXJSON.hpp>
+
 #include <Inifiles.hpp>
 #include <memory>
 #include <FileCtrl.hpp>
 #include "DateUtils.hpp"
 
+#include "mmsystem.h"
+
+#include "Grin.h"
+#include "VKApi.h"
+
 
 Tf *f;
+
 bool DEMONSTRATION = false;
 bool LOADED = false; 
 int PAGEINDEX = 0;
@@ -351,9 +373,9 @@ void c_main::conf_servers(bool save)
 	{
 		for ( int c = 0; c < f->LV_SERVERS->Items->Count; c++ )
 		{
-			str id    = f->LV_SERVERS->Items->Item[c]->SubItems->Strings[0];
-			str login = f->LV_SERVERS->Items->Item[c]->SubItems->Strings[1];
-			str pass  = f->LV_SERVERS->Items->Item[c]->SubItems->Strings[2];
+			String id    = f->LV_SERVERS->Items->Item[c]->SubItems->Strings[0];
+			String login = f->LV_SERVERS->Items->Item[c]->SubItems->Strings[1];
+			String pass  = f->LV_SERVERS->Items->Item[c]->SubItems->Strings[2];
 
 			L->Add(UnicodeString(id + "#" + login + "#" + pass));
 		}
@@ -386,7 +408,7 @@ void c_main::conf_servers(bool save)
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str line = L->Strings[c];
+			String line = L->Strings[c];
 
 			TListItem *ListItem;
 			ListItem = f->LV_SERVERS->Items->Add();
@@ -464,7 +486,7 @@ void c_main::conf_workgroups(bool save)
 		for ( int c = 0; c < f->LV_WORKGROUPS->Items->Count; c++ )
 		{
 			bool ex = false;
-			str groupname = Trim( f->LV_WORKGROUPS->Items->Item[c]->Caption );
+			String groupname = Trim( f->LV_WORKGROUPS->Items->Item[c]->Caption );
 			for ( int x = 0; x < L->Count; x++ )
 			{
 				if ( L->Strings[x] == groupname )
@@ -537,7 +559,7 @@ void c_main::conf_robots(int index, bool save)
 
 	if ( save )
 	{
-		str robotpath = p_robots + IntToStr(RobotPathID) + "_" + g.GetMD5(RobotPathID) + "\\";
+		String robotpath = p_robots + IntToStr(RobotPathID) + "_" + g.GetMD5(RobotPathID) + "\\";
         checkDirectoryExisting(robotpath);
         
 		RobotPathID++;
@@ -590,12 +612,12 @@ void c_main::conf_robots(int index, bool save)
 	else
 	{
 		f->LV_CONF_ROBOTS->Items->Clear();
-		str NeededGroupName = Trim(f->LV_CONF_GROUPS->Items->Item[index]->Caption);
+		String NeededGroupName = Trim(f->LV_CONF_GROUPS->Items->Item[index]->Caption);
 		g.GetFiles( p_robots, L );
 
         for ( int c = 0; c < L->Count; c++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline; 
+			String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline; 
             bool freeze;
 			get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
@@ -650,10 +672,10 @@ void c_main::conf_robots(int index, bool save)
 
 	delete L;
 }
-void c_main::conf_robots_import(int groupindex, str name, str login, str pass)
+void c_main::conf_robots_import(int groupindex, String name, String login, String pass)
 {
 	TStringList *L = new TStringList;
-    str robotpath = p_robots + IntToStr(RobotPathID) + "_" + g.GetMD5(RobotPathID) + "\\";
+    String robotpath = p_robots + IntToStr(RobotPathID) + "_" + g.GetMD5(RobotPathID) + "\\";
     CreateDir( robotpath );
     RobotPathID++;
     conf_ini( true );
@@ -706,7 +728,7 @@ void c_main::conf_robots_import(int groupindex, str name, str login, str pass)
 void c_main::conf_users(int index, bool save)
 {
 	TStringList *L = new TStringList;
-	str NeededGroupName = Trim(f->LV_CONF_GROUPS->Items->Item[index]->Caption);
+	String NeededGroupName = Trim(f->LV_CONF_GROUPS->Items->Item[index]->Caption);
 
 	if ( ! save )
 	{
@@ -718,13 +740,13 @@ void c_main::conf_users(int index, bool save)
         int i = 1;
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str dataline = L->Strings[c];
+			String dataline = L->Strings[c];
 
-			str UserGroup 	= g.Encrypt(1,5,"#",dataline);
-			str UserID 		= g.Encrypt(2,5,"#",dataline);
-			str Name 		= g.Encrypt(3,5,"#",dataline);
-			str Surname 	= g.Encrypt(4,5,"#",dataline);
-			str Date 		= g.Encrypt(5,5,"#",dataline);
+			String UserGroup 	= g.Encrypt(1,5,"#",dataline);
+			String UserID 		= g.Encrypt(2,5,"#",dataline);
+			String Name 		= g.Encrypt(3,5,"#",dataline);
+			String Surname 	= g.Encrypt(4,5,"#",dataline);
+			String Date 		= g.Encrypt(5,5,"#",dataline);
 
 			if ( UserGroup == NeededGroupName )
 			{
@@ -754,13 +776,13 @@ void c_main::conf_dialogs(bool save)
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str id = L->Strings[c];
+			String id = L->Strings[c];
             if(FileExists(p_dialogs + id))
             {
 			    X->LoadFromFile( p_dialogs + id );
 
-			    str name 		 = X->Strings[1];
-			    str surname 	 = X->Strings[2];
+			    String name 		 = X->Strings[1];
+			    String surname 	 = X->Strings[2];
 
 			    TListItem *ListItem;
 			    ListItem = f->LV_DIALOGS->Items->Add();
@@ -790,7 +812,7 @@ void c_main::conf_models(bool save)
     	g.GetFiles( p_robots, L );
         for ( int c = 0; c < L->Count; c++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+			String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
             bool freeze;
 			get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
             f->CB_MODELS_ROBOTS->Items->Add( RobotName );
@@ -811,7 +833,7 @@ void c_main::conf_models(bool save)
 }
 void c_main::soundplay_captha()
 {
-	wchar_t *wc = f_soundcaptcha.t_str();
+	wchar_t *wc = f_soundcaptcha.c_str();
 	char c[255];
 	wcstombs(c, wc, wcslen(wc)+1);
 
@@ -835,18 +857,18 @@ void c_main::increment_server()
 	conf_ini( true );
 	f->LV_SERVERS->ItemIndex = CurrentServer;
 }
-void c_main::GlobalUsersCache_Add(str id)
+void c_main::GlobalUsersCache_Add(String id)
 {
 	GLOBAL_USERS_CACHE->Add( id );
 	GLOBAL_USERS_CACHE->SaveToFile( f_globaluserscache );
     log(L"Добавлено в Global.users.cache [ "+id+" ]");
 }
-bool c_main::GlobalUsersCache_Exist(str id)
+bool c_main::GlobalUsersCache_Exist(String id)
 {
 	bool ex = false;
 	for ( int c = 0; c < GLOBAL_USERS_CACHE->Count; c++ )
 	{
-		str line = GLOBAL_USERS_CACHE->Strings[c];
+		String line = GLOBAL_USERS_CACHE->Strings[c];
 		if ( line == id )
 		{
 			ex = true;
@@ -855,13 +877,13 @@ bool c_main::GlobalUsersCache_Exist(str id)
 	}
 	return ex;
 }
-void c_main::GlobalUsersCache_Delete(str id)
+void c_main::GlobalUsersCache_Delete(String id)
 {
 	try
 	{
 		for ( int c = GLOBAL_USERS_CACHE->Count-1; c >= 0; c-- )
 		{
-			str line = GLOBAL_USERS_CACHE->Strings[c];
+			String line = GLOBAL_USERS_CACHE->Strings[c];
 			if ( line == id )
 			{
 				GLOBAL_USERS_CACHE->Delete( c );
@@ -881,7 +903,7 @@ void c_main::GlobalUsersCache_DublicatesDelete()
 	TStringList *L = new TStringList;
 	for ( int c = 0; c < GLOBAL_USERS_CACHE->Count; c++ )
 	{
-		str a = GLOBAL_USERS_CACHE->Strings[c];
+		String a = GLOBAL_USERS_CACHE->Strings[c];
 		if ( Pos(a,L->Text) == 0 ) 
         {
             L->Add(a);
@@ -894,7 +916,7 @@ void c_main::GlobalUsersCache_DublicatesDelete()
     
 	ShowMessage(L"Выполнено.\n\nДо очистки: "+IntToStr(acount)+L"\nПосле очистки: "+IntToStr(GLOBAL_USERS_CACHE->Count));
 }
-void c_main::log( str data )
+void c_main::log( String data )
 {
 	try
 	{
@@ -922,7 +944,7 @@ void c_main::log( str data )
 	}
 }
 
-void c_main::checkDirectoryExisting(str directoryPath)
+void c_main::checkDirectoryExisting(String directoryPath)
 {
     if(DirectoryExists(directoryPath) == false)
     {
@@ -933,9 +955,9 @@ void c_main::checkDirectoryExisting(str directoryPath)
         }
     }
 }
-void c_main::iSleep(int index, str token)
+void c_main::iSleep(int index, String token)
 {
-	str a;
+	String a;
     int x;
 
     f->online->addtobuffer(token);
@@ -968,9 +990,9 @@ void c_main::iSleep(int index, str token)
 		g.ProcessMessages();
 	}
 }
-void c_main::logline( str data )
+void c_main::logline( String data )
 {
-	str line = ":::::::::::::::::::::::::::::::::::::::::::::::::::::::";
+	String line = ":::::::::::::::::::::::::::::::::::::::::::::::::::::::";
 
 	if ( data == "" || data == "NULL" )
 	{
@@ -983,13 +1005,13 @@ void c_main::logline( str data )
 		log(line);
 	}
 }
-str  c_main::jsonfix( str data )
+String  c_main::jsonfix( String data )
 {
-	str buff = "";
+	String buff = "";
 
 	for ( int c = 1; c < data.Length(); c++ )
 	{
-		str ch = data[c];
+		String ch = data[c];
 		if ( ch != "\"" ) 
         {
             buff = buff + ch;
@@ -998,7 +1020,7 @@ str  c_main::jsonfix( str data )
 
 	return buff;
 }
-void c_main::buffer_write( str data )
+void c_main::buffer_write( String data )
 {
 	bool ok = false;
 
@@ -1017,11 +1039,11 @@ void c_main::buffer_write( str data )
 		}
 	}
 }
-void c_main::get_robotdata( int index, str *GroupName, str *RobotName, str *Server_ID, str *Login, str *Password, str *Token, str *Activity, str *Online, str *LastOnline, bool *freeze )
+void c_main::get_robotdata( int index, String *GroupName, String *RobotName, String *Server_ID, String *Login, String *Password, String *Token, String *Activity, String *Online, String *LastOnline, bool *freeze )
 {
 	TStringList *L = new TStringList;
 	g.GetFiles( p_robots, L );
-	str robotpath = p_robots + L->Strings[index] + "\\";
+	String robotpath = p_robots + L->Strings[index] + "\\";
 
 	TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath + "Conf.ini"),TEncoding::UTF8 );
 
@@ -1039,7 +1061,7 @@ void c_main::get_robotdata( int index, str *GroupName, str *RobotName, str *Serv
 	delete INI;
 	delete L;
 }
-int  c_main::get_robotnext( str GroupName )
+int  c_main::get_robotnext( String GroupName )
 {
 	int CNT = 0;
 
@@ -1047,7 +1069,7 @@ int  c_main::get_robotnext( str GroupName )
 	g.GetFiles(p_robots,L);
 	for ( int c = 0; c < L->Count; c++ )
 	{
-		str CurGroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+		String CurGroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
         bool freeze;
 		get_robotdata( c, &CurGroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 		if ( CurGroupName == GroupName ) 
@@ -1072,7 +1094,7 @@ long int c_main::getUnix()
 {
 	return Dateutils::DateTimeToUnix(Now());
 }
-void c_main::search_request( str RequestUrl, str OffSet, str Count, int iteration )
+void c_main::search_request( String RequestUrl, String OffSet, String Count, int iteration )
 {
 	logline( "ADD USERS BY VK SEARCH URL" );
 
@@ -1080,7 +1102,7 @@ void c_main::search_request( str RequestUrl, str OffSet, str Count, int iteratio
 	log("OFFSET:    "+OffSet);
 	log("COUNT:     "+Count);
 
-	str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline; 
+	String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline; 
     bool freeze;
 	TStringList *L = new TStringList;
 	g.GetFiles( p_robots, L );
@@ -1088,29 +1110,29 @@ void c_main::search_request( str RequestUrl, str OffSet, str Count, int iteratio
 
 	if ( f->proc->Establish(RobotName,&Token) )
 	{
-		str Group               = get_vkurl_param( "group",RequestUrl );
-		str q                   = get_vkurl_param( "q",RequestUrl );
-		str Country 			= get_vkurl_param( "country",RequestUrl );
-		str City                = get_vkurl_param( "city",RequestUrl );
-		str AgeFrom 			= get_vkurl_param( "age_from",RequestUrl );
-		str AgeTo   			= get_vkurl_param( "age_to",RequestUrl );
-		str Sex     			= get_vkurl_param( "sex",RequestUrl );
-		str Status  			= get_vkurl_param( "status",RequestUrl );
-		str PhotoEX 			= get_vkurl_param( "photo",RequestUrl );
-		str OnlineEX 			= get_vkurl_param( "online",RequestUrl );
-		str Religion    		= get_vkurl_param( "religion",RequestUrl );
-		str PersonalPriority    = get_vkurl_param( "personal_priority",RequestUrl );
-		str PeoplePriority  	= get_vkurl_param( "people_priority",RequestUrl );
-		str Smoking  			= get_vkurl_param( "smoking",RequestUrl );
-		str Alcogol  			= get_vkurl_param( "alcohol",RequestUrl );
-		str Company  			= get_vkurl_param( "company",RequestUrl );
-		str Position  			= get_vkurl_param( "position",RequestUrl );
-		str MilitaryCountry  	= get_vkurl_param( "mil_country",RequestUrl );
-		str birth_year  		= get_vkurl_param( "byear",RequestUrl );
-		str birth_month  	    = get_vkurl_param( "bmonth",RequestUrl );
-		str birth_day  		    = get_vkurl_param( "bday",RequestUrl );
+		String Group               = get_vkurl_param( "group",RequestUrl );
+		String q                   = get_vkurl_param( "q",RequestUrl );
+		String Country 			= get_vkurl_param( "country",RequestUrl );
+		String City                = get_vkurl_param( "city",RequestUrl );
+		String AgeFrom 			= get_vkurl_param( "age_from",RequestUrl );
+		String AgeTo   			= get_vkurl_param( "age_to",RequestUrl );
+		String Sex     			= get_vkurl_param( "sex",RequestUrl );
+		String Status  			= get_vkurl_param( "status",RequestUrl );
+		String PhotoEX 			= get_vkurl_param( "photo",RequestUrl );
+		String OnlineEX 			= get_vkurl_param( "online",RequestUrl );
+		String Religion    		= get_vkurl_param( "religion",RequestUrl );
+		String PersonalPriority    = get_vkurl_param( "personal_priority",RequestUrl );
+		String PeoplePriority  	= get_vkurl_param( "people_priority",RequestUrl );
+		String Smoking  			= get_vkurl_param( "smoking",RequestUrl );
+		String Alcogol  			= get_vkurl_param( "alcohol",RequestUrl );
+		String Company  			= get_vkurl_param( "company",RequestUrl );
+		String Position  			= get_vkurl_param( "position",RequestUrl );
+		String MilitaryCountry  	= get_vkurl_param( "mil_country",RequestUrl );
+		String birth_year  		= get_vkurl_param( "byear",RequestUrl );
+		String birth_month  	    = get_vkurl_param( "bmonth",RequestUrl );
+		String birth_day  		    = get_vkurl_param( "bday",RequestUrl );
 
-		str request = "q="+q;
+		String request = "q="+q;
         request += "&offset="+OffSet;
         request += "&count="+Count;
         if(Country.IsEmpty() == false)
@@ -1174,7 +1196,7 @@ void c_main::search_request( str RequestUrl, str OffSet, str Count, int iteratio
             request += "&birth_day="+birth_day;
         }
 
-		str response;
+		String response;
 
         if ( f->ch_dynamic_userbdata->Checked == false )
 		{
@@ -1223,14 +1245,14 @@ void c_main::search_request( str RequestUrl, str OffSet, str Count, int iteratio
 
 	logline( "" );
 }
-str  c_main::include_actual_bdata(int m, int d, str request)
+String  c_main::include_actual_bdata(int m, int d, String request)
 {
-	str fx = "&birth_month=";
+	String fx = "&birth_month=";
 	int pos = Pos(fx,request);
-	str a = request.SubString(1,pos-1);
+	String a = request.SubString(1,pos-1);
     return a + "&birth_month=" + IntToStr(m) + "&birth_day=" + IntToStr(d);
 }
-void c_main::response_read(str response, TStringList *L, str Count, str OffSet, str RequestUrl, int iteration)
+void c_main::response_read(String response, TStringList *L, String Count, String OffSet, String RequestUrl, int iteration)
 {
     if ( Pos("items\":[]",response) == 0 )
     {
@@ -1241,30 +1263,30 @@ void c_main::response_read(str response, TStringList *L, str Count, str OffSet, 
         // JSON //////////////////////////////////////////////////////////////////////////////
         std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
         TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
-        str allcount = obj_response->GetValue("count")->ToString();
+        String allcount = obj_response->GetValue("count")->ToString();
 
         TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
         for ( int c = 0; c < obj_items->Count; c++ )
         {
-            TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Get(c));
+            TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Items[c]);
 
-            str uid = "";
+            String uid = "";
             TJSONValue* uidObj = x_obj_items->GetValue("id");
             if(uidObj != NULL)
                 uid = uidObj->ToString();
                 
             TJSONValue* unameObj = x_obj_items->GetValue("first_name");
-            str uname = "";
+            String uname = "";
             if(unameObj != NULL)
                 uname = unameObj->ToString();
                 
             TJSONValue* usurnameObj = x_obj_items->GetValue("last_name");
-            str usurname = "";
+            String usurname = "";
             if(usurnameObj != NULL)
                 usurname = usurnameObj->ToString();
                 
             TJSONValue* canwritepmObj = x_obj_items->GetValue("can_write_private_message");
-            str canwritepm = "";
+            String canwritepm = "";
             if(canwritepmObj != NULL)
                 canwritepm = canwritepmObj->ToString();
 
@@ -1284,7 +1306,7 @@ void c_main::response_read(str response, TStringList *L, str Count, str OffSet, 
             {
                 TDateTime D = Date();
                 TDateTime T = Time();
-                str DT = DateToStr(D) + " - " + TimeToStr(T);
+                String DT = DateToStr(D) + " - " + TimeToStr(T);
                 L->Add( Trim(f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption)+"#"+uid+"#"+uname+"#"+usurname+"#"+DT );
 
                 GlobalUsersCache_Add( uid );
@@ -1326,9 +1348,9 @@ void c_main::response_read(str response, TStringList *L, str Count, str OffSet, 
         log(L"VK API ВЕРНУЛ [ 0 ] РЕЗУЛЬТАТОВ ПРИ [ OFFSET:"+OffSet+", COUNT:"+Count+" ]");
     }
 }
-str  c_main::get_vkurl_param(str ParamName, str Data)
+String  c_main::get_vkurl_param(String ParamName, String Data)
 {
-	str RETURN = "";
+	String RETURN = "";
 
 	ParamName = "["+ParamName+"]=";
 	int pos = Pos(ParamName,Data);
@@ -1344,7 +1366,7 @@ str  c_main::get_vkurl_param(str ParamName, str Data)
 
 	return RETURN;
 }
-str  c_main::getCountOfMesages(str Dialog)
+String  c_main::getCountOfMesages(String Dialog)
 {
 	TStringList *L = new TStringList;
 	L->Text = Dialog;
@@ -1363,7 +1385,7 @@ str  c_main::getCountOfMesages(str Dialog)
 
 	delete L;
 
-	str J;
+	String J;
 	if ( new_count == 0 ) 
         J = IntToStr(mess_count);
 	else                  
@@ -1371,7 +1393,7 @@ str  c_main::getCountOfMesages(str Dialog)
 
 	return J;
 }
-int  c_main::getCountOfHello(str GroupName)
+int  c_main::getCountOfHello(String GroupName)
 {
 	int C = 0;
 
@@ -1382,7 +1404,7 @@ int  c_main::getCountOfHello(str GroupName)
     }
 	for ( int x = 0; x < L->Count; x++ )
 	{
-		str CurGroup = Trim( g.Encrypt(1,5,"#",L->Strings[x]) );
+		String CurGroup = Trim( g.Encrypt(1,5,"#",L->Strings[x]) );
 
 		if ( CurGroup == GroupName ) 
             C++;
@@ -1391,30 +1413,30 @@ int  c_main::getCountOfHello(str GroupName)
 	delete L;
 	return C;
 }
-void c_main::DrawMessageBox(str Name, str Surname, str RobotGID, TStringList *DIALOGS)
+void c_main::DrawMessageBox(String Name, String Surname, String RobotGID, TStringList *DIALOGS)
 {
 	for ( int c = 0; c < DIALOGS->Count; c++ )
 	{
-		str dataline = DIALOGS->Strings[c];
+		String dataline = DIALOGS->Strings[c];
 		if ( dataline == "#MESSAGE" )
 		{
 			bool Out = true;
 			if ( DIALOGS->Strings[c+1] == "#INC" ) 
                 Out = false;
-			str  DATE = DIALOGS->Strings[c+2].SubString(7,50);
+			String  DATE = DIALOGS->Strings[c+2].SubString(7,50);
 
 			TStringList *TEXT = new TStringList;
 			int START_C = c + 7;
 			while ( true )
 			{
-				str S = DIALOGS->Strings[START_C];
+				String S = DIALOGS->Strings[START_C];
 				if ( S == "#END" ) 
                     break;
 				TEXT->Add(S);
 				START_C++;
 			}
 
-			str Usr = L"РОБОТ [ "+RobotGID+" ] :";
+			String Usr = L"РОБОТ [ "+RobotGID+" ] :";
 			if ( ! Out ) 
                 Usr = Name+" "+Surname+" :";
 
@@ -1426,7 +1448,7 @@ void c_main::DrawMessageBox(str Name, str Surname, str RobotGID, TStringList *DI
 		}
 	}
 }
-void c_main::DeleteUserFromQueueAndPutToDialogs(str UserID, str UserName, str UserSurname, str RobotName, bool msghello, str Text)
+void c_main::DeleteUserFromQueueAndPutToDialogs(String UserID, String UserName, String UserSurname, String RobotName, bool msghello, String Text)
 {
 	TStringList *L = new TStringList;
     if(FileExists(f_users))
@@ -1435,7 +1457,7 @@ void c_main::DeleteUserFromQueueAndPutToDialogs(str UserID, str UserName, str Us
     }
 	for ( int c = L->Count-1; c >= 0; c-- )
 	{
-		str uid = g.Encrypt(2,5,"#",L->Strings[c]);
+		String uid = g.Encrypt(2,5,"#",L->Strings[c]);
 		if ( uid == UserID ) 
         { 
             L->Delete(c); 
@@ -1450,7 +1472,7 @@ void c_main::DeleteUserFromQueueAndPutToDialogs(str UserID, str UserName, str Us
 
 	TDateTime D = Date();
 	TDateTime T = Time();
-	str DT = DateToStr(D) + " - " + TimeToStr(T);
+	String DT = DateToStr(D) + " - " + TimeToStr(T);
 	TStringList *X = new TStringList;
 	X->Add(RobotName);
 	X->Add(UserName);
@@ -1483,12 +1505,12 @@ void c_main::SetAsRead(TStringList *DIALOG)
 		}
 	}
 }
-void c_main::WriteInboxList(str Token)
+void c_main::WriteInboxList(String Token)
 {
 	bool ex = false;
 	for ( int c = 0; c < INBOX->Count; c++ )
 	{
-		str _token = g.Encrypt(1,6,"#", INBOX->Strings[c] );
+		String _token = g.Encrypt(1,6,"#", INBOX->Strings[c] );
 		if ( Token == _token )
 		{
 			ex = true;
@@ -1505,7 +1527,7 @@ void c_main::WriteInboxList(str Token)
 		int current_offset_of = 0;
 		while ( true )
 		{
-			str response;
+			String response;
 			bool success = false;
 			while ( ! success )
 			{
@@ -1522,15 +1544,15 @@ void c_main::WriteInboxList(str Token)
                 f->main->log(L"Ответ сервера: ["+response+"]");
             }
 
-			str vMid = "id";
-			str vUid = "user_id";
+			String vMid = "id";
+			String vUid = "user_id";
 			if ( Pos(vUid,response) == 0 ) 
             { 
                 vMid = "mid"; 
                 vUid = "uid"; 
             }
 			// JSON //////////////////////////////////////////////////////////////////////////////
-			str messcount = "0";
+			String messcount = "0";
 
 			try
 			{
@@ -1540,13 +1562,13 @@ void c_main::WriteInboxList(str Token)
 				TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
 				for ( int c = 0; c < obj_items->Count; c++ )
 				{
-					TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Get(c));
+					TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Items[c]);
 
-					str mid 			= x_obj_items->GetValue(vMid)->ToString();
-					str uid 			= x_obj_items->GetValue(vUid)->ToString();
-					str read_state 		= x_obj_items->GetValue("read_state")->ToString();
-					str title 	   		= x_obj_items->GetValue("title")->ToString();
-					str body 			= x_obj_items->GetValue("body")->ToString();
+					String mid 			= x_obj_items->GetValue(vMid)->ToString();
+					String uid 			= x_obj_items->GetValue(vUid)->ToString();
+					String read_state 		= x_obj_items->GetValue("read_state")->ToString();
+					String title 	   		= x_obj_items->GetValue("title")->ToString();
+					String body 			= x_obj_items->GetValue("body")->ToString();
 
 					INBOX->Add( Token+"#"+mid+"#"+uid+"#"+read_state+"#"+title+"#"+body );
 
@@ -1565,13 +1587,13 @@ void c_main::WriteInboxList(str Token)
 					messcount = IntToStr( obj_response->Count - 1 );
 					for ( int c = 1; c < obj_response->Count; c++ )
 					{
-						TJSONObject* x_arr_item = static_cast<TJSONObject*>(obj_response->Get(c));
+						TJSONObject* x_arr_item = static_cast<TJSONObject*>(obj_response->Items[c]);
 
-						str mid 			= x_arr_item->GetValue(vMid)->ToString();
-						str uid 			= x_arr_item->GetValue(vUid)->ToString();
-						str read_state 		= x_arr_item->GetValue("read_state")->ToString();
-						str title 	   		= x_arr_item->GetValue("title")->ToString();
-						str body 			= x_arr_item->GetValue("body")->ToString();
+						String mid 			= x_arr_item->GetValue(vMid)->ToString();
+						String uid 			= x_arr_item->GetValue(vUid)->ToString();
+						String read_state 		= x_arr_item->GetValue("read_state")->ToString();
+						String title 	   		= x_arr_item->GetValue("title")->ToString();
+						String body 			= x_arr_item->GetValue("body")->ToString();
 
 						INBOX->Add( Token+"#"+mid+"#"+uid+"#"+read_state+"#"+title+"#"+body );
 
@@ -1609,9 +1631,9 @@ void c_main::WriteInboxList(str Token)
 		log(L"Список сообщений был получен ранее. Буффер наполнен.");
 	}
 }
-void c_main::WriteOutboxAutoAnsList(str Token, str RobotName)
+void c_main::WriteOutboxAutoAnsList(String Token, String RobotName)
 {
-    str PX = f->main->PREFIX;
+    String PX = f->main->PREFIX;
 	f->main->PREFIX = L"Автоответчик : [ "+RobotName+" ] ";
 
 	if ( Pos(Token,AUTOANSOUTBOX->Text) == 0 )
@@ -1621,7 +1643,7 @@ void c_main::WriteOutboxAutoAnsList(str Token, str RobotName)
 
 		for ( int c = 0; c < UIDS->Count; c++ )
 		{
-			str UID = UIDS->Strings[c];
+			String UID = UIDS->Strings[c];
 			GetHistory( AUTOANSOUTBOX, UID, 1, 10, Token, RobotName );
 		}
 		delete UIDS;
@@ -1633,7 +1655,7 @@ void c_main::WriteOutboxAutoAnsList(str Token, str RobotName)
 
 	f->main->PREFIX = PX;
 }
-void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, str Token, str RobotName)
+void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String Token, String RobotName)
 {
 	log(L"Получение диалогов..");
 	g.ProcessMessages();
@@ -1643,7 +1665,7 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, str Token
 
 	while ( true )
 	{
-		str response;
+		String response;
 		bool success = false;
 		while ( ! success )
 		{
@@ -1663,12 +1685,12 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, str Token
 		// JSON //////////////////////////////////////////////////////////////////////////////
 		std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
 		TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
-		str messcount = obj_response->GetValue("count")->ToString();
+		String messcount = obj_response->GetValue("count")->ToString();
 		TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
 		for ( int c = 0; c < obj_items->Count; c++ )
 		{
-			TJSONObject *obj_root = static_cast<TJSONObject*>(obj_items->Get(c));
-			str unread          = "0"; 
+			TJSONObject *obj_root = static_cast<TJSONObject*>(obj_items->Items[c]);
+			String unread          = "0"; 
             try 
             { 
                 unread = obj_root->GetValue("unread")->ToString(); 
@@ -1678,13 +1700,13 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, str Token
             }
 
 			TJSONObject *obj_message = static_cast<TJSONObject*>(obj_root->Get("message")->JsonValue);
-			str mid 	     = obj_message->GetValue("id")->ToString();
-			str date 	     = obj_message->GetValue("date")->ToString();
-			str out 	     = obj_message->GetValue("out")->ToString();
-			str user_id 	 = obj_message->GetValue("user_id")->ToString();
-			str read_state 	 = obj_message->GetValue("read_state")->ToString();
-			str title 	     = obj_message->GetValue("title")->ToString();
-			str body 	     = obj_message->GetValue("body")->ToString();
+			String mid 	     = obj_message->GetValue("id")->ToString();
+			String date 	     = obj_message->GetValue("date")->ToString();
+			String out 	     = obj_message->GetValue("out")->ToString();
+			String user_id 	 = obj_message->GetValue("user_id")->ToString();
+			String read_state 	 = obj_message->GetValue("read_state")->ToString();
+			String title 	     = obj_message->GetValue("title")->ToString();
+			String body 	     = obj_message->GetValue("body")->ToString();
 
 			bool go1 = false; // OUT_3
 			if ( OUT_3 == 0 && out == "0" ) 
@@ -1738,7 +1760,7 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, str Token
 
 	log(L"Список диалогов получен.");
 }
-void c_main::GetHistory(TStringList *LIST, str UID, int OUT_3, int Count, str Token, str RobotName)
+void c_main::GetHistory(TStringList *LIST, String UID, int OUT_3, int Count, String Token, String RobotName)
 {
 	log(L"Получение истории сообщений пользователя [ "+UID+L" ] .. Макс [ "+IntToStr( Count )+L" ] шт.");
 	g.ProcessMessages();
@@ -1751,7 +1773,7 @@ void c_main::GetHistory(TStringList *LIST, str UID, int OUT_3, int Count, str To
 
 	while ( true )
 	{
-		str response;
+		String response;
 		bool success = false;
 		while ( ! success )
 		{
@@ -1771,19 +1793,19 @@ void c_main::GetHistory(TStringList *LIST, str UID, int OUT_3, int Count, str To
 		// JSON //////////////////////////////////////////////////////////////////////////////
 		std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
 		TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
-		str messcount = obj_response->GetValue("count")->ToString();
+		String messcount = obj_response->GetValue("count")->ToString();
 		TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
 
 		for ( int c = 0; c < obj_items->Count; c++ )
 		{
-			TJSONObject *obj_root = static_cast<TJSONObject*>(obj_items->Get(c));
-			str mid 		= obj_root->GetValue("id")->ToString();
-			str body  		= obj_root->GetValue("body")->ToString();
-			str user_id 	= obj_root->GetValue("user_id")->ToString();
-			str from_id 	= obj_root->GetValue("from_id")->ToString();
-			str date 		= obj_root->GetValue("date")->ToString();
-			str read_state 	= obj_root->GetValue("read_state")->ToString();
-			str out 		= obj_root->GetValue("out")->ToString();
+			TJSONObject *obj_root = static_cast<TJSONObject*>(obj_items->Items[c]);
+			String mid 		= obj_root->GetValue("id")->ToString();
+			String body  		= obj_root->GetValue("body")->ToString();
+			String user_id 	= obj_root->GetValue("user_id")->ToString();
+			String from_id 	= obj_root->GetValue("from_id")->ToString();
+			String date 		= obj_root->GetValue("date")->ToString();
+			String read_state 	= obj_root->GetValue("read_state")->ToString();
+			String out 		= obj_root->GetValue("out")->ToString();
 
 			bool go = false; // OUT_3
 			if ( OUT_3 == 0 && out == "0" ) 
@@ -1832,12 +1854,12 @@ void c_main::GetHistory(TStringList *LIST, str UID, int OUT_3, int Count, str To
 
 	log(L"Получено от [ "+UID+L" ] сообщений [ "+IntToStr( gotch_cnt )+L" ] по заданному фильтру.");
 }
-str  c_main::GetLastStageName(TStringList *DIALOG)
+String  c_main::GetLastStageName(TStringList *DIALOG)
 {
-	str J;
+	String J;
 	for ( int c = 0; c < DIALOG->Count; c++ )
 	{
-		str l = DIALOG->Strings[c];
+		String l = DIALOG->Strings[c];
 		if ( Pos("#STAGEDATA=",l) != 0 && Pos("#STAGEDATA=INC",l) == 0 )
 		{
 			J = l.SubString(12,l.Length());
@@ -1845,7 +1867,7 @@ str  c_main::GetLastStageName(TStringList *DIALOG)
 	}
 	return J;
 }
-void c_main::GetOnlyOneStage(TStringList *MODEL, str StageName)
+void c_main::GetOnlyOneStage(TStringList *MODEL, String StageName)
 {
 	TStringList *A = new TStringList;                                            //log("GetOnlyOneStage - start");
 
@@ -1854,11 +1876,11 @@ void c_main::GetOnlyOneStage(TStringList *MODEL, str StageName)
 
 	for ( int c = 0; c < MODEL->Count; c++ )
 	{
-		str l = Trim( MODEL->Strings[c] );
+		String l = Trim( MODEL->Strings[c] );
 		if (   wr && Pos("#",l)    != 0 ) 
             break;
 
-		str ch = StageName[1];
+		String ch = StageName[1];
 		if ( ch == "#" )
 		{
 			if ( ! wr && StageName == l ) 
@@ -1897,13 +1919,13 @@ int  c_main::GetMaxLevelsOfStages()
     int max = 1;
     for ( int c = 0; c < MODEL_LOGICAL->Count; c++ )
     {
-        str l = MODEL_LOGICAL->Strings[c];
+        String l = MODEL_LOGICAL->Strings[c];
         if ( Pos("#",l) != 0 )
         {
             int x = 0;
             for ( int i = 1; i <= l.Length(); i++ )
             {
-                str ch = l[i];
+                String ch = l[i];
                 if ( ch == "." ) 
                     x++;
             }
@@ -1918,13 +1940,13 @@ void c_main::GetListOfLevel(int level,TStringList *L)
     for ( int c = 0; c < MODEL_LOGICAL->Count; c++ )
     {
     	int max = 1;
-        str l = MODEL_LOGICAL->Strings[c];
+        String l = MODEL_LOGICAL->Strings[c];
         if ( Pos("#",l) != 0 )
         {
             int x = 0;
             for ( int i = 1; i <= l.Length(); i++ )
             {
-                str ch = l[i];
+                String ch = l[i];
                 if ( ch == "." ) 
                     x++;
             }
@@ -1938,28 +1960,28 @@ void c_main::GetListOfLevel(int level,TStringList *L)
         max = 1;
     }
 }
-str  c_main::CutLastLevel(str data)
+String  c_main::CutLastLevel(String data)
 {
     int p;
     for ( int c = 1; c <= data.Length(); c++ )
     {
-        str ch = data[c];
+        String ch = data[c];
         if ( ch == "." ) 
             p = c;
     }
 
-    str j = data.SubString(1,p-1);
+    String j = data.SubString(1,p-1);
     return j;
 }
-str  c_main::ConvertToVars(str extline)
+String  c_main::ConvertToVars(String extline)
 {
-    str j = "";
+    String j = "";
 
     TStringList *L = new TStringList;
     L->Text = g.EncryptToList(",",extline);
     for ( int c = 0; c < L->Count; c++ )
     {
-        str fx = VARIANTS->Strings[ g.Sti(L->Strings[c])-1 ];
+        String fx = VARIANTS->Strings[ g.Sti(L->Strings[c])-1 ];
         fx = fx.SubString(9,fx.Length());
         int p = Pos("'",fx);
         fx = fx.SubString(1,p-1);
@@ -1970,22 +1992,22 @@ str  c_main::ConvertToVars(str extline)
     j = j.SubString(1,j.Length()-1);
     return j;
 }
-str  c_main::GetVarFrom(int index)
+String  c_main::GetVarFrom(int index)
 {
-    str fx = VARIANTS->Strings[index];
+    String fx = VARIANTS->Strings[index];
     fx = fx.SubString(9,fx.Length());
     int p = Pos("'",fx);
     fx = fx.SubString(1,p-1);
     return fx;
 }
-str  c_main::CreateStageName(str data)
+String  c_main::CreateStageName(String data)
 {
-    str j;
+    String j;
     if ( IFCREATE )
     {
         if ( IFROOT )
         {
-            str  chx = data[1];
+            String  chx = data[1];
             if ( chx == "#" ) 
                 j = data;
             else              
@@ -1993,7 +2015,7 @@ str  c_main::CreateStageName(str data)
         }
         else
         {
-            str  chx = data[1];
+            String  chx = data[1];
             if ( chx == "#" ) 
                 data = data.SubString(2,data.Length());
             j = MYPARENT + "." + data;
@@ -2005,14 +2027,14 @@ str  c_main::CreateStageName(str data)
     }
     return j;
 }
-bool c_main::ifStageNameExist(str StageName)
+bool c_main::ifStageNameExist(String StageName)
 {
     bool ex = false;
     if ( IFCREATE )
     {
         for ( int c = 0; c < MODEL_LOGICAL->Count; c++ )
         {
-            str l = MODEL_LOGICAL->Strings[c];
+            String l = MODEL_LOGICAL->Strings[c];
             if ( l == StageName )
             {
                 ex = true;
@@ -2022,16 +2044,16 @@ bool c_main::ifStageNameExist(str StageName)
     }
     return ex;
 }
-str  c_main::getLastStage(str data)
+String  c_main::getLastStage(String data)
 {
-    str j = "NULL";
+    String j = "NULL";
 
     TStringList *L = new TStringList;
     L->Text = data;
 
     for ( int c = 0; c < L->Count; c++ )
     {
-        str line = L->Strings[c];
+        String line = L->Strings[c];
         if ( Pos("#STAGEDATA=",line) != 0 )
         {
             j = line.SubString(12,line.Length());
@@ -2065,21 +2087,21 @@ void c_main::generatelogname()
 	TDateTime D = Date();
 	TDateTime T = Time();
 
-	str SD = DateToStr(D);
-	str ST = TimeToStr(T);
+	String SD = DateToStr(D);
+	String ST = TimeToStr(T);
 
 	for ( int c = 1; c <= ST.Length(); c++ )
 	{
-		str ch = ST[c];
+		String ch = ST[c];
 		if ( ch == ":" ) 
             ST[c] = '.';
     }
 
-	str d = g.Encrypt(1,3,".",SD);
-	str m = g.Encrypt(2,3,".",SD);
-	str y = g.Encrypt(3,3,".",SD);
+	String d = g.Encrypt(1,3,".",SD);
+	String m = g.Encrypt(2,3,".",SD);
+	String y = g.Encrypt(3,3,".",SD);
 
-	str j = y+"."+m+"."+d+"_"+ST;
+	String j = y+"."+m+"."+d+"_"+ST;
 
 	BUFF_CURRENTLOG = j;
     conf_ini(true);
@@ -2139,18 +2161,18 @@ void c_main::checkLinkedStages()
 {
 	TStringList *J = new TStringList;
 
-	str CurrSTAGE;
+	String CurrSTAGE;
 
 	// CHECK AUTOANS VARIANTS
 
 	for ( int c = 0; c < f->LV_MODEL_AUTOANS->Items->Count; c++ )
 	{
-		str tofind = f->LV_MODEL_AUTOANS->Items->Item[c]->SubItems->Strings[0];
+		String tofind = f->LV_MODEL_AUTOANS->Items->Item[c]->SubItems->Strings[0];
 
 		bool ex = false;
 		for ( int x = 0; x < MODEL_LOGICAL->Count; x++ )
 		{
-			str linex = MODEL_LOGICAL->Strings[x];
+			String linex = MODEL_LOGICAL->Strings[x];
 			if ( tofind == linex )
 			{
 				ex = true;
@@ -2167,14 +2189,14 @@ void c_main::checkLinkedStages()
 
 	// CHECK AUTOANS DEFAULT
 
-	str tofind = Trim(f->E_MODEL_AUTOANS_DEFAULT->Text);
+	String tofind = Trim(f->E_MODEL_AUTOANS_DEFAULT->Text);
 	if ( tofind.Length() == 0 ) 
         tofind = "NULL";
 
 	bool ex = false;
 	for ( int x = 0; x < MODEL_LOGICAL->Count; x++ )
 	{
-		str linex = MODEL_LOGICAL->Strings[x];
+		String linex = MODEL_LOGICAL->Strings[x];
 
 		if ( tofind == linex )
 		{
@@ -2192,13 +2214,13 @@ void c_main::checkLinkedStages()
 
 	for ( int c = 0; c < MODEL_LOGICAL->Count; c++ )
 	{
-		str line = MODEL_LOGICAL->Strings[c];
+		String line = MODEL_LOGICAL->Strings[c];
 		if ( Pos("#",line) != 0 ) 
             CurrSTAGE = line;
 
 		if ( Pos("IF'",line) != 0 || Pos("EXTENDED'",line) != 0 || Pos("DEFAULT'",line) != 0 )
 		{
-			str tofind;
+			String tofind;
 
 			if ( Pos("DEFAULT'",line) == 0 ) 
                 tofind = g.Encrypt(3,3,"'",line);
@@ -2208,7 +2230,7 @@ void c_main::checkLinkedStages()
 			bool ex = false;
 			for ( int x = 0; x < MODEL_LOGICAL->Count; x++ )
 			{
-				str linex = MODEL_LOGICAL->Strings[x];
+				String linex = MODEL_LOGICAL->Strings[x];
 				if ( "#"+tofind == linex )
 				{
 					ex = true;
@@ -2233,13 +2255,13 @@ void c_main::make_new_inbox(TStringList *ALL, TStringList *DEST)
 {
 	for ( int c = 0; c < ALL->Count; c++ )
 	{
-		str aline = ALL->Strings[c];
-		str uid = g.Encrypt(3,6,"#",aline);
+		String aline = ALL->Strings[c];
+		String uid = g.Encrypt(3,6,"#",aline);
 
 		bool ex = false;
 		for ( int x = 0; x < DEST->Count; x++ )
 		{
-			str xline = DEST->Strings[x];
+			String xline = DEST->Strings[x];
 			if ( uid == xline )
 			{
 				ex = true;
@@ -2251,31 +2273,31 @@ void c_main::make_new_inbox(TStringList *ALL, TStringList *DEST)
             DEST->Add(uid);
     }
 }
-void c_main::deleteDialogsPerRobot(str robotname)
+void c_main::deleteDialogsPerRobot(String robotname)
 {
 	TStringList *DIALOGS = new TStringList;
 	g.GetFiles( p_dialogs ,DIALOGS);
 
 	for ( int c = 0; c < DIALOGS->Count; c++ )
 	{
-		str DialogFile = p_dialogs + DIALOGS->Strings[c];
+		String DialogFile = p_dialogs + DIALOGS->Strings[c];
 		TStringList *DIALOG = new TStringList;
 		DIALOG->LoadFromFile( DialogFile );
-		str ROBOTGID = DIALOG->Strings[0];
+		String ROBOTGID = DIALOG->Strings[0];
 		delete DIALOG;
 
 		if ( ROBOTGID == robotname )
 		{
-			DeleteFile( DialogFile.t_str() );
+			DeleteFile( DialogFile.c_str() );
         }
 	}
 
 	delete DIALOGS;
 	conf_dialogs(false);
 }
-str  c_main::from_list_to_str(TStringList *L)
+String  c_main::from_list_to_str(TStringList *L)
 {
-	str a = "";
+	String a = "";
 	for ( int c = 0; c < L->Count; c++ )
 	{
 		a = a + L->Strings[c] + "~";
@@ -2283,12 +2305,12 @@ str  c_main::from_list_to_str(TStringList *L)
 
 	return a;
 }
-int  c_main::getrobotindex(str robotname, TStringList *L)
+int  c_main::getrobotindex(String robotname, TStringList *L)
 {
 	int j = -1;
 	for ( int c = L->Count-1; c >= 0; c-- )
 	{
-		str data = L->Strings[c];
+		String data = L->Strings[c];
 		if ( robotname == g.Encrypt(1,2,"|",data) )
 		{
 			j = c;
@@ -2298,7 +2320,7 @@ int  c_main::getrobotindex(str robotname, TStringList *L)
 
 	return j;
 }
-bool c_main::if_imbanned(str Token, str uid)
+bool c_main::if_imbanned(String Token, String uid)
 {
 	bool imbanned;
 	bool success = false;
@@ -2313,14 +2335,14 @@ bool c_main::if_imbanned(str Token, str uid)
 	}
 	return imbanned;
 }
-void c_main::sended_count_add(str robotname)
+void c_main::sended_count_add(String robotname)
 {
 	int cnt = 0;
 	for ( int c = 0; c < AUTOANS_LIMIT->Count; c++ )
 	{
-		str line = AUTOANS_LIMIT->Strings[c];
-		str cr = g.Encrypt(1,2,"#",line);
-		str cc = g.Encrypt(2,2,"#",line);
+		String line = AUTOANS_LIMIT->Strings[c];
+		String cr = g.Encrypt(1,2,"#",line);
+		String cc = g.Encrypt(2,2,"#",line);
 
 		if ( robotname == cr )
 		{
@@ -2333,14 +2355,14 @@ void c_main::sended_count_add(str robotname)
 	cnt++;
 	AUTOANS_LIMIT->Add( robotname+"#"+IntToStr(cnt) );
 }
-bool c_main::sended_count_iflimit(str robotname)
+bool c_main::sended_count_iflimit(String robotname)
 {
 	int cnt = 0;
 	for ( int c = 0; c < AUTOANS_LIMIT->Count; c++ )
 	{
-		str line = AUTOANS_LIMIT->Strings[c];
-		str cr = g.Encrypt(1,2,"#",line);
-		str cc = g.Encrypt(2,2,"#",line);
+		String line = AUTOANS_LIMIT->Strings[c];
+		String cr = g.Encrypt(1,2,"#",line);
+		String cc = g.Encrypt(2,2,"#",line);
 
 		if ( robotname == cr )
 		{
@@ -2356,7 +2378,7 @@ bool c_main::sended_count_iflimit(str robotname)
 	{
 		j = true;
 
-		str me = f->ME_LOG->Lines->Strings[ f->ME_LOG->Lines->Count-1 ];
+		String me = f->ME_LOG->Lines->Strings[ f->ME_LOG->Lines->Count-1 ];
 		if ( Pos(L"Достигнут лимит отправки сообщений [",me) == 0 ) 
         {
             f->main->log(L"Достигнут лимит отправки сообщений [ "+f->e_autoanswerlimit->Text+" ]");
@@ -2370,13 +2392,13 @@ void c_main::LoadModel(int index)
 	TStringList *L = new TStringList;
 	g.GetFiles( p_robots, L );
 
-    str file_a = p_robots + L->Strings[index] + "\\Hello.txt";
-	str file_b = p_robots + L->Strings[index] + "\\Model.txt";
-	str file_c = p_robots + L->Strings[index] + "\\AutoAnsRules.txt";
-	str file_d = p_robots + L->Strings[index] + "\\AutoAnsDefault.txt";
-	str file_e = p_robots + L->Strings[index] + "\\AutoStopKeys.txt";
-	str file_f = p_robots + L->Strings[index] + "\\AutoStopPosts.txt";
-    str file_g = p_robots + L->Strings[index] + "\\Global.txt";
+    String file_a = p_robots + L->Strings[index] + "\\Hello.txt";
+	String file_b = p_robots + L->Strings[index] + "\\Model.txt";
+	String file_c = p_robots + L->Strings[index] + "\\AutoAnsRules.txt";
+	String file_d = p_robots + L->Strings[index] + "\\AutoAnsDefault.txt";
+	String file_e = p_robots + L->Strings[index] + "\\AutoStopKeys.txt";
+	String file_f = p_robots + L->Strings[index] + "\\AutoStopPosts.txt";
+    String file_g = p_robots + L->Strings[index] + "\\Global.txt";
 
 	delete L;
     if(FileExists(file_a))
@@ -2454,10 +2476,10 @@ void c_main::LoadModelLogicalTree(int level)
     {
         while ( L->Count > 0 )
         {
-        	str fx = L->Strings[0];
+        	String fx = L->Strings[0];
             for ( int i = 0; i < f->TREE->Items->Count; i++ )
             {
-            	str l = f->TREE->Items->Item[i]->Text;
+            	String l = f->TREE->Items->Item[i]->Text;
             	if ( CutLastLevel(fx) == l )
                 {
                 	f->TREE->Items->AddChild( f->TREE->Items->Item[i] ,fx);
@@ -2479,7 +2501,7 @@ void c_main::LoadModelAutoAnsRules()
 
 	for ( int c = 0; c < MODEL_AUTOANS->Count; c++ )
 	{
-		str dataline = MODEL_AUTOANS->Strings[c];
+		String dataline = MODEL_AUTOANS->Strings[c];
 
 		TListItem *ListItem;
 		ListItem = f->LV_MODEL_AUTOANS->Items->Add();
@@ -2487,7 +2509,7 @@ void c_main::LoadModelAutoAnsRules()
 		ListItem->SubItems->Add( g.Encrypt(2,2,"~",dataline) );
 	}
 }
-void c_main::LoadModelAutoAnsDefault(str file)
+void c_main::LoadModelAutoAnsDefault(String file)
 {
 	TStringList *L = new TStringList;
 
@@ -2505,7 +2527,7 @@ void c_main::LoadModelAutoStopKeys()
 	f->LV_MODEL_AUTOSTOP_KEYS->Items->Clear();
 	for ( int c = 0; c < MODEL_AUTOSTOP_KEYS->Count; c++ )
 	{
-		str dataline = MODEL_AUTOSTOP_KEYS->Strings[c];
+		String dataline = MODEL_AUTOSTOP_KEYS->Strings[c];
 
 		TListItem *ListItem;
 		ListItem = f->LV_MODEL_AUTOSTOP_KEYS->Items->Add();
@@ -2517,7 +2539,7 @@ void c_main::LoadModelAutoStopPosts()
 	f->LV_MODEL_AUTOSTOP_POSTS->Items->Clear();
 	for ( int c = 0; c < MODEL_AUTOSTOP_POSTS->Count; c++ )
 	{
-		str dataline = MODEL_AUTOSTOP_POSTS->Strings[c];
+		String dataline = MODEL_AUTOSTOP_POSTS->Strings[c];
 
 		TListItem *ListItem;
 		ListItem = f->LV_MODEL_AUTOSTOP_POSTS->Items->Add();
@@ -2525,7 +2547,7 @@ void c_main::LoadModelAutoStopPosts()
 	}
 }
 
-void c_main::LoadModelStage(str StageName)
+void c_main::LoadModelStage(String StageName)
 {
     f->vcl->ModelStageClear();
     f->E_MODEL_LOGICAL_STAGE->Text = StageName;
@@ -2534,7 +2556,7 @@ void c_main::LoadModelStage(str StageName)
     bool REC = false;
     for ( int c = 0; c < MODEL_LOGICAL->Count; c++ )
     {
-        str l = MODEL_LOGICAL->Strings[c];
+        String l = MODEL_LOGICAL->Strings[c];
         if ( REC && Pos("#",l) != 0 ) 
             break;
         if ( REC ) 
@@ -2545,7 +2567,7 @@ void c_main::LoadModelStage(str StageName)
 
     for ( int c = 0; c < A->Count; c++ )
     {
-        str l = A->Strings[c];
+        String l = A->Strings[c];
 
         if ( Pos("POST'",l) != 0 ) 
             POSTS->Add( l );
@@ -2571,7 +2593,7 @@ void c_main::LoadModelStagePosts()
 {
     for ( int c = 0; c < POSTS->Count; c++ )
     {
-        str data = POSTS->Strings[c];
+        String data = POSTS->Strings[c];
         f->LI_MODEL_LOGICAL_POSTS->Items->Add( data.SubString(6,data.Length()) );
     }
 }
@@ -2579,7 +2601,7 @@ void c_main::LoadModelStageVariants()
 {
     for ( int c = 0; c < VARIANTS->Count; c++ )
     {
-        str data = VARIANTS->Strings[c];
+        String data = VARIANTS->Strings[c];
         data = data.SubString(9,data.Length());
         int p = Pos("'",data);
         data = data.SubString(p+1,data.Length());
@@ -2595,14 +2617,14 @@ void c_main::LoadModelStageExtendeds()
 {
     for ( int c = 0; c < EXTENDED->Count; c++ )
     {
-        str xext = EXTENDED->Strings[c].SubString(10,EXTENDED->Strings[c].Length());
+        String xext = EXTENDED->Strings[c].SubString(10,EXTENDED->Strings[c].Length());
 		int xextpos = Pos("'",xext);
 		xext = xext.SubString(1,xextpos-1);
 
-		str j = "";
+		String j = "";
 		for ( int x = 0; x < VARIANTS->Count; x++ )
         {
-			str data = VARIANTS->Strings[x];
+			String data = VARIANTS->Strings[x];
 			data = data.SubString(9,data.Length());
 			int p = Pos("'",data);
 			data = data.SubString(1,p-1);
@@ -2623,7 +2645,7 @@ void c_main::LoadModelStageDefault()
 {
     f->vcl->GetAllStages( f->CB_MODEL_LOGICAL_DEFAULT );
 
-    str fx;
+    String fx;
     if(DEFAULT->Count > 0)
     {
         fx = DEFAULT->Strings[0];
@@ -2632,7 +2654,7 @@ void c_main::LoadModelStageDefault()
 
     for ( int c = 0; c < f->CB_MODEL_LOGICAL_DEFAULT->Items->Count; c++ )
     {
-        str data = f->CB_MODEL_LOGICAL_DEFAULT->Items->Strings[c];
+        String data = f->CB_MODEL_LOGICAL_DEFAULT->Items->Strings[c];
         if ( data == "#"+fx )
         {
             f->CB_MODEL_LOGICAL_DEFAULT->ItemIndex = c;
@@ -2658,7 +2680,7 @@ void c_main::ModelLogicalChangeStage(TStringList *STAGE)
 
 	for ( int c = 0; c < MODEL_LOGICAL->Count; c++ )
     {
-		str dataline = MODEL_LOGICAL->Strings[c];
+		String dataline = MODEL_LOGICAL->Strings[c];
 
         if ( dataline == MYPARENT ) 
             index = c;
@@ -2685,14 +2707,14 @@ void c_main::ModelLogicalChangeStage(TStringList *STAGE)
 	delete A;
 	delete T;
 }
-void c_main::ModelLogicalDeleteStage(str StageName)
+void c_main::ModelLogicalDeleteStage(String StageName)
 {
 	TStringList *DESTMODEL = new TStringList;
 	DESTMODEL->Text = MODEL_LOGICAL->Text;
 
 	for ( int c = 0; c < MODEL_LOGICAL->Count; c++ )
     {
-		str dataline = MODEL_LOGICAL->Strings[c];
+		String dataline = MODEL_LOGICAL->Strings[c];
 		if ( Pos(StageName,dataline) != 0  )
 		{
 			ModelLogicalDeleteStageDo(dataline,DESTMODEL);
@@ -2709,7 +2731,7 @@ void c_main::ModelLogicalDeleteStage(str StageName)
 
 	conf_models( false );
 }
-void c_main::ModelLogicalDeleteStageDo(str StageName, TStringList *MODEL)
+void c_main::ModelLogicalDeleteStageDo(String StageName, TStringList *MODEL)
 {
 	TStringList *T = new TStringList;
 
@@ -2718,7 +2740,7 @@ void c_main::ModelLogicalDeleteStageDo(str StageName, TStringList *MODEL)
 
 	for ( int c = 0; c < MODEL->Count; c++ )
 	{
-		str line = MODEL->Strings[c];
+		String line = MODEL->Strings[c];
 
 		if ( StageName == line )
 		{
@@ -2744,20 +2766,20 @@ void c_main::ModelLogicalDeleteStageDo(str StageName, TStringList *MODEL)
 
     delete T;
 }
-void c_main::ModelLogicalDeleteStageDeleteLinked(str StageName, TStringList *MODEL)
+void c_main::ModelLogicalDeleteStageDeleteLinked(String StageName, TStringList *MODEL)
 {
 	for ( int c = 0; c < MODEL->Count; c++ )
 	{
-		str line = MODEL->Strings[c];
-		str myStage = StageName.SubString(2,StageName.Length());
+		String line = MODEL->Strings[c];
+		String myStage = StageName.SubString(2,StageName.Length());
 		if ( Pos("'"+myStage,line) > 0 )
 		{
 			if ( Pos("DEFAULT'",line) == 0 )
 			{
 				if ( Pos("IF'",line) != 0 || Pos("EXTENDED'",line) != 0 )
 				{
-					str a = g.Encrypt(1,3,"'",line);
-					str b = g.Encrypt(2,3,"'",line);
+					String a = g.Encrypt(1,3,"'",line);
+					String b = g.Encrypt(2,3,"'",line);
 
 					MODEL->Strings[c] = a+"'"+b+"'NULL";
 				}
@@ -2778,8 +2800,8 @@ void c_main::ModelSaveAndReloadInterface()
 }
 void c_main::Robot_Freeze(int index)
 {
-	str iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
-	str iName  = Trim( f->LV_CONF_ROBOTS->Items->Item[f->LV_CONF_ROBOTS->ItemIndex]->Caption );
+	String iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
+	String iName  = Trim( f->LV_CONF_ROBOTS->Items->Item[f->LV_CONF_ROBOTS->ItemIndex]->Caption );
 
 	TStringList *L = new TStringList;
 	g.GetFiles( p_robots, L );
@@ -2787,10 +2809,10 @@ void c_main::Robot_Freeze(int index)
 	bool breaked = false;
 	for ( int c = 0; c < L->Count; c++ )
 	{
-		str robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
+		String robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
 		TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 );
-		str xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
-		str xName  = INI->ReadString( UnicodeString("MAIN"), UnicodeString("name"), UnicodeString("") );
+		String xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
+		String xName  = INI->ReadString( UnicodeString("MAIN"), UnicodeString("name"), UnicodeString("") );
 
 		if ( iGroup == xGroup && iName == xName )
 		{
@@ -2812,8 +2834,8 @@ void c_main::Robot_Freeze(int index)
 }
 void c_main::Robot_UnFreeze(int index)
 {
-	str iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
-	str iName  = Trim( f->LV_CONF_ROBOTS->Items->Item[f->LV_CONF_ROBOTS->ItemIndex]->Caption );
+	String iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
+	String iName  = Trim( f->LV_CONF_ROBOTS->Items->Item[f->LV_CONF_ROBOTS->ItemIndex]->Caption );
 
 	TStringList *L = new TStringList;
 	g.GetFiles( p_robots, L );
@@ -2821,10 +2843,10 @@ void c_main::Robot_UnFreeze(int index)
 	bool breaked = false;
 	for ( int c = 0; c < L->Count; c++ )
 	{
-		str robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
+		String robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
 		TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 );
-		str xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
-		str xName  = INI->ReadString( UnicodeString("MAIN"), UnicodeString("name"), UnicodeString("") );
+		String xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
+		String xName  = INI->ReadString( UnicodeString("MAIN"), UnicodeString("name"), UnicodeString("") );
 
 		if ( iGroup == xGroup && iName == xName )
 		{
@@ -2847,16 +2869,16 @@ void c_main::Robot_UnFreeze(int index)
 }
 void c_main::Robots_Freeze()
 {
-	str iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
+	String iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
 
 	TStringList *L = new TStringList;
 	g.GetFiles( p_robots, L );
 
 	for ( int c = 0; c < L->Count; c++ )
 	{
-		str robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
+		String robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
 		TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 );
-		str xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
+		String xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
 
 		if ( iGroup == xGroup ) 
         {
@@ -2872,16 +2894,16 @@ void c_main::Robots_Freeze()
 }
 void c_main::Robots_UnFreeze()
 {
-	str iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
+	String iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
 
 	TStringList *L = new TStringList;
 	g.GetFiles( p_robots, L );
 
 	for ( int c = 0; c < L->Count; c++ )
 	{
-		str robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
+		String robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
         TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 );
-		str xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
+		String xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
 
 		if ( iGroup == xGroup ) 
         {
@@ -2895,7 +2917,7 @@ void c_main::Robots_UnFreeze()
 	conf_robots( f->LV_CONF_GROUPS->ItemIndex, false);
 	f->vcl->groupechoReadRobots();
 }
-void c_main::import_robots(str file)
+void c_main::import_robots(String file)
 {
 	try
 	{
@@ -2907,11 +2929,11 @@ void c_main::import_robots(str file)
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str dataline = Trim( L->Strings[c] );
+			String dataline = Trim( L->Strings[c] );
 
-			str r_name   = get_fromfile(1,dataline);
-			str r_login  = get_fromfile(2,dataline);
-			str r_pass   = get_fromfile(3,dataline);
+			String r_name   = get_fromfile(1,dataline);
+			String r_login  = get_fromfile(2,dataline);
+			String r_pass   = get_fromfile(3,dataline);
 
 			conf_robots_import( f->LV_CONF_GROUPS->ItemIndex, r_name, r_login, r_pass );
 		}
@@ -2926,9 +2948,9 @@ void c_main::import_robots(str file)
     }
 }
 
-str  c_main::get_fromfile(int i, str data)
+String  c_main::get_fromfile(int i, String data)
 {
-	str j = "NULL";
+	String j = "NULL";
 
 	int p1 = Pos(" ",data);
 	int p2 = Pos("	",data);
@@ -2947,7 +2969,7 @@ str  c_main::get_fromfile(int i, str data)
         }
 	}
 
-	str A = Trim( data.SubString(1,p-1) );
+	String A = Trim( data.SubString(1,p-1) );
 	data = Trim( data.SubString(p+1,data.Length()) );
 	p = Pos(" ",data);
     if ( p == 0 )
@@ -2963,8 +2985,8 @@ str  c_main::get_fromfile(int i, str data)
         }
 	}
 
-	str B = Trim( data.SubString(1,p-1) );
-	str C = Trim( data.SubString(p+1,data.Length()) );
+	String B = Trim( data.SubString(1,p-1) );
+	String C = Trim( data.SubString(p+1,data.Length()) );
 
 	if ( i == 1 ) j = A;
 	if ( i == 2 ) j = B;
@@ -2972,9 +2994,9 @@ str  c_main::get_fromfile(int i, str data)
 
     return j;
 }
-str  c_main::ConvertErrors(str edata)
+String  c_main::ConvertErrors(String edata)
 {
-	str j = edata;
+	String j = edata;
 	if ( Pos("Can't send messages to this user due to their privacy settings",edata) != 0 ) 
     {
         j = L"Этот пользователь принимает сообщения только от друзей";
@@ -2986,7 +3008,7 @@ str  c_main::ConvertErrors(str edata)
 
 	return " "+j+" ";
 }
-str  c_main::GetPHPLINE(str data)
+String  c_main::GetPHPLINE(String data)
 {
 	int p = Pos("{",data);
 	data = data.SubString(p+1,data.Length());
@@ -3003,8 +3025,8 @@ void c_main::GetServersFromNET(TStringList *L)
 		HTTP->ConnectTimeout 	= 10000;
 		HTTP->ReadTimeout 		= 10000;
 
-		str URL = HTTPDOMAIN + "API/get_servers.php";
-		str J = HTTP->Get( URL );
+		String URL = HTTPDOMAIN + "API/get_servers.php";
+		String J = HTTP->Get( URL );
 
 		delete HTTP;
 
@@ -3024,12 +3046,12 @@ void c_main::GetServersFromNET(TStringList *L)
         ShowMessage(L"Ошибка!\n\nНевозможно получить список серверов.\n\nПроверьте подключение к интернету и перезапустите программу.");
 	}
 }
-void c_main::asplit(TStringList* lout, str s, str separator)
+void c_main::asplit(TStringList* lout, String s, String separator)
 {
-	str buff = "";
+	String buff = "";
 	for ( int c = 1; c <= s.Length(); c++ )
 	{
-		str ch = s[c];
+		String ch = s[c];
 		if ( ch == separator )
 		{
 			lout->Add( buff );
@@ -3052,9 +3074,9 @@ c_process::c_process()
 {
 
 }
-bool c_process::Establish( str RobotName, str *Token )
+bool c_process::Establish( String RobotName, String *Token )
 {
-	str IniFile, GroupName, CurRobotName, Server_ID, Login, Password, Activity, token, Online, LastOnline;  
+	String IniFile, GroupName, CurRobotName, Server_ID, Login, Password, Activity, token, Online, LastOnline;  
     bool freeze;
 
 	TStringList *L = new TStringList;
@@ -3070,7 +3092,7 @@ bool c_process::Establish( str RobotName, str *Token )
 	}
 	delete L;
 
-	str client_id = f->LV_SERVERS->Items->Item[ f->main->CurrentServer ]->SubItems->Strings[0];
+	String client_id = f->LV_SERVERS->Items->Item[ f->main->CurrentServer ]->SubItems->Strings[0];
 	bool WasConnectedEarly;
 	bool ESTABLISH = vk.Establish(client_id,Login,Password,&token,f->main->APIV,&WasConnectedEarly);
 	f->main->iSleep(1, token);
@@ -3082,7 +3104,7 @@ bool c_process::Establish( str RobotName, str *Token )
 		{
             TDateTime D = Date();
 			TDateTime T = Time();
-			str DT = DateToStr(D) + " - " + TimeToStr(T);
+			String DT = DateToStr(D) + " - " + TimeToStr(T);
 
             TMemIniFile *INI = new TMemIniFile( UnicodeString(IniFile), TEncoding::UTF8 );
 			INI->WriteString(UnicodeString("CONNECTION"), UnicodeString("activity"),  UnicodeString(DT));
@@ -3104,9 +3126,9 @@ bool c_process::Establish( str RobotName, str *Token )
 
 	return ESTABLISH;
 }
-str  c_process::SendMessage( str UserID, str Message, str Token )
+String  c_process::SendMessage( String UserID, String Message, String Token )
 {
-	str response;
+	String response;
 	bool success = false;
 	while ( ! success )
 	{
@@ -3120,11 +3142,11 @@ str  c_process::SendMessage( str UserID, str Message, str Token )
 	if ( Pos("Captcha needed",response) > 0 )
 	{
 		bool rec = true;
-		str CaptchaSID = vk.GetParameter("captcha_sid",&response,false,false,&rec);
-		str CaptchaIMG = vk.GetParameter("captcha_img",&response,false,false,&rec);
+		String CaptchaSID = vk.GetParameter("captcha_sid",&response,false,false,&rec);
+		String CaptchaIMG = vk.GetParameter("captcha_img",&response,false,false,&rec);
 
 		f->main->log( L"Запрашивается каптча: [ " + CaptchaSID + " ] [ " + f->captcha->FixURL(CaptchaIMG) + " ]" );
-		str CaptchaANS = f->captcha->GetAnswer( CaptchaIMG );
+		String CaptchaANS = f->captcha->GetAnswer( CaptchaIMG );
 		f->main->log( L"Каптча решена: [ " + CaptchaANS + " ]" );
 		f->main->iSleep(1, Token);
 
@@ -3151,9 +3173,9 @@ str  c_process::SendMessage( str UserID, str Message, str Token )
     }
 	return response;
 }
-str  c_process::AddToFriends( str UserID, str Message, str Token )
+String  c_process::AddToFriends( String UserID, String Message, String Token )
 {
-	str response;
+	String response;
 	bool success = false;
 	while ( ! success )
 	{
@@ -3167,10 +3189,10 @@ str  c_process::AddToFriends( str UserID, str Message, str Token )
 	if ( Pos("Captcha needed",response) > 0 )
 	{
 		bool rec = true;
-		str CaptchaSID = vk.GetParameter("captcha_sid",&response,false,false,&rec);
-		str CaptchaIMG = vk.GetParameter("captcha_img",&response,false,false,&rec);
+		String CaptchaSID = vk.GetParameter("captcha_sid",&response,false,false,&rec);
+		String CaptchaIMG = vk.GetParameter("captcha_img",&response,false,false,&rec);
 		f->main->log( L"Запрашивается каптча: [ " + CaptchaSID + " ] [ " + f->captcha->FixURL(CaptchaIMG) + " ]" );
-		str CaptchaANS = f->captcha->GetAnswer( CaptchaIMG );
+		String CaptchaANS = f->captcha->GetAnswer( CaptchaIMG );
 		f->main->log( L"Каптча решена: [ " + CaptchaANS + " ]" );
 		f->main->iSleep(1, Token);
 
@@ -3196,9 +3218,9 @@ str  c_process::AddToFriends( str UserID, str Message, str Token )
     }
 	return response;
 }
-str  c_process::RequestsFriends( str Token )
+String  c_process::RequestsFriends( String Token )
 {
-	str response;
+	String response;
 
 	bool success = false;
 	while ( ! success )
@@ -3236,7 +3258,7 @@ void c_process::ProcessTwoOpen()
 	{
         if ( f->LV_WORKGROUPS->Items->Item[c]->Checked )
 		{
-			str ActiveGroup = Trim(f->LV_WORKGROUPS->Items->Item[c]->Caption);
+			String ActiveGroup = Trim(f->LV_WORKGROUPS->Items->Item[c]->Caption);
 
 			f->main->logline(L"");
 			f->main->log(L"ГРУППА : [ "+ActiveGroup+" ]");
@@ -3262,13 +3284,13 @@ void c_process::ProcessTwoOpen()
 
 			TStringList *L_ROBOTS = new TStringList;
 			g.GetFiles( f->main->p_robots, L_ROBOTS );
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelFile, Online, LastOnline;  
+			String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelFile, Online, LastOnline;  
             bool freeze;
 			for ( int x = 0; x < L_ROBOTS->Count; x++ )
 			{
 				ModelFile             = f->main->p_robots + L_ROBOTS->Strings[x] + "\\Model.txt";
-				str AutoStopKeysFile  = f->main->p_robots + L_ROBOTS->Strings[x] + "\\AutoStopKeys.txt";
-				str AutoStopPostsFile = f->main->p_robots + L_ROBOTS->Strings[x] + "\\AutoStopPosts.txt";
+				String AutoStopKeysFile  = f->main->p_robots + L_ROBOTS->Strings[x] + "\\AutoStopKeys.txt";
+				String AutoStopPostsFile = f->main->p_robots + L_ROBOTS->Strings[x] + "\\AutoStopPosts.txt";
 				f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 				if ( freeze ) 
@@ -3395,7 +3417,7 @@ void c_process::ProcessTwoOpen()
         f->main->logline(L"[ ПРОЦЕСС УСПЕШНО ЗАВЕРШЕН ]");
     }
 }
-void c_process::ProcessHello(str GroupName)
+void c_process::ProcessHello(String GroupName)
 {
 	f->BAR->Position = 0;
 	f->BAR->Max      = f->main->getCountOfHello(GroupName);
@@ -3410,10 +3432,10 @@ void c_process::ProcessHello(str GroupName)
 
 	for ( int x = 0; x < L->Count; x++ )
 	{
-		str GROUP    = Trim( g.Encrypt(1,5,"#",L->Strings[x]) );
-		str UID 	 = Trim( g.Encrypt(2,5,"#",L->Strings[x]) );
-		str NAME     = Trim( g.Encrypt(3,5,"#",L->Strings[x]) );
-		str SURNAME  = Trim( g.Encrypt(4,5,"#",L->Strings[x]) );
+		String GROUP    = Trim( g.Encrypt(1,5,"#",L->Strings[x]) );
+		String UID 	 = Trim( g.Encrypt(2,5,"#",L->Strings[x]) );
+		String NAME     = Trim( g.Encrypt(3,5,"#",L->Strings[x]) );
+		String SURNAME  = Trim( g.Encrypt(4,5,"#",L->Strings[x]) );
 
 		if ( GROUP == GroupName )
 		{
@@ -3440,7 +3462,7 @@ void c_process::ProcessHello(str GroupName)
 	delete L;
 	g.ProcessMessages();
 }
-void c_process::ProcessHelloDo(str Group, str UserID, str UserName, str UserSurname)
+void c_process::ProcessHelloDo(String Group, String UserID, String UserName, String UserSurname)
 {
 	TStringList *XL = new TStringList;
 	TStringList *L = new TStringList;
@@ -3448,7 +3470,7 @@ void c_process::ProcessHelloDo(str Group, str UserID, str UserName, str UserSurn
     
 	for ( int c = 0; c < L->Count; c++ )
 	{
-		str CurGroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+		String CurGroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
         bool freeze;
 		f->main->get_robotdata( c, &CurGroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 		if ( CurGroupName == Group ) 
@@ -3458,28 +3480,28 @@ void c_process::ProcessHelloDo(str Group, str UserID, str UserName, str UserSurn
 	}
 
     int robotIndex = f->main->get_robotnext( Group );
-	str RobotPath   = f->main->p_robots + XL->Strings[robotIndex] + "\\";
-	str RobotConfig = RobotPath + "Conf.ini";
+	String RobotPath   = f->main->p_robots + XL->Strings[robotIndex] + "\\";
+	String RobotConfig = RobotPath + "Conf.ini";
 
 	TMemIniFile *INI = new TMemIniFile( UnicodeString(RobotConfig),TEncoding::UTF8 );
-	str iGroupName 	= INI->ReadString( UnicodeString("MAIN"),       UnicodeString("owner"),     UnicodeString("0") );
-	str iRobotName  = INI->ReadString( UnicodeString("MAIN"),       UnicodeString("name"),  	  UnicodeString("0") );
-	str iLogin 		= INI->ReadString( UnicodeString("ACCOUNT"),    UnicodeString("login"),     UnicodeString("0") );
-	str iPassword  	= INI->ReadString( UnicodeString("ACCOUNT"),    UnicodeString("password"),  UnicodeString("0") );
-	str iActivity 	= INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("activity"),  UnicodeString("0") );
-	str iServer_ID 	= INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("client_id"), UnicodeString("0") );
-	str iToken     	= INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("token"),     UnicodeString("0") );
+	String iGroupName 	= INI->ReadString( UnicodeString("MAIN"),       UnicodeString("owner"),     UnicodeString("0") );
+	String iRobotName  = INI->ReadString( UnicodeString("MAIN"),       UnicodeString("name"),  	  UnicodeString("0") );
+	String iLogin 		= INI->ReadString( UnicodeString("ACCOUNT"),    UnicodeString("login"),     UnicodeString("0") );
+	String iPassword  	= INI->ReadString( UnicodeString("ACCOUNT"),    UnicodeString("password"),  UnicodeString("0") );
+	String iActivity 	= INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("activity"),  UnicodeString("0") );
+	String iServer_ID 	= INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("client_id"), UnicodeString("0") );
+	String iToken     	= INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("token"),     UnicodeString("0") );
 	delete INI;
 	delete L;
 	delete XL;
 
 	ProcessHelloDoSend(Group,UserID,UserName,UserSurname,iRobotName,iToken,RobotPath);
 }
-void c_process::ProcessHelloDoSend(str Group, str UserID, str UserName, str UserSurname, str RobotName, str Token, str RobotPath)
+void c_process::ProcessHelloDoSend(String Group, String UserID, String UserName, String UserSurname, String RobotName, String Token, String RobotPath)
 {
 	TStringList *L = new TStringList;
 	L->LoadFromFile(RobotPath+"Hello.txt");
-	str LINE = L->Strings[ Random( L->Count ) ];
+	String LINE = L->Strings[ Random( L->Count ) ];
 
 	f->main->log(L"Робот : [ " + RobotName + " ]");
 
@@ -3488,7 +3510,7 @@ void c_process::ProcessHelloDoSend(str Group, str UserID, str UserName, str User
 		f->main->log(L"Пользователь: [ " + UserID + " ] , [ " + UserName + " " + UserSurname + " ]");
 
         LINE = f->ii->MakePostLine(LINE);
-		str response = SendMessage(UserID,LINE,Token);
+		String response = SendMessage(UserID,LINE,Token);
 
 		if ( Pos("error",response) == 0 )
 		{
@@ -3518,9 +3540,9 @@ void c_process::ProcessHelloDoSend(str Group, str UserID, str UserName, str User
 
 	delete L;
 }
-void c_process::ProcessFriendConfirm(str GroupName, str RobotName, str Server_ID, str Login, str Password, str Token, str Activity, str ModelFile)
+void c_process::ProcessFriendConfirm(String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity, String ModelFile)
 {
-	str response = RequestsFriends(Token);
+	String response = RequestsFriends(Token);
 
 	if ( Pos("error",response) == 0 )
 	{
@@ -3530,8 +3552,8 @@ void c_process::ProcessFriendConfirm(str GroupName, str RobotName, str Server_ID
 		{
 			for ( int cnt = 1; cnt <= CountOf; cnt++ )
 			{
-				str UserID      = "NULL";
-				str UserMESSAGE = "NULL";
+				String UserID      = "NULL";
+				String UserMESSAGE = "NULL";
 
 				vk.GetParameterIntString(cnt,"user_id","message",&UserID,&UserMESSAGE,response);
 
@@ -3544,7 +3566,7 @@ void c_process::ProcessFriendConfirm(str GroupName, str RobotName, str Server_ID
                     f->main->log(L"От пользователя: [ " + UserID + L" ] Текстовая вставка: [ " + UserMESSAGE +" ]" );
                 }
 
-				str response;
+				String response;
 				bool success = false;
 				while ( ! success )
 				{
@@ -3559,12 +3581,12 @@ void c_process::ProcessFriendConfirm(str GroupName, str RobotName, str Server_ID
 				{
 					bool processed = false;
 
-					str code177 = "error_code\":177";
+					String code177 = "error_code\":177";
 					if ( Pos(code177,response) != 0 )
 					{
 						f->main->log(L"Ошибка 177. Страница пользователя удалена.");
 
-						str response;
+						String response;
 
 						bool success = false;
 						while ( ! success )
@@ -3585,12 +3607,12 @@ void c_process::ProcessFriendConfirm(str GroupName, str RobotName, str Server_ID
 						processed = true;
 					}
 
-					str code1 = "error_code\":1";
+					String code1 = "error_code\":1";
 					if ( Pos(code1,response) != 0 )
 					{
 						f->main->log(L"Ошибка 1. Робот находится в чёрном списке.");
 
-						str response;
+						String response;
 
 						bool success = false;
 						while ( ! success )
@@ -3644,7 +3666,7 @@ void c_process::ProcessFriendConfirm(str GroupName, str RobotName, str Server_ID
 
 	f->main->logline(L"");
 }
-void c_process::ProcessAutoAnswer(str GroupName, str RobotName, str Server_ID, str Login, str Password, str Token, str Activity, str ModelFile)
+void c_process::ProcessAutoAnswer(String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity, String ModelFile)
 {
 	f->main->WriteInboxList(Token);
 
@@ -3658,7 +3680,7 @@ void c_process::ProcessAutoAnswer(str GroupName, str RobotName, str Server_ID, s
     }
 	f->main->logline(L"");
 }
-void c_process::ProcessAutoAnswerCheckNew(str RobotName, str Token)
+void c_process::ProcessAutoAnswerCheckNew(String RobotName, String Token)
 {
 	TStringList *NEW = new TStringList;
 
@@ -3667,12 +3689,12 @@ void c_process::ProcessAutoAnswerCheckNew(str RobotName, str Token)
 
 	for ( int c = f->main->INBOX->Count-1; c >= 0 ; c-- )
 	{
-		str utoken          = g.Encrypt(1,6,"#",f->main->INBOX->Strings[c]);
-		str mid 			= g.Encrypt(2,6,"#",f->main->INBOX->Strings[c]);
-		str uid 			= g.Encrypt(3,6,"#",f->main->INBOX->Strings[c]);
-		str read_state 		= g.Encrypt(4,6,"#",f->main->INBOX->Strings[c]);
-		str title           = g.Encrypt(5,6,"#",f->main->INBOX->Strings[c]);
-		str body            = g.Encrypt(6,6,"#",f->main->INBOX->Strings[c]);
+		String utoken          = g.Encrypt(1,6,"#",f->main->INBOX->Strings[c]);
+		String mid 			= g.Encrypt(2,6,"#",f->main->INBOX->Strings[c]);
+		String uid 			= g.Encrypt(3,6,"#",f->main->INBOX->Strings[c]);
+		String read_state 		= g.Encrypt(4,6,"#",f->main->INBOX->Strings[c]);
+		String title           = g.Encrypt(5,6,"#",f->main->INBOX->Strings[c]);
+		String body            = g.Encrypt(6,6,"#",f->main->INBOX->Strings[c]);
 
 		bool ex = false;
 
@@ -3715,7 +3737,7 @@ void c_process::ProcessAutoAnswerCheckNew(str RobotName, str Token)
 		f->main->make_new_inbox(NEW,USERS);
 		for ( int c = 0; c < USERS->Count; c++ )
 		{
-			str uid = USERS->Strings[c];
+			String uid = USERS->Strings[c];
 
 			if ( f->main->TERMINATED ) 
             {
@@ -3725,7 +3747,7 @@ void c_process::ProcessAutoAnswerCheckNew(str RobotName, str Token)
 			TStringList *USERMESSAGES = new TStringList;
 			for ( int i = 0; i < NEW->Count; i++ )
 			{
-				str nuid = g.Encrypt(3,6,"#",NEW->Strings[i]);
+				String nuid = g.Encrypt(3,6,"#",NEW->Strings[i]);
 				if ( nuid == uid ) 
                 {
                     USERMESSAGES->Add( NEW->Strings[i] );
@@ -3752,9 +3774,9 @@ void c_process::ProcessAutoAnswerCheckNew(str RobotName, str Token)
 
 	delete NEW;
 }
-void c_process::ProcessAutoAnswerAddToDialogs(TStringList *NEWBOX, str RobotName, str Token, str Uid)
+void c_process::ProcessAutoAnswerAddToDialogs(TStringList *NEWBOX, String RobotName, String Token, String Uid)
 {
-	str file = f->main->p_dialogs;
+	String file = f->main->p_dialogs;
 
 	TStringList *DIALOG = new TStringList;
 	TStringList *MESSAGEDATA = new TStringList;
@@ -3764,21 +3786,21 @@ void c_process::ProcessAutoAnswerAddToDialogs(TStringList *NEWBOX, str RobotName
 	DIALOG->Add("A_NULL");
 	DIALOG->Add(Uid);
 
-	str lastmid = "JNULL";
+	String lastmid = "JNULL";
 
 	for ( int c = 0; c < NEWBOX->Count; c++ )
 	{
-		str utoken          = g.Encrypt(1,6,"#",NEWBOX->Strings[c]);
-		str mid 			= g.Encrypt(2,6,"#",NEWBOX->Strings[c]);        
+		String utoken          = g.Encrypt(1,6,"#",NEWBOX->Strings[c]);
+		String mid 			= g.Encrypt(2,6,"#",NEWBOX->Strings[c]);        
         lastmid = mid;
-		str uid 			= g.Encrypt(3,6,"#",NEWBOX->Strings[c]);
-		str read_state 		= g.Encrypt(4,6,"#",NEWBOX->Strings[c]);
-		str title           = g.Encrypt(5,6,"#",NEWBOX->Strings[c]);
-		str body            = g.Encrypt(6,6,"#",NEWBOX->Strings[c]);
+		String uid 			= g.Encrypt(3,6,"#",NEWBOX->Strings[c]);
+		String read_state 		= g.Encrypt(4,6,"#",NEWBOX->Strings[c]);
+		String title           = g.Encrypt(5,6,"#",NEWBOX->Strings[c]);
+		String body            = g.Encrypt(6,6,"#",NEWBOX->Strings[c]);
 
 		TDateTime D = Date();
 		TDateTime T = Time();
-		str DT = DateToStr(D) + " - " + TimeToStr(T);
+		String DT = DateToStr(D) + " - " + TimeToStr(T);
 		DIALOG->Add("");
 		DIALOG->Add("#MESSAGE");
 		DIALOG->Add("#INC");
@@ -3820,7 +3842,7 @@ void c_process::ProcessAutoAnswerRunBuffer()
 
 		for ( int c = 0; c < f->main->AUTOANSBUFF->Count; c++ )
 		{
-			str robot = g.Encrypt(1,2,"|",f->main->AUTOANSBUFF->Strings[c]);
+			String robot = g.Encrypt(1,2,"|",f->main->AUTOANSBUFF->Strings[c]);
 
 			int thisIndex = f->main->getrobotindex(robot,L);
 			if ( thisIndex < indexToAddLevel )
@@ -3840,17 +3862,17 @@ void c_process::ProcessAutoAnswerRunBuffer()
         TStringList *MESSAGEDATA 	= new TStringList;
 		TStringList *DIALOG      	= new TStringList;
 
-		str RobotName 	= g.Encrypt(1,7,"|",L->Strings[c]);
-		str Token 		= g.Encrypt(2,7,"|",L->Strings[c]);
-		str file 		= g.Encrypt(3,7,"|",L->Strings[c]);
-		str dialog 		= g.Encrypt(4,7,"|",L->Strings[c]);
-		str message 	= g.Encrypt(5,7,"|",L->Strings[c]);
-		str uid 		= g.Encrypt(6,7,"|",L->Strings[c]);
-		str lastmid  	= g.Encrypt(7,7,"|",L->Strings[c]);
+		String RobotName 	= g.Encrypt(1,7,"|",L->Strings[c]);
+		String Token 		= g.Encrypt(2,7,"|",L->Strings[c]);
+		String file 		= g.Encrypt(3,7,"|",L->Strings[c]);
+		String dialog 		= g.Encrypt(4,7,"|",L->Strings[c]);
+		String message 	= g.Encrypt(5,7,"|",L->Strings[c]);
+		String uid 		= g.Encrypt(6,7,"|",L->Strings[c]);
+		String lastmid  	= g.Encrypt(7,7,"|",L->Strings[c]);
 
 		if ( ! f->main->sended_count_iflimit(RobotName) )
 		{
-			str responsedatax;
+			String responsedatax;
 
 			bool asuccess = false;
 			while ( ! asuccess )
@@ -3864,8 +3886,8 @@ void c_process::ProcessAutoAnswerRunBuffer()
 			}
 
 			bool rec;
-			str uname    = vk.GetParameter("first_name",&responsedatax,false,false,&rec);
-			str usurname = vk.GetParameter("last_name",&responsedatax,false,false,&rec);
+			String uname    = vk.GetParameter("first_name",&responsedatax,false,false,&rec);
+			String usurname = vk.GetParameter("last_name",&responsedatax,false,false,&rec);
 
 			DIALOG->Text 		= g.EncryptToList("~",dialog);
 			MESSAGEDATA->Text 	= g.EncryptToList("~",message);
@@ -3948,18 +3970,18 @@ void c_process::ProcessAutoAnswerRunBuffer()
 
 	delete L;
 }
-void c_process::ProcessSpeech(str _GroupName)
+void c_process::ProcessSpeech(String _GroupName)
 {
 	TStringList *L = new TStringList;
 	g.GetFiles( f->main->p_robots, L );
-	str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelGlobal, ModelFile, Online, LastOnline;  
+	String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelGlobal, ModelFile, Online, LastOnline;  
     bool freeze;
 	for ( int x = 0; x < L->Count; x++ )
 	{
 		ModelGlobal           = f->main->p_robots + L->Strings[x] + "\\Global.txt";
 		ModelFile             = f->main->p_robots + L->Strings[x] + "\\Model.txt";
-		str AutoStopKeysFile  = f->main->p_robots + L->Strings[x] + "\\AutoStopKeys.txt";
-		str AutoStopPostsFile = f->main->p_robots + L->Strings[x] + "\\AutoStopPosts.txt";
+		String AutoStopKeysFile  = f->main->p_robots + L->Strings[x] + "\\AutoStopKeys.txt";
+		String AutoStopPostsFile = f->main->p_robots + L->Strings[x] + "\\AutoStopPosts.txt";
 		f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 		if ( freeze ) 
@@ -3979,7 +4001,7 @@ void c_process::ProcessSpeech(str _GroupName)
         }
 	}
 }
-void c_process::ProcessSpeech(str GroupName, str RobotName, str Server_ID, str Login, str Password, str Token, str Activity, str ModelGlobalFile, str ModelFile, str AutoStopKeysFile, str AutoStopPostsFile)
+void c_process::ProcessSpeech(String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity, String ModelGlobalFile, String ModelFile, String AutoStopKeysFile, String AutoStopPostsFile)
 {
 	f->main->WriteInboxList(Token);
 
@@ -3992,14 +4014,14 @@ void c_process::ProcessSpeech(str GroupName, str RobotName, str Server_ID, str L
 
 	for ( int c = 0; c < DIALOGS->Count; c++ )
 	{
-		str DialogFile = f->main->p_dialogs + DIALOGS->Strings[c];
+		String DialogFile = f->main->p_dialogs + DIALOGS->Strings[c];
 		TStringList *DIALOG = new TStringList;
 		DIALOG->LoadFromFile( DialogFile );
 
-		str ROBOTGID = DIALOG->Strings[0];
-		str NAME     = DIALOG->Strings[1];
-		str SURNAME  = DIALOG->Strings[2];
-		str USERID   = DIALOG->Strings[3];
+		String ROBOTGID = DIALOG->Strings[0];
+		String NAME     = DIALOG->Strings[1];
+		String SURNAME  = DIALOG->Strings[2];
+		String USERID   = DIALOG->Strings[3];
 
 		if ( RobotName == ROBOTGID )
 		{
@@ -4038,21 +4060,21 @@ void c_process::ProcessSpeech(str GroupName, str RobotName, str Server_ID, str L
 
 	f->main->logline("");
 }
-void c_process::ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserID, TStringList *DIALOG, str Token, str RobotModelGlobalFile, str RobotModelFile, bool *SaveDialog, str AutoStopKeysFile, str AutoStopPostsFile)
+void c_process::ProcessSpeechUser(String RobotGID, String Name, String SurName, String UserID, TStringList *DIALOG, String Token, String RobotModelGlobalFile, String RobotModelFile, bool *SaveDialog, String AutoStopKeysFile, String AutoStopPostsFile)
 {
 	f->main->log(L"Обработка диалога [ "+Name+" "+SurName+" ] [ "+UserID+" ]");
     
 	TStringList *NEWSTACK = new TStringList;
-	str inboxIDS = "";
+	String inboxIDS = "";
 
 	for ( int c = f->main->INBOX->Count-1; c >= 0 ; c-- )
 	{
-		str utoken          = g.Encrypt(1,6,"#",f->main->INBOX->Strings[c]);
-		str mid 			= g.Encrypt(2,6,"#",f->main->INBOX->Strings[c]);
-		str uid 			= g.Encrypt(3,6,"#",f->main->INBOX->Strings[c]);
-		str read_state 		= g.Encrypt(4,6,"#",f->main->INBOX->Strings[c]);
-		str title           = g.Encrypt(5,6,"#",f->main->INBOX->Strings[c]);
-		str body            = g.Encrypt(6,6,"#",f->main->INBOX->Strings[c]);
+		String utoken          = g.Encrypt(1,6,"#",f->main->INBOX->Strings[c]);
+		String mid 			= g.Encrypt(2,6,"#",f->main->INBOX->Strings[c]);
+		String uid 			= g.Encrypt(3,6,"#",f->main->INBOX->Strings[c]);
+		String read_state 		= g.Encrypt(4,6,"#",f->main->INBOX->Strings[c]);
+		String title           = g.Encrypt(5,6,"#",f->main->INBOX->Strings[c]);
+		String body            = g.Encrypt(6,6,"#",f->main->INBOX->Strings[c]);
 
 		if ( utoken == Token && uid == UserID && 
              Pos("#ID="+mid,DIALOG->Text) == 0 )
@@ -4063,7 +4085,7 @@ void c_process::ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserI
 
 			TDateTime D = Date();
 			TDateTime T = Time();
-			str DT = DateToStr(D) + " - " + TimeToStr(T);
+			String DT = DateToStr(D) + " - " + TimeToStr(T);
 			DIALOG->Add("");
 			DIALOG->Add("#MESSAGE");
 			DIALOG->Add("#INC");
@@ -4094,7 +4116,7 @@ void c_process::ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserI
 	{
 		if ( inboxIDS.Length() > 0 )
 		{
-			str tidmsgs = inboxIDS.SubString(1,inboxIDS.Length()-1);
+			String tidmsgs = inboxIDS.SubString(1,inboxIDS.Length()-1);
 
 			bool csuccess = false;
 			while ( ! csuccess )
@@ -4115,7 +4137,7 @@ void c_process::ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserI
 	{
 		if ( inboxIDS.Length() > 0 )
 		{
-			str tidmsgs = inboxIDS.SubString(1,inboxIDS.Length()-1);
+			String tidmsgs = inboxIDS.SubString(1,inboxIDS.Length()-1);
 
 			bool csuccess = false;
 			while ( ! csuccess )
@@ -4134,7 +4156,7 @@ void c_process::ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserI
 
 	delete NEWSTACK;
 }
-void c_process::ProcessSpeechUserDo(str UserID, TStringList *DIALOG, str STACK, str Token, str RobotGlobalModelFile, str RobotModelFile, bool *SaveDialog, str AutoStopKeysFile, str AutoStopPostsFile, bool *MakeReaded)
+void c_process::ProcessSpeechUserDo(String UserID, TStringList *DIALOG, String STACK, String Token, String RobotGlobalModelFile, String RobotModelFile, bool *SaveDialog, String AutoStopKeysFile, String AutoStopPostsFile, bool *MakeReaded)
 {
 	TStringList *GLOBALMODEL = new TStringList;
 	TStringList *MODEL = new TStringList;
@@ -4144,7 +4166,7 @@ void c_process::ProcessSpeechUserDo(str UserID, TStringList *DIALOG, str STACK, 
 	MODEL->LoadFromFile(RobotModelFile);
 	STAGE->Text = MODEL->Text;
 
-	str CURRENT_STAGE = f->main->GetLastStageName(DIALOG);
+	String CURRENT_STAGE = f->main->GetLastStageName(DIALOG);
 	f->main->log(L"Текущий stage: [ #"+CURRENT_STAGE+" ]");
 
 	if ( CURRENT_STAGE == "HELLO" ) 
@@ -4156,7 +4178,7 @@ void c_process::ProcessSpeechUserDo(str UserID, TStringList *DIALOG, str STACK, 
 		f->main->GetOnlyOneStage(STAGE,CURRENT_STAGE);
 		if ( STAGE->Strings[0] != "NULL" )
 		{
-			str TARGET_STAGE = f->ii->GetStage(STACK,STAGE);
+			String TARGET_STAGE = f->ii->GetStage(STACK,STAGE);
 			if ( TARGET_STAGE == "NULL" || 
                  Pos("FIN",TARGET_STAGE) != 0 )
 			{
@@ -4176,7 +4198,7 @@ void c_process::ProcessSpeechUserDo(str UserID, TStringList *DIALOG, str STACK, 
 			{
 				if ( ! f->ii->IfAutoStop(STACK,AutoStopKeysFile) )
 				{
-					str GLOGALPOST = f->ii->GetGlobalPostText(STACK,GLOBALMODEL,DIALOG);
+					String GLOGALPOST = f->ii->GetGlobalPostText(STACK,GLOBALMODEL,DIALOG);
 					if ( GLOGALPOST == "NULL" ) 
                     {
                         SendStageX(UserID,DIALOG,STACK,Token,MODEL,TARGET_STAGE);
@@ -4198,13 +4220,13 @@ void c_process::ProcessSpeechUserDo(str UserID, TStringList *DIALOG, str STACK, 
 	delete MODEL;
 	delete STAGE;
 }
-void c_process::ProcessMessages_UIDS_To_GlobalUsersCache( str RobotName, str Token )
+void c_process::ProcessMessages_UIDS_To_GlobalUsersCache( String RobotName, String Token )
 {
 	TStringList *UIDS = new TStringList;
 	f->main->GetDialogs(UIDS, 2, 2, Token, RobotName);
 	for ( int c = 0; c < UIDS->Count; c++ )
 	{
-		str UID = UIDS->Strings[c];
+		String UID = UIDS->Strings[c];
 		if ( ! f->main->GlobalUsersCache_Exist( UID ) )
 		{
 			f->main->GlobalUsersCache_Add( UID );
@@ -4218,11 +4240,11 @@ void c_process::ProcessTwoClose()
 	f->TINTERVAL->Enabled = f->ch_entimer->Checked;
 	g.ProcessMessages();
 }
-void c_process::SendStage1(str UserID, TStringList *DIALOG, str STACK, str Token, TStringList *MODEL)
+void c_process::SendStage1(String UserID, TStringList *DIALOG, String STACK, String Token, TStringList *MODEL)
 {
 	f->main->log(L"Отправка первого stage.");
 
-	str STAGENAME;
+	String STAGENAME;
 
 	TStringList *STAGE = new TStringList;                  
     STAGE->Text = MODEL->Text;
@@ -4233,7 +4255,7 @@ void c_process::SendStage1(str UserID, TStringList *DIALOG, str STACK, str Token
 
 	for ( int c = 0; c < MODEL->Count; c++ )
 	{
-		str l = MODEL->Strings[c];
+		String l = MODEL->Strings[c];
 		if ( Pos("#",l) != 0 )
 		{
 			STAGENAME = l.SubString(2,l.Length());
@@ -4241,10 +4263,10 @@ void c_process::SendStage1(str UserID, TStringList *DIALOG, str STACK, str Token
 
 			for ( int x = 0; x < STAGE->Count; x++ )
 			{
-				str ln = STAGE->Strings[x];
+				String ln = STAGE->Strings[x];
 				if ( Pos("POST'",ln) != 0 )
 				{
-					str PostLine = g.Encrypt(2,2,"'",ln);
+					String PostLine = g.Encrypt(2,2,"'",ln);
 					f->ii->WritePostDataIn(IMAGELIST,AUDIOLIST,RECORDLIST,&PostLine);
 					POST->Add( PostLine );
 				}
@@ -4268,10 +4290,10 @@ void c_process::SendStage1(str UserID, TStringList *DIALOG, str STACK, str Token
         }
 	}
 
-	str DATAPOST = POST->Strings[ Random( POST->Count ) ];
+	String DATAPOST = POST->Strings[ Random( POST->Count ) ];
 	DATAPOST = f->ii->MakePostLine(DATAPOST);
 
-	str MESSID = SendMessage( UserID, DATAPOST, Token );
+	String MESSID = SendMessage( UserID, DATAPOST, Token );
 	if ( Pos("error",MESSID) == 0 )
 	{
 		f->main->log(L"Текст: [ " + DATAPOST + " ]" );
@@ -4279,7 +4301,7 @@ void c_process::SendStage1(str UserID, TStringList *DIALOG, str STACK, str Token
 
 		TDateTime D = Date();
 		TDateTime T = Time();
-		str DT = DateToStr(D) + " - " + TimeToStr(T);
+		String DT = DateToStr(D) + " - " + TimeToStr(T);
 		DIALOG->Add("");
 		DIALOG->Add("#MESSAGE");
 		DIALOG->Add("#OUT");
@@ -4309,10 +4331,10 @@ void c_process::SendStage1(str UserID, TStringList *DIALOG, str STACK, str Token
 	delete AUDIOLIST;
 	delete RECORDLIST;
 }
-void c_process::SendGlobalPost(str UserID, TStringList *DIALOG, str POSTTEXT, str Token, TStringList *MODEL, str CURRENT_STAGE)
+void c_process::SendGlobalPost(String UserID, TStringList *DIALOG, String POSTTEXT, String Token, TStringList *MODEL, String CURRENT_STAGE)
 {
 	POSTTEXT = f->ii->MakePostLine(POSTTEXT);
-	str MESSID = SendMessage( UserID, POSTTEXT, Token );
+	String MESSID = SendMessage( UserID, POSTTEXT, Token );
 
 	if ( Pos("error",MESSID) == 0 )
 	{
@@ -4321,7 +4343,7 @@ void c_process::SendGlobalPost(str UserID, TStringList *DIALOG, str POSTTEXT, st
 
 		TDateTime D = Date();
 		TDateTime T = Time();
-		str DT = DateToStr(D) + " - " + TimeToStr(T);
+		String DT = DateToStr(D) + " - " + TimeToStr(T);
 		DIALOG->Add("");
 		DIALOG->Add("#MESSAGE");
 		DIALOG->Add("#OUT");
@@ -4342,7 +4364,7 @@ void c_process::SendGlobalPost(str UserID, TStringList *DIALOG, str POSTTEXT, st
 		f->main->log(L"Невозможно отправить сообщение.. (");
 	}
 }
-void c_process::SendStageX(str UserID, TStringList *DIALOG, str STACK, str Token, TStringList *MODEL, str TARGET_STAGE)
+void c_process::SendStageX(String UserID, TStringList *DIALOG, String STACK, String Token, TStringList *MODEL, String TARGET_STAGE)
 {
 	f->main->log(L"Отправка stage: [ #"+TARGET_STAGE+" ]");
 
@@ -4356,10 +4378,10 @@ void c_process::SendStageX(str UserID, TStringList *DIALOG, str STACK, str Token
 	f->main->GetOnlyOneStage(STAGE,TARGET_STAGE);
 	for ( int x = 0; x < STAGE->Count; x++ )
 	{
-		str ln = STAGE->Strings[x];
+		String ln = STAGE->Strings[x];
 		if ( Pos("POST'",ln) != 0 )
 		{
-			str PostLine = g.Encrypt(2,2,"'",ln);
+			String PostLine = g.Encrypt(2,2,"'",ln);
 			f->ii->WritePostDataIn(IMAGELIST,AUDIOLIST,RECORDLIST,&PostLine);
 			POST->Add( PostLine );
 		}
@@ -4380,10 +4402,10 @@ void c_process::SendStageX(str UserID, TStringList *DIALOG, str STACK, str Token
 		}
 	}
 
-	str DATAPOST = POST->Strings[ Random( POST->Count ) ];
+	String DATAPOST = POST->Strings[ Random( POST->Count ) ];
 	DATAPOST = f->ii->MakePostLine(DATAPOST);
 
-	str MESSID = SendMessage( UserID, DATAPOST, Token );
+	String MESSID = SendMessage( UserID, DATAPOST, Token );
     if ( Pos("error",MESSID) == 0 )
 	{
 		f->main->log(L"Текст: [ " + DATAPOST + " ]" );
@@ -4391,7 +4413,7 @@ void c_process::SendStageX(str UserID, TStringList *DIALOG, str STACK, str Token
 
 		TDateTime D = Date();
 		TDateTime T = Time();
-		str DT = DateToStr(D) + " - " + TimeToStr(T);
+		String DT = DateToStr(D) + " - " + TimeToStr(T);
 		DIALOG->Add("");
 		DIALOG->Add("#MESSAGE");
 		DIALOG->Add("#OUT");
@@ -4421,12 +4443,12 @@ void c_process::SendStageX(str UserID, TStringList *DIALOG, str STACK, str Token
 	delete AUDIOLIST;
 	delete RECORDLIST;
 }
-void c_process::SendAutoAns(str RobotName, str UserID, str MessageData, str Token, TStringList *DIALOG, bool *success, bool *e900, bool *e902)
+void c_process::SendAutoAns(String RobotName, String UserID, String MessageData, String Token, TStringList *DIALOG, bool *success, bool *e900, bool *e902)
 {
 	f->main->WriteOutboxAutoAnsList(Token,RobotName);
 	f->main->log(L"Входящий текст: [ "+ Trim( MessageData.SubString(1,MessageData.Length()-3) ) +" ]");
 
-	str TARGETSTAGE = "NULL";
+	String TARGETSTAGE = "NULL";
 	f->ii->GetAutoAns(&MessageData,&TARGETSTAGE,Token,UserID);
 	f->main->log(L"Отправка stage: [ "+TARGETSTAGE+" ]");
 
@@ -4436,7 +4458,7 @@ void c_process::SendAutoAns(str RobotName, str UserID, str MessageData, str Toke
 
 	f->ii->WritePostDataIn(IMAGELIST,AUDIOLIST,RECORDLIST,&MessageData);
 	MessageData = f->ii->MakePostLine(MessageData);
-	str MESSID = SendMessage( UserID, MessageData, Token );
+	String MESSID = SendMessage( UserID, MessageData, Token );
 
 	if ( Pos("error",MESSID) == 0 )
 	{
@@ -4445,7 +4467,7 @@ void c_process::SendAutoAns(str RobotName, str UserID, str MessageData, str Toke
 
 		TDateTime D = Date();
 		TDateTime T = Time();
-		str DT = DateToStr(D) + " - " + TimeToStr(T);
+		String DT = DateToStr(D) + " - " + TimeToStr(T);
 		DIALOG->Add("");
 		DIALOG->Add("#MESSAGE");
 		DIALOG->Add("#OUT");
@@ -4484,13 +4506,13 @@ void c_process::SendAutoAns(str RobotName, str UserID, str MessageData, str Toke
 	delete AUDIOLIST;
 	delete RECORDLIST;
 }
-void c_process::SendAutoStop(str UserID, TStringList *DIALOG, str STACK, str Token, str AutoStopPostsFile)
+void c_process::SendAutoStop(String UserID, TStringList *DIALOG, String STACK, String Token, String AutoStopPostsFile)
 {
 	f->main->log(L"Отправка: [ Автостоп вариант ]");
 
-	str DATAPOST = f->ii->GetAutoStopMessage(AutoStopPostsFile);
+	String DATAPOST = f->ii->GetAutoStopMessage(AutoStopPostsFile);
     DATAPOST = f->ii->MakePostLine(DATAPOST);
-	str MESSID = SendMessage( UserID, DATAPOST, Token );
+	String MESSID = SendMessage( UserID, DATAPOST, Token );
 
     if ( Pos("error",MESSID) == 0 )
 	{
@@ -4499,7 +4521,7 @@ void c_process::SendAutoStop(str UserID, TStringList *DIALOG, str STACK, str Tok
 
 		TDateTime D = Date();
 		TDateTime T = Time();
-		str DT = DateToStr(D) + " - " + TimeToStr(T);
+		String DT = DateToStr(D) + " - " + TimeToStr(T);
 		DIALOG->Add("");
 		DIALOG->Add("#MESSAGE");
 		DIALOG->Add("#OUT");
@@ -4519,20 +4541,20 @@ void c_process::SendAutoStop(str UserID, TStringList *DIALOG, str STACK, str Tok
 		f->main->log(L"Невозможно отправить сообщение.. (");
 	}
 }
-void c_process::SendImage(str UserID, TStringList *IMAGELIST, str Token)
+void c_process::SendImage(String UserID, TStringList *IMAGELIST, String Token)
 {
 	try
 	{
 		if ( IMAGELIST->Count > 0 )
 		{
-			str x = IMAGELIST->Strings[ Random( IMAGELIST->Count ) ];
-			str afx = "[IMAGE="; 
+			String x = IMAGELIST->Strings[ Random( IMAGELIST->Count ) ];
+			String afx = "[IMAGE="; 
             x = x.SubString(afx.Length()+1,x.Length()); 
             x = x.SubString(1,x.Length()-1);
-			str fullpath = f->main->p_resources_images + x;
+			String fullpath = f->main->p_resources_images + x;
 
 			bool success;
-			str uploadurl = vk.photos_getUploadServer( &success, Token );
+			String uploadurl = vk.photos_getUploadServer( &success, Token );
 
 			// JSON //////////////////////////////////////////////////////////////////////////////
 			try
@@ -4540,8 +4562,8 @@ void c_process::SendImage(str UserID, TStringList *IMAGELIST, str Token)
 				std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(uploadurl)));
 				TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
 				uploadurl    = obj_response->GetValue("upload_url")->ToString();
-				str album_id = obj_response->GetValue("album_id")->ToString();
-				str user_id  = obj_response->GetValue("user_id")->ToString();
+				String album_id = obj_response->GetValue("album_id")->ToString();
+				String user_id  = obj_response->GetValue("user_id")->ToString();
 			}
 			catch (...) 
             { 
@@ -4552,7 +4574,7 @@ void c_process::SendImage(str UserID, TStringList *IMAGELIST, str Token)
 			if ( success )
 			{
 				f->main->log(L"Загрузка изображения на сервер.. [ "+x+" ]");
-				str RETURN = vk.UploadToServer( &success, fullpath, sa.cut_kk(uploadurl) );
+				String RETURN = vk.UploadToServer( &success, fullpath, g.cut_kk(uploadurl) );
 				f->main->log(L"Загрузка завершена.");
 				f->main->log(L"Обработка..");
 
@@ -4561,13 +4583,13 @@ void c_process::SendImage(str UserID, TStringList *IMAGELIST, str Token)
 				{
 					std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(RETURN)));
 
-					str server    = json->GetValue("server")->ToString();
-					str hash      = json->GetValue("hash")->ToString();      hash = sa.cut_kk( hash );
+					String server    = json->GetValue("server")->ToString();
+					String hash      = json->GetValue("hash")->ToString();      
+                    hash = g.cut_kk( hash );
+					String photo  = g.StripSlashes( RETURN );
+					photo      = g.cut_photo( photo );
 
-					str photo  = sa.StripSlashes( RETURN );
-					photo      = sa.cut_photo( photo );
-
-					str RETURN2 = vk.photos_saveMessagesPhoto( &success, photo, server, hash, Token );
+					String RETURN2 = vk.photos_saveMessagesPhoto( &success, photo, server, hash, Token );
 					f->main->log(L"Отправка Media Image..");
 
                     // JSON //////////////////////////////////////////////////////////////////////////////
@@ -4577,10 +4599,10 @@ void c_process::SendImage(str UserID, TStringList *IMAGELIST, str Token)
 
 						TJSONArray *obj_items = static_cast<TJSONArray*>(json->Get("response")->JsonValue);
 
-						TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Get(0));
+						TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Items[0]);
 
-						str xid    = x_obj_items->GetValue("id")->ToString();
-						str ownerid = x_obj_items->GetValue("owner_id")->ToString();
+						String xid    = x_obj_items->GetValue("id")->ToString();
+						String ownerid = x_obj_items->GetValue("owner_id")->ToString();
 
 						vk.messages_send2( &success, UserID, "photo"+ownerid+"_"+xid, Token );
 					}
@@ -4601,20 +4623,20 @@ void c_process::SendImage(str UserID, TStringList *IMAGELIST, str Token)
 		f->main->log("error in: c_process::SendImage(catch);");
 	}
 }
-void c_process::SendAudio(str UserID, TStringList *AUDIOLIST, str Token)
+void c_process::SendAudio(String UserID, TStringList *AUDIOLIST, String Token)
 {
 	try
 	{
 		if ( AUDIOLIST->Count > 0 )
 		{
-			str x = AUDIOLIST->Strings[ Random( AUDIOLIST->Count ) ];
-			str afx = "[AUDIO="; 
+			String x = AUDIOLIST->Strings[ Random( AUDIOLIST->Count ) ];
+			String afx = "[AUDIO="; 
             x = x.SubString(afx.Length()+1,x.Length()); 
             x = x.SubString(1,x.Length()-1);
-			str fullpath = f->main->p_resources_audio + x;
+			String fullpath = f->main->p_resources_audio + x;
 
             bool success;
-			str uploadurl = vk.audio_getUploadServer( &success, Token );
+			String uploadurl = vk.audio_getUploadServer( &success, Token );
 
 			// JSON //////////////////////////////////////////////////////////////////////////////
 			try
@@ -4631,7 +4653,7 @@ void c_process::SendAudio(str UserID, TStringList *AUDIOLIST, str Token)
 			if ( success )
 			{
 				f->main->log(L"Загрузка аудиофайла на сервер.. [ "+x+" ]");
-				str RETURN = vk.audioUploadToServer( &success, fullpath, sa.cut_kk(uploadurl) );
+				String RETURN = vk.audioUploadToServer( &success, fullpath, g.cut_kk(uploadurl) );
 				f->main->log(L"Загрузка завершена.");
 				f->main->log(L"Обработка..");
 
@@ -4639,16 +4661,16 @@ void c_process::SendAudio(str UserID, TStringList *AUDIOLIST, str Token)
 				try
 				{
 					std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(RETURN)));
-					str redirect    = json->GetValue("redirect")->ToString();
-					str server      = json->GetValue("server")->ToString();
-					str audio       = json->GetValue("audio")->ToString();
-					str hash        = json->GetValue("hash")->ToString();
+					String redirect    = json->GetValue("redirect")->ToString();
+					String server      = json->GetValue("server")->ToString();
+					String audio       = json->GetValue("audio")->ToString();
+					String hash        = json->GetValue("hash")->ToString();
 
-					redirect = sa.cut_kk( redirect );
-					audio = sa.cut_kk( audio );
-					hash = sa.cut_kk( hash );
+					redirect = g.cut_kk( redirect );
+					audio = g.cut_kk( audio );
+					hash = g.cut_kk( hash );
 
-                    str RETURN2 = vk.audio_Save( &success, audio, server, hash, Token );
+                    String RETURN2 = vk.audio_Save( &success, audio, server, hash, Token );
 					f->main->log(L"Отправка Media Audio..");
 
                     // JSON //////////////////////////////////////////////////////////////////////////////
@@ -4657,8 +4679,8 @@ void c_process::SendAudio(str UserID, TStringList *AUDIOLIST, str Token)
 						std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(RETURN2)));
 						TJSONObject *obj_items = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
 
-						str xid      = obj_items->GetValue("id")->ToString();
-						str ownerid = obj_items->GetValue("owner_id")->ToString();
+						String xid      = obj_items->GetValue("id")->ToString();
+						String ownerid = obj_items->GetValue("owner_id")->ToString();
 
 						vk.messages_send2( &success, UserID, "audio"+ownerid+"_"+xid, Token );
 					}
@@ -4679,20 +4701,20 @@ void c_process::SendAudio(str UserID, TStringList *AUDIOLIST, str Token)
 		f->main->log("error in: c_process::SendAudio(catch);");
 	}
 }
-void c_process::SendAudioRec(str UserID, TStringList *AUDIOLIST, str Token)
+void c_process::SendAudioRec(String UserID, TStringList *AUDIOLIST, String Token)
 {
 	try
 	{
 		if ( AUDIOLIST->Count > 0 )
 		{
-			str x = AUDIOLIST->Strings[ Random( AUDIOLIST->Count ) ];
-			str afx = "[RECORD="; 
+			String x = AUDIOLIST->Strings[ Random( AUDIOLIST->Count ) ];
+			String afx = "[RECORD="; 
             x = x.SubString(afx.Length()+1,x.Length()); 
             x = x.SubString(1,x.Length()-1);
-			str fullpath = f->main->p_resources_records + x;
+			String fullpath = f->main->p_resources_records + x;
 
             bool success;
-			str uploadurl = vk.docs_getMessagesUploadServer( &success, Token );
+			String uploadurl = vk.docs_getMessagesUploadServer( &success, Token );
 			// JSON //////////////////////////////////////////////////////////////////////////////
 			try
 			{
@@ -4707,17 +4729,17 @@ void c_process::SendAudioRec(str UserID, TStringList *AUDIOLIST, str Token)
 			if ( success )
 			{
 				f->main->log(L"Загрузка аудиозаписи на сервер.. [ "+x+" ]");
-				str RETURN = vk.audioUploadToServer( &success, fullpath, sa.cut_kk(uploadurl) );
+				String RETURN = vk.audioUploadToServer( &success, fullpath, g.cut_kk(uploadurl) );
 				f->main->log(L"Загрузка завершена.");
 				f->main->log(L"Обработка..");
 
 				try
 				{
 					RETURN = RETURN.SubString(8,RETURN.Length());
-					str FILE = sa.cut_kk( RETURN );
-					FILE = sa.cut_kk( FILE );
+					String FILE = g.cut_kk( RETURN );
+					FILE = g.cut_kk( FILE );
 
-					str RETURN2 = vk.docs_save( &success, FILE, "MyFile1", "Socionic", Token );
+					String RETURN2 = vk.docs_save( &success, FILE, "MyFile1", "Socionic", Token );
 					f->main->log(L"Отправка Media Record..");
 
 					// JSON //////////////////////////////////////////////////////////////////////////////
@@ -4725,9 +4747,9 @@ void c_process::SendAudioRec(str UserID, TStringList *AUDIOLIST, str Token)
 					{
 						std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(RETURN2)));
 						TJSONArray *obj_items = static_cast<TJSONArray*>(json->Get("response")->JsonValue);
-						TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Get(0));
-						str xid    = x_obj_items->GetValue("id")->ToString();
-						str ownerid = x_obj_items->GetValue("owner_id")->ToString();
+						TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Items[0]);
+						String xid    = x_obj_items->GetValue("id")->ToString();
+						String ownerid = x_obj_items->GetValue("owner_id")->ToString();
 						vk.messages_send2( &success, UserID, "doc"+ownerid+"_"+xid, Token );
 					}
 					catch (...) 
@@ -4752,9 +4774,9 @@ c_ii::c_ii()
 {
 
 }
-str  c_ii::GetGlobalPostText(str STACK, TStringList *GLOBALMODEL, TStringList *DIALOG)
+String  c_ii::GetGlobalPostText(String STACK, TStringList *GLOBALMODEL, TStringList *DIALOG)
 {
-	str j = "NULL";
+	String j = "NULL";
 
 	if ( ! LastMessageIsGlobal(DIALOG) )
 	{
@@ -4763,7 +4785,7 @@ str  c_ii::GetGlobalPostText(str STACK, TStringList *GLOBALMODEL, TStringList *D
 
 		for ( int c = 0; c < GLOBALMODEL->Count; c++ )
 		{
-			str dataline = GLOBALMODEL->Strings[c];
+			String dataline = GLOBALMODEL->Strings[c];
 
 			if ( Pos("#",dataline) != 0 || c == GLOBALMODEL->Count-1 )
 			{
@@ -4771,7 +4793,7 @@ str  c_ii::GetGlobalPostText(str STACK, TStringList *GLOBALMODEL, TStringList *D
 				{
 					for ( int c = 0; c < IFS->Count; c++ )
 					{
-						str LINE_IF = IFS->Strings[c];
+						String LINE_IF = IFS->Strings[c];
 						TStringList *ARR = new TStringList;
 						f->main->asplit(ARR, LINE_IF, "'");
 						TStringList *ARRC = new TStringList;
@@ -4789,7 +4811,7 @@ str  c_ii::GetGlobalPostText(str STACK, TStringList *GLOBALMODEL, TStringList *D
 							{
 								f->main->log(L"GLOBAL IF : найден ключ: [ "+ARRC->Strings[x]+L" ] в [ "+Trim(STACK)+" ]");
 
-								str rc = POSTS->Strings[ Random( POSTS->Count ) ];
+								String rc = POSTS->Strings[ Random( POSTS->Count ) ];
 								j = rc.SubString(6,rc.Length());
 							}
 						}
@@ -4828,7 +4850,7 @@ bool c_ii::LastMessageIsGlobal(TStringList *DIALOG)
 
 	for ( int c = DIALOG->Count-1; c >= 0; c-- )
 	{
-		str l = DIALOG->Strings[c];
+		String l = DIALOG->Strings[c];
 		if ( l == "#MESSAGE" ) 
         {
             mc++;
@@ -4847,9 +4869,9 @@ bool c_ii::LastMessageIsGlobal(TStringList *DIALOG)
 	delete X;
 	return j;
 }
-str  c_ii::GetStage(str STACK, TStringList *STAGE)
+String  c_ii::GetStage(String STACK, TStringList *STAGE)
 {
-	str J = "NULL";
+	String J = "NULL";
 
 	try
 	{
@@ -4882,20 +4904,20 @@ void c_ii::MakeMass(TStringList *STAGE, TStringList *LinesIF)
 {
 	for ( int c = 0; c < STAGE->Count; c++ )
 	{
-		str dataline = STAGE->Strings[c];
+		String dataline = STAGE->Strings[c];
 		if ( Pos("IF'",dataline) != 0 )
 		{
 			LinesIF->Add( dataline );
         }
 	}
 }
-str  c_ii::GetTarget(TStringList *LinesIF, str STACK)
+String  c_ii::GetTarget(TStringList *LinesIF, String STACK)
 {
-	str J = "NULL";
+	String J = "NULL";
 
 	for ( int c = 0; c < LinesIF->Count; c++ )
 	{
-		str LINE_IF = LinesIF->Strings[c];
+		String LINE_IF = LinesIF->Strings[c];
 		TStringList *ARR = new TStringList;
 		f->main->asplit(ARR, LINE_IF, "'");
 
@@ -4922,35 +4944,35 @@ str  c_ii::GetTarget(TStringList *LinesIF, str STACK)
 
 	return J;
 }
-void c_ii::GetDefault(TStringList *STAGE, str *TARGETSTAGE)
+void c_ii::GetDefault(TStringList *STAGE, String *TARGETSTAGE)
 {
 	for ( int c = 0; c < STAGE->Count; c++ )
 	{
-		str dataline = STAGE->Strings[c];
+		String dataline = STAGE->Strings[c];
 		if ( Pos("DEFAULT'",dataline) != 0 )
 		{
-			str j = g.Encrypt(2,2,"'",dataline);
+			String j = g.Encrypt(2,2,"'",dataline);
 			*TARGETSTAGE = j;
 			break;
         }
 	}
 }
-str  c_ii::GetOldStage(str uid, str token, TStringList *RobotModel, str Message)
+String  c_ii::GetOldStage(String uid, String token, TStringList *RobotModel, String Message)
 {
-	str J = "NULL";                                                                            
-	str MYPOST = "NULL";
-	str WASSTAGE = "NULL";
+	String J = "NULL";                                                                            
+	String MYPOST = "NULL";
+	String WASSTAGE = "NULL";
 																
 	for ( int c = 0; c < f->main->AUTOANSOUTBOX->Count; c++ )
 	{
-		str line = f->main->AUTOANSOUTBOX->Strings[c];           
+		String line = f->main->AUTOANSOUTBOX->Strings[c];           
 
-		str xToken  = g.Encrypt(1,6,"#",line);
-		str xMid    = g.Encrypt(2,6,"#",line);
-		str xUid 	= g.Encrypt(3,6,"#",line);
-		str xRs 	= g.Encrypt(4,6,"#",line);
-		str xTitle  = g.Encrypt(5,6,"#",line);
-		str xBody 	= g.Encrypt(6,6,"#",line);
+		String xToken  = g.Encrypt(1,6,"#",line);
+		String xMid    = g.Encrypt(2,6,"#",line);
+		String xUid 	= g.Encrypt(3,6,"#",line);
+		String xRs 	= g.Encrypt(4,6,"#",line);
+		String xTitle  = g.Encrypt(5,6,"#",line);
+		String xBody 	= g.Encrypt(6,6,"#",line);
 
 		xBody = xBody.SubString(2,xBody.Length());
         xBody = xBody.SubString(1,xBody.Length()-1);
@@ -4971,10 +4993,10 @@ str  c_ii::GetOldStage(str uid, str token, TStringList *RobotModel, str Message)
 			bool xbreaked = false;
 			for ( int c = 0; c < RobotModel->Count; c++ )
 			{
-				str l = RobotModel->Strings[c];
+				String l = RobotModel->Strings[c];
 				if ( Pos("POST'",l) != 0 )
 				{
-					str ModelPost = g.Encrypt(2,2,"'",l);
+					String ModelPost = g.Encrypt(2,2,"'",l);
 					if ( if_EqualPosts(ModelPost,MYPOST) )
 					{
 						int C = c;
@@ -5015,10 +5037,10 @@ str  c_ii::GetOldStage(str uid, str token, TStringList *RobotModel, str Message)
 
 	return J;                                                                                                  
 }
-void c_ii::GetAutoAns(str *iodata, str *targetstage, str Token, str uid)
+void c_ii::GetAutoAns(String *iodata, String *targetstage, String Token, String uid)
 {
-	str data = *iodata;                        
-    str DEF;                                  
+	String data = *iodata;                        
+    String DEF;                                  
 
 	TStringList *ANSMODEL = new TStringList;
 	TStringList *DEFAULT = new TStringList;    
@@ -5026,7 +5048,7 @@ void c_ii::GetAutoAns(str *iodata, str *targetstage, str Token, str uid)
 
 	TStringList *L = new TStringList;
 	g.GetFiles( f->main->p_robots, L );
-	str GroupName, RobotName, Server_ID, Login, Password, xToken, Activity, ModelFile, Online, LastOnline;  bool freeze;
+	String GroupName, RobotName, Server_ID, Login, Password, xToken, Activity, ModelFile, Online, LastOnline;  bool freeze;
 	for ( int x = 0; x < L->Count; x++ )
 	{
 		f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &xToken, &Activity, &Online, &LastOnline, &freeze );
@@ -5044,7 +5066,7 @@ void c_ii::GetAutoAns(str *iodata, str *targetstage, str Token, str uid)
 	delete DEFAULT;
 
 	f->main->log(L"Попытка определить прежний Stage." );
-	str target = GetOldStage(uid,xToken,ROBOTMODEL,data);
+	String target = GetOldStage(uid,xToken,ROBOTMODEL,data);
 	if ( target == "NULL" ) 
     {
         f->main->log( L"Прежний Stage не найден. (" );
@@ -5054,7 +5076,7 @@ void c_ii::GetAutoAns(str *iodata, str *targetstage, str Token, str uid)
 	{
 		for ( int c = 0; c < ANSMODEL->Count; c++ )
 		{
-			str key = g.Encrypt(1,2,"~",ANSMODEL->Strings[c]);
+			String key = g.Encrypt(1,2,"~",ANSMODEL->Strings[c]);
 			if ( Pos(get_alpha_keys(key),data) > 0 )
 			{
 				target = g.Encrypt(2,2,"~",ANSMODEL->Strings[c]);
@@ -5076,12 +5098,12 @@ void c_ii::GetAutoAns(str *iodata, str *targetstage, str Token, str uid)
 	bool breaked = false;
 	for ( int i = 0; i < ROBOTMODEL->Count; i++ )
 	{
-		str l = ROBOTMODEL->Strings[i];
+		String l = ROBOTMODEL->Strings[i];
 		if ( l == target )
 		{
 			while ( true )
 			{
-				str l = ROBOTMODEL->Strings[i]; i++;
+				String l = ROBOTMODEL->Strings[i]; i++;
 				if ( Pos("DEFAULT",l) > 0 ) 
                 {
                     breaked = true;
@@ -5103,14 +5125,14 @@ void c_ii::GetAutoAns(str *iodata, str *targetstage, str Token, str uid)
         }
 	}
 
-	str J = CLEAR->Strings[ Random( CLEAR->Count ) ];
+	String J = CLEAR->Strings[ Random( CLEAR->Count ) ];
 	J = g.Encrypt(2,2,"'",J);
 	*iodata = J;
     
     delete CLEAR;
 	delete ROBOTMODEL;                                                                             //f->main->plog("GetAutoAns - stop");
 }
-bool c_ii::IfAutoStop(str message, str file)
+bool c_ii::IfAutoStop(String message, String file)
 {
 	bool stop = false;
 
@@ -5122,7 +5144,7 @@ bool c_ii::IfAutoStop(str message, str file)
 		message = message;
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str key = Trim(L->Strings[c]);
+			String key = Trim(L->Strings[c]);
 			key = get_alpha_keys(key);
 
 			if ( Pos(key,message) != 0 )
@@ -5136,12 +5158,12 @@ bool c_ii::IfAutoStop(str message, str file)
 	}
 	return stop;
 }
-str  c_ii::GetAutoStopMessage(str file)
+String  c_ii::GetAutoStopMessage(String file)
 {
 	TStringList *L = new TStringList;
 	L->LoadFromFile(file);
 
-	str j = "NULL";
+	String j = "NULL";
 	if ( L->Count > 0 ) 
     {
         j = L->Strings[ Random( L->Count ) ];
@@ -5150,15 +5172,15 @@ str  c_ii::GetAutoStopMessage(str file)
 	delete L;
 	return Trim(j);
 }
-str  c_ii::do_randomize(str text)
+String  c_ii::do_randomize(String text)
 {
-	str j = "";
+	String j = "";
 
 	if ( f->ch_RANDOMIZE->Checked )
 	{
 		for ( int c = 1; c <= text.Length(); c++ )
 		{
-			str ch = text[c];
+			String ch = text[c];
 
 			int x = Random(2);
 			if ( x == 1 )
@@ -5193,16 +5215,16 @@ str  c_ii::do_randomize(str text)
     }
     return j;
 }
-str  c_ii::get_alpha_keys(str text)
+String  c_ii::get_alpha_keys(String text)
 {
 	text = text.LowerCase();
-	str j = "";
+	String j = "";
 
 	if ( f->ch_ALPHAKEYS->Checked )
 	{
 		for ( int c = 1; c <= text.Length(); c++ )
 		{
-			str ch = text[c];
+			String ch = text[c];
 
 			if ( ch == L"а" ) ch = L"a";
 			if ( ch == L"е" ) ch = L"e";
@@ -5222,20 +5244,20 @@ str  c_ii::get_alpha_keys(str text)
 
 	return j;
 }
-str  c_ii::MakePostLine(str post_variables_line)
+String  c_ii::MakePostLine(String post_variables_line)
 {
 	f->main->log("POST : [ "+post_variables_line+" ]");
 
-	str result = "";
+	String result = "";
 
 	int long_memory_index = 0;
 	int long_upper_count  = 0;
 
 	bool tempBlockInProcess = false;
-	str  tempBufer = "";
+	String  tempBufer = "";
 	for ( int c = 1; c <= post_variables_line.Length(); c++ )
 	{
-		str ch = post_variables_line[c];
+		String ch = post_variables_line[c];
 		if ( tempBlockInProcess == true )
 		{
 			if ( ch == ")" )
@@ -5251,7 +5273,7 @@ str  c_ii::MakePostLine(str post_variables_line)
 
 				try
 				{
-					str chn = post_variables_line[c+1];
+					String chn = post_variables_line[c+1];
                     int chc = 0;
                     if(TryStrToInt(post_variables_line[c+2], chc) == true &&
                        chn == "^")
@@ -5285,12 +5307,12 @@ str  c_ii::MakePostLine(str post_variables_line)
     }
 	return result;
 }
-str  c_ii::MakePostLineGetOne(str buffer, int uppercount, int *memory_j)
+String  c_ii::MakePostLineGetOne(String buffer, int uppercount, int *memory_j)
 {
 	int sc = 0;
 	for ( int c = 1; c < buffer.Length(); c++ )
 	{
-		str ch = buffer[c];
+		String ch = buffer[c];
 		if ( ch == "|" ) 
         {
             sc++;
@@ -5298,7 +5320,7 @@ str  c_ii::MakePostLineGetOne(str buffer, int uppercount, int *memory_j)
 	}
 
 	int parts = sc + 1;
-	str j = "NULL";
+	String j = "NULL";
 
 	if ( uppercount > 0 && *memory_j > 0 )
 	{
@@ -5313,19 +5335,19 @@ str  c_ii::MakePostLineGetOne(str buffer, int uppercount, int *memory_j)
 
 	return j;
 }
-bool c_ii::if_EqualPosts(str ModelPost, str MyPost)
+bool c_ii::if_EqualPosts(String ModelPost, String MyPost)
 {                                                                        
 	bool eq = false;
 
 	TStringList *JPOSTVARIABLES = new TStringList;
 	JPOSTVARIABLES->Add("");
 
-	str  buff = "";
+	String  buff = "";
 
 	bool w = false;
 	for ( int c = 1; c <= ModelPost.Length(); c++ )
 	{
-		str ch = ModelPost[c];
+		String ch = ModelPost[c];
 
 		if ( w )
 		{
@@ -5336,7 +5358,7 @@ bool c_ii::if_EqualPosts(str ModelPost, str MyPost)
 
 				try
 				{
-					str chn = ModelPost[c+1];
+					String chn = ModelPost[c+1];
 					if ( chn == "^" ) 
                     { 
                         c++; 
@@ -5371,10 +5393,10 @@ bool c_ii::if_EqualPosts(str ModelPost, str MyPost)
 
 	for ( int i = 0; i < JPOSTVARIABLES->Count; i++ )
 	{
-		str l = JPOSTVARIABLES->Strings[i];
-		str f1 = CutMediaTags( l );
+		String l = JPOSTVARIABLES->Strings[i];
+		String f1 = CutMediaTags( l );
         f1 = f1.LowerCase();
-		str f2 = MyPost.LowerCase();
+		String f2 = MyPost.LowerCase();
 
 		if ( f1.Length() > 0 && f2.Length() > 0 )
 		{
@@ -5390,12 +5412,12 @@ bool c_ii::if_EqualPosts(str ModelPost, str MyPost)
 	delete JPOSTVARIABLES;
 	return eq;
 }
-void c_ii::MakePostLineGetAll(str buffer, TStringList *JPOSTVARIABLES_A)
+void c_ii::MakePostLineGetAll(String buffer, TStringList *JPOSTVARIABLES_A)
 {
 	int sc = 0;
 	for ( int c = 1; c < buffer.Length(); c++ )
 	{
-		str ch = buffer[c];
+		String ch = buffer[c];
 		if ( ch == "|" ) 
         {
             sc++;
@@ -5407,7 +5429,7 @@ void c_ii::MakePostLineGetAll(str buffer, TStringList *JPOSTVARIABLES_A)
 
 	for ( int r = 1;  r <= parts; r++ )
 	{
-		str j = g.Encrypt(r,parts,"|",buffer);
+		String j = g.Encrypt(r,parts,"|",buffer);
 
 		for ( int c = 0; c < JPOSTVARIABLES_A->Count; c++ )
 		{
@@ -5418,9 +5440,9 @@ void c_ii::MakePostLineGetAll(str buffer, TStringList *JPOSTVARIABLES_A)
 	JPOSTVARIABLES_A->Text = JPOSTVARIABLES_D->Text;
 	delete JPOSTVARIABLES_D;
 }
-void c_ii::WritePostDataIn(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStringList *RECORDLIST, str *postline)
+void c_ii::WritePostDataIn(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStringList *RECORDLIST, String *postline)
 {
-	str pl = *postline; str fx; int p;
+	String pl = *postline; String fx; int p;
 
 	try
 	{
@@ -5428,11 +5450,11 @@ void c_ii::WritePostDataIn(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStri
 		p = Pos(fx,pl);
 		if ( p != 0 )
 		{
-			str L = pl.SubString(1,p-1);
-			str R = pl.SubString(p,pl.Length());
+			String L = pl.SubString(1,p-1);
+			String R = pl.SubString(p,pl.Length());
 			p = Pos("]",R);
-			str M = R.SubString(1,p);
-			str X = R.SubString(p+1,R.Length());
+			String M = R.SubString(1,p);
+			String X = R.SubString(p+1,R.Length());
 			pl = L + X;
 			IMAGELIST->Add(M);
 		}
@@ -5448,11 +5470,11 @@ void c_ii::WritePostDataIn(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStri
 		p = Pos(fx,pl);
 		if ( p != 0 )
 		{
-			str L = pl.SubString(1,p-1);
-			str R = pl.SubString(p,pl.Length());
+			String L = pl.SubString(1,p-1);
+			String R = pl.SubString(p,pl.Length());
 			p = Pos("]",R);
-			str M = R.SubString(1,p);
-			str X = R.SubString(p+1,R.Length());
+			String M = R.SubString(1,p);
+			String X = R.SubString(p+1,R.Length());
 			pl = L + X;
 			AUDIOLIST->Add(M);
 		}
@@ -5468,11 +5490,11 @@ void c_ii::WritePostDataIn(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStri
 		p = Pos(fx,pl);
 		if ( p != 0 )
 		{
-			str L = pl.SubString(1,p-1);
-			str R = pl.SubString(p,pl.Length());
+			String L = pl.SubString(1,p-1);
+			String R = pl.SubString(p,pl.Length());
 			p = Pos("]",R);
-			str M = R.SubString(1,p);
-			str X = R.SubString(p+1,R.Length());
+			String M = R.SubString(1,p);
+			String X = R.SubString(p+1,R.Length());
 			pl = L + X;
 			RECORDLIST->Add(M);
 		}
@@ -5524,11 +5546,11 @@ void c_ii::ShowDataLNS(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStringLi
 		f->main->log( "RECORDLIST_"+RECORDLIST->Strings[c]+"_" );
 	}
 }
-str  c_ii::CutMediaTags(str data)
+String  c_ii::CutMediaTags(String data)
 {
-	str fx1 = "[IMAGE=";
-	str fx2 = "[AUDIO=";
-	str fx3 = "[RECORD=";
+	String fx1 = "[IMAGE=";
+	String fx2 = "[AUDIO=";
+	String fx3 = "[RECORD=";
 
 	int p1 = Pos( fx1, data );
 	int p2 = Pos( fx2, data );
@@ -5561,10 +5583,10 @@ c_online::c_online()
 {
 	APIBUFFER = new TStringList;
 }
-void c_online::addtobuffer(str token)
+void c_online::addtobuffer(String token)
 {
 	long int unix = f->main->getUnix();
-	str s = unix;
+	String s = unix;
 	APIBUFFER->Add( token + "#" + s );
 }
 void c_online::processing()
@@ -5579,7 +5601,7 @@ void c_online::processing()
 
 	for ( int c = 0; c < L->Count; c++ )
 	{
-		str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  bool freeze;
+		String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  bool freeze;
 		f->main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 		if ( Online == "0" && Token != "NULL" )
@@ -5592,12 +5614,12 @@ void c_online::processing()
 
 				if ( success )
 				{
-					str tprefix = f->main->PREFIX;
+					String tprefix = f->main->PREFIX;
 					f->main->PREFIX = L"Вечный онлайн : [ "+RobotName+" ] ";
 					f->main->log(L"Статус 'online' установлен.");
 					f->main->PREFIX = tprefix;
 
-					str robotpath = f->main->p_robots + L->Strings[c] + "\\" + "Conf.ini";
+					String robotpath = f->main->p_robots + L->Strings[c] + "\\" + "Conf.ini";
                     TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 );
 			        INI->WriteInteger(UnicodeString("ACCOUNT"), UnicodeString("lastonline"),  IUNIX);
                     INI->UpdateFile();
@@ -5605,7 +5627,7 @@ void c_online::processing()
 				}
 				else
 				{
-					str tprefix = f->main->PREFIX;
+					String tprefix = f->main->PREFIX;
 					f->main->PREFIX = L"Вечный онлайн : [ "+RobotName+" ] ";
 					f->main->log(L"Не удалось установить статус 'online'. ((");
 					f->main->PREFIX = tprefix;
@@ -5617,7 +5639,7 @@ void c_online::processing()
 
 		if ( Online == "0" && Token == "NULL" )
 		{
-            str tprefix = f->main->PREFIX;
+            String tprefix = f->main->PREFIX;
 			f->main->PREFIX = L"Вечный онлайн : [ "+RobotName+" ] ";
 			f->main->log(L"Необходимо получить токен!");
 			f->main->PREFIX = tprefix;
@@ -5626,9 +5648,9 @@ void c_online::processing()
 
 	delete L;
 }
-void c_online::make_online(str robotname, str token, bool *success)
+void c_online::make_online(String robotname, String token, bool *success)
 {
-	str j = vk.set_online(success,token);
+	String j = vk.set_online(success,token);
 	if ( *success )
 	{
 		if ( Pos("error",j) != 0 ) 
@@ -5642,7 +5664,7 @@ void c_online::buffer_clear(int unix)
 	TStringList *L = new TStringList;
 	for ( int c = 0; c < APIBUFFER->Count; c++ )
 	{
-		str lastapi = g.Encrypt(2,2,"#",APIBUFFER->Strings[c]);
+		String lastapi = g.Encrypt(2,2,"#",APIBUFFER->Strings[c]);
 		if ( StrToInt(lastapi)+5 < unix ) 
         {
             L->Add( APIBUFFER->Strings[c] );
@@ -5746,14 +5768,14 @@ void c_vcl::groupechoReadRobots()
 {
 	for ( int c = 0; c < f->LV_CONF_GROUPS->Items->Count; c++ )
 	{
-		str NeededGroupName = Trim(f->LV_CONF_GROUPS->Items->Item[c]->Caption);
+		String NeededGroupName = Trim(f->LV_CONF_GROUPS->Items->Item[c]->Caption);
 
 		int Count = 0;
 		TStringList *L = new TStringList;
 		g.GetFiles( f->main->p_robots, L );
 		for ( int x = 0; x < L->Count; x++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+			String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
             bool freeze;
 			f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
@@ -5777,11 +5799,11 @@ void c_vcl::groupechoReadUsers()
 
 	for ( int c = 0; c < f->LV_CONF_GROUPS->Items->Count; c++ )
 	{
-		str NeededGroupName = Trim(f->LV_CONF_GROUPS->Items->Item[c]->Caption);
+		String NeededGroupName = Trim(f->LV_CONF_GROUPS->Items->Item[c]->Caption);
 		int Count = 0;
 		for ( int x = 0; x < L->Count; x++ )
 		{
-			str UserGroup = g.Encrypt(1,5,"#",L->Strings[x]);
+			String UserGroup = g.Encrypt(1,5,"#",L->Strings[x]);
 
 			if ( UserGroup == NeededGroupName ) 
             {
@@ -5794,7 +5816,7 @@ void c_vcl::groupechoReadUsers()
 
 	delete L;
 }
-void c_vcl::Dialog_Add_User(str User)
+void c_vcl::Dialog_Add_User(String User)
 {
 	f->ME_DIALOG->SelStart = f->ME_DIALOG->Lines->Text.Length();
 	f->ME_DIALOG->SelAttributes->Size = 8;
@@ -5810,7 +5832,7 @@ void c_vcl::Dialog_Add_Text(TStringList *TEXT)
 {
 	for ( int c = 0; c < TEXT->Count; c++ )
 	{
-		str textline = TEXT->Strings[c];
+		String textline = TEXT->Strings[c];
 
         f->ME_DIALOG->SelStart = f->ME_DIALOG->Lines->Text.Length();
 		f->ME_DIALOG->SelAttributes->Size = 8;
@@ -5822,7 +5844,7 @@ void c_vcl::Dialog_Add_Text(TStringList *TEXT)
 
 	::SendMessage(f->ME_DIALOG->Handle,WM_VSCROLL,SB_BOTTOM,0);
 }
-void c_vcl::Dialog_Add_Date(str Date)
+void c_vcl::Dialog_Add_Date(String Date)
 {
 	f->ME_DIALOG->SelStart = f->ME_DIALOG->Lines->Text.Length();
 	f->ME_DIALOG->SelAttributes->Size = 8;
@@ -5844,7 +5866,7 @@ void c_vcl::EchoStatistic()
 
 	g.ProcessMessages();
 }
-str  c_vcl::FixInbox(str data)
+String  c_vcl::FixInbox(String data)
 {
 	int x = Pos("(",data);
 	if ( x != 0 ) 
@@ -5893,7 +5915,7 @@ void c_vcl::ModelsSET(bool set)
         f->GB_MODEL->Caption = L" Выделенное звено ";
     }
 }
-void c_vcl::GoToModels(str RobotName, int PositionView)
+void c_vcl::GoToModels(String RobotName, int PositionView)
 {
 	f->PAGES->ActivePageIndex = 6;
 	if ( PositionView == 0 ) 
@@ -5931,7 +5953,7 @@ void c_vcl::GoToModels(str RobotName, int PositionView)
     g.GetFiles( f->main->p_robots, L );
     for ( int c = 0; c < L->Count; c++ )
     {
-		str GroupName, cRobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+		String GroupName, cRobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
         bool freeze;
 		f->main->get_robotdata( c, &GroupName, &cRobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
@@ -5967,7 +5989,7 @@ void c_vcl::GetAllStages(TsComboBox *CB)
 
     for ( int c = 0; c < f->main->MODEL_LOGICAL->Count; c++ )
     {
-        str data = f->main->MODEL_LOGICAL->Strings[c];
+        String data = f->main->MODEL_LOGICAL->Strings[c];
         if ( Pos("#",data) != 0 ) 
         {
             CB->Items->Add( data );
@@ -5982,7 +6004,7 @@ void c_vcl::GetAllRobots(TsComboBox *CB)
 	g.GetFiles( f->main->p_robots, L );
     for ( int c = 0; c < L->Count; c++ )
     {
-		str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+		String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
         bool freeze;
 		f->main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
@@ -5991,7 +6013,7 @@ void c_vcl::GetAllRobots(TsComboBox *CB)
 
     delete L;
 }
-void c_vcl::InputCaptchaOpenForm(str file)
+void c_vcl::InputCaptchaOpenForm(String file)
 {
     f->PAGES->Enabled = false;
 	f->i_INPUTCAPCHA->Picture->LoadFromFile( file );
@@ -6008,14 +6030,14 @@ c_captcha::c_captcha()
 {
     WAITMANUAL = false;
 }
-str  c_captcha::GetAnswer( str CaptchaIMGURL )
+String  c_captcha::GetAnswer( String CaptchaIMGURL )
 {
-	str ANS = "NULL";
+	String ANS = "NULL";
 
 	try
 	{
 		CaptchaIMGURL = FixURL( CaptchaIMGURL );
-		str CaptchaFILE = SaveToFile(CaptchaIMGURL);
+		String CaptchaFILE = SaveToFile(CaptchaIMGURL);
 
 		if ( f->rg_CAPTCHA_SERVICE->ItemIndex == 1 ) // AUTO
 		{
@@ -6057,12 +6079,12 @@ str  c_captcha::GetAnswer( str CaptchaIMGURL )
 
 	return ANS;
 }
-str  c_captcha::FixURL( str Url )
+String  c_captcha::FixURL( String Url )
 {
-	str j = "";
+	String j = "";
 	for ( int c = 1; c <= Url.Length(); c++ )
 	{
-		str ch = Url[c];
+		String ch = Url[c];
 		if ( ch != "\\" ) 
         {
             j = j + ch;
@@ -6070,9 +6092,9 @@ str  c_captcha::FixURL( str Url )
 	}
 	return j;
 }
-str  c_captcha::SaveToFile( str Url )
+String  c_captcha::SaveToFile( String Url )
 {
-	str file = g.GetDirectoryApplicationDatapath()+"captcha.jpg";
+	String file = g.GetDirectoryApplicationDatapath()+"captcha.jpg";
 
 	TMemoryStream *ms = new TMemoryStream();
 
@@ -6186,7 +6208,7 @@ void __fastcall Tf::b_SERVERS_ADDClick(TObject *Sender)
 }
 void __fastcall Tf::b_CAPTCHA_GOTOPROFILEClick(TObject *Sender)
 {
-	str url;
+	String url;
 	if ( rg_CAPTCHA_SERVICE->ItemIndex == 0 ) 
     {
         url = "https://rucaptcha.com/setting";
@@ -6239,7 +6261,7 @@ void __fastcall Tf::LV_CONF_GROUPSClick(TObject *Sender)
 	{
 		vcl->set_enabled_conf_groups(true);
 
-		str name  = Trim(LV_CONF_GROUPS->Items->Item[index]->Caption);
+		String name  = Trim(LV_CONF_GROUPS->Items->Item[index]->Caption);
 		e_conf_groups_edit_name->Text = name;
 
 		main->conf_robots( index, false );
@@ -6263,11 +6285,11 @@ void __fastcall Tf::LV_CONF_ROBOTSClick(TObject *Sender)
 	if ( index != -1 )
 	{
 		int cbIndex = -1;
-		str UsesGroupName = Trim(LV_CONF_GROUPS->Items->Item[LV_CONF_GROUPS->ItemIndex]->Caption);
+		String UsesGroupName = Trim(LV_CONF_GROUPS->Items->Item[LV_CONF_GROUPS->ItemIndex]->Caption);
 		TStringList *G = new TStringList;
 		for ( int c = 0; c < LV_CONF_GROUPS->Items->Count; c++ )
 		{
-			str tGroup = Trim(LV_CONF_GROUPS->Items->Item[c]->Caption);
+			String tGroup = Trim(LV_CONF_GROUPS->Items->Item[c]->Caption);
 			if ( UsesGroupName == tGroup ) 
             {
                 cbIndex = c;
@@ -6282,7 +6304,7 @@ void __fastcall Tf::LV_CONF_ROBOTSClick(TObject *Sender)
 		g.GetFiles( main->p_robots, L );
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+			String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
             bool freeze;
 			main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
@@ -6335,20 +6357,20 @@ void __fastcall Tf::b_CONF_ROBOTS_EDIT_APPLYClick(TObject *Sender)
          e_conf_robots_edit_password->Text.Length() > 0 && 
          cb_conf_robots_edit_groups->ItemIndex != -1 )
 	{
-		str OldName = Trim(LV_CONF_ROBOTS->Items->Item[LV_CONF_ROBOTS->ItemIndex]->Caption);
+		String OldName = Trim(LV_CONF_ROBOTS->Items->Item[LV_CONF_ROBOTS->ItemIndex]->Caption);
 
 		TStringList *L = new TStringList;
 		g.GetFiles( main->p_robots, L );
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+			String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
             bool freeze;
 			main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 			if ( RobotName == OldName )
 			{
-                str robotpath = main->p_robots + L->Strings[c] + "\\";
+                String robotpath = main->p_robots + L->Strings[c] + "\\";
                 main->checkDirectoryExisting(robotpath);
 				TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath + "Conf.ini"),TEncoding::UTF8 );
 				INI->WriteString( UnicodeString("MAIN"),    UnicodeString("owner"),   UnicodeString(Trim(cb_conf_robots_edit_groups->Items->Strings[cb_conf_robots_edit_groups->ItemIndex]))   );
@@ -6373,7 +6395,7 @@ void __fastcall Tf::b_CONF_ROBOTS_EDIT_APPLYClick(TObject *Sender)
 }
 void __fastcall Tf::b_CONF_USERS_SEARCHClick(TObject *Sender)
 {
-	str URL = e_conf_users_URL->Text;
+	String URL = e_conf_users_URL->Text;
 	if ( URL.Length() > 10 && 
          Pos("vk.com/search",URL) > 0 && 
          Pos("=people",URL) > 0 )
@@ -6427,14 +6449,14 @@ void __fastcall Tf::LV_DIALOGSClick(TObject *Sender)
 	int index = LV_DIALOGS->ItemIndex;
 	if ( index != -1 )
 	{
-		str id = Trim(LV_DIALOGS->Items->Item[index]->Caption);
+		String id = Trim(LV_DIALOGS->Items->Item[index]->Caption);
 
 		TStringList *X = new TStringList;
 		X->LoadFromFile( main->p_dialogs + id );
 
-		str robot_gid 	 = X->Strings[0];
-		str name 		 = X->Strings[1];
-		str surname 	 = X->Strings[2];
+		String robot_gid 	 = X->Strings[0];
+		String name 		 = X->Strings[1];
+		String surname 	 = X->Strings[2];
 
 		f->l_GID->Caption = robot_gid;
 
@@ -6444,7 +6466,7 @@ void __fastcall Tf::LV_DIALOGSClick(TObject *Sender)
 		X->SaveToFile( UnicodeString(main->p_dialogs + id), TEncoding::UTF8 );
 		delete X;
 
-		str inc = LV_DIALOGS->Items->Item[index]->SubItems->Strings[2];
+		String inc = LV_DIALOGS->Items->Item[index]->SubItems->Strings[2];
 		LV_DIALOGS->Items->Item[index]->SubItems->Strings[2] = vcl->FixInbox( inc );
 	}
 }
@@ -6455,14 +6477,14 @@ void __fastcall Tf::B_SENDMESSAGEClick(TObject *Sender)
 
 	if ( ME_INPUT->Lines->Text.Length() > 2 )
 	{
-		str id = Trim(LV_DIALOGS->Items->Item[LV_DIALOGS->ItemIndex]->Caption);
+		String id = Trim(LV_DIALOGS->Items->Item[LV_DIALOGS->ItemIndex]->Caption);
 
 		TStringList *L = new TStringList;
 		g.GetFiles( main->p_robots, L );
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+			String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
             bool freeze;
 			main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
@@ -6470,11 +6492,11 @@ void __fastcall Tf::B_SENDMESSAGEClick(TObject *Sender)
 			{
 				if ( proc->Establish(RobotName,&Token) )
 				{
-					str MESSID = proc->SendMessage( id, ME_INPUT->Lines->Text, Token );
+					String MESSID = proc->SendMessage( id, ME_INPUT->Lines->Text, Token );
 
 					TDateTime D = Date();
 					TDateTime T = Time();
-					str DT = DateToStr(D) + " - " + TimeToStr(T);
+					String DT = DateToStr(D) + " - " + TimeToStr(T);
 					TStringList *X = new TStringList;
 					X->LoadFromFile( main->p_dialogs + id );
 					X->Add("");
@@ -6548,7 +6570,7 @@ void __fastcall Tf::TREEClick(TObject *Sender)
 		GB_MODEL->Caption = L" Выделенное звено ";
         if(TREE->Items->Count > 0)
         {
-            str indexName = TREE->Selected->Text;
+            String indexName = TREE->Selected->Text;
 		    main->LoadModelStage( indexName );
         }
 	}
@@ -6633,7 +6655,7 @@ void __fastcall Tf::B_MODEL_HELLO_ADDClick(TObject *Sender)
 		E_MODEL_HELLO_ADD->Clear();
         TStringList *L = new TStringList;
         g.GetFiles( main->p_robots, L );
-		str file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\Hello.txt";
+		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\Hello.txt";
         delete L;
         
         main->MODEL_HELLO->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
@@ -6649,7 +6671,7 @@ void __fastcall Tf::B_MODEL_AUTOANS_ADDClick(TObject *Sender)
 		E_MODEL_AUTOANS_RULESTAGE->Clear();
 		TStringList *L = new TStringList;
         g.GetFiles( main->p_robots, L );
-		str file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoAnsRules.txt";
+		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoAnsRules.txt";
         delete L;
         
 		main->MODEL_AUTOANS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
@@ -6664,7 +6686,7 @@ void __fastcall Tf::B_MODEL_AUTOSTOP_KEYSClick(TObject *Sender)
 		E_MODEL_AUTOSTOP_KEYS->Clear();
 		TStringList *L = new TStringList;
         g.GetFiles( main->p_robots, L );
-		str file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopKeys.txt";
+		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopKeys.txt";
         delete L;
         
 		main->MODEL_AUTOSTOP_KEYS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
@@ -6679,7 +6701,7 @@ void __fastcall Tf::B_MODEL_AUTOSTOP_POSTSClick(TObject *Sender)
 		E_MODEL_AUTOSTOP_POSTS->Clear();
 		TStringList *L = new TStringList;
         g.GetFiles( main->p_robots, L );
-		str file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopPosts.txt";
+		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopPosts.txt";
         delete L;
         
 		main->MODEL_AUTOSTOP_POSTS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
@@ -6690,7 +6712,7 @@ void __fastcall Tf::B_MODEL_LOGICAL_ADDEDITClick(TObject *Sender)
 {
 	if ( LI_MODEL_LOGICAL_POSTS->Items->Count > 0 && E_MODEL_LOGICAL_STAGE->Text.Length() > 0 )
     {
-		str StageName = main->CreateStageName(E_MODEL_LOGICAL_STAGE->Text);
+		String StageName = main->CreateStageName(E_MODEL_LOGICAL_STAGE->Text);
         if ( ! main->ifStageNameExist(StageName) )
         {
     		B_MODEL_LOGICAL_ADDEDIT->Caption = "";
@@ -6761,7 +6783,7 @@ void __fastcall Tf::B_MODEL_LOGICAL_VARIANTS_ADDClick(TObject *Sender)
     {
         LI_MODEL_LOGICAL_VARIANTS->Items->Add( E_MODEL_LOGICAL_VARIANTS_ADD->Text );
 
-        str var = g.Its( Random(999999) );
+        String var = g.Its( Random(999999) );
         main->VARIANTS->Add( "VARIANT'"+var+"'"+E_MODEL_LOGICAL_VARIANTS_ADD->Text );
 
         if ( CB_MODEL_LOGICAL_IFVARIANTS->ItemIndex == -1 ) 
@@ -6802,7 +6824,7 @@ void __fastcall Tf::LI_MODEL_LOGICAL_VARIANTSClick(TObject *Sender)
 
     if ( index != -1 )
     {
-        str fx = main->IFVARIANTS->Strings[index];
+        String fx = main->IFVARIANTS->Strings[index];
         fx = fx.SubString(4,fx.Length());
         int p = Pos("'",fx);
         fx = fx.SubString(p+1,fx.Length());
@@ -6811,7 +6833,7 @@ void __fastcall Tf::LI_MODEL_LOGICAL_VARIANTSClick(TObject *Sender)
 		bool ex = false;
         for ( int c = 0; c < CB_MODEL_LOGICAL_IFVARIANTS->Items->Count; c++ )
         {
-            str dataline = CB_MODEL_LOGICAL_IFVARIANTS->Items->Strings[c];
+            String dataline = CB_MODEL_LOGICAL_IFVARIANTS->Items->Strings[c];
             if ( dataline == fx )
             {
 				ex = true;
@@ -6833,7 +6855,7 @@ void __fastcall Tf::LI_MODEL_LOGICAL_EXTENDEDClick(TObject *Sender)
 
     if ( index != -1 )
     {
-        str fx = main->EXTENDED->Strings[index];
+        String fx = main->EXTENDED->Strings[index];
         fx = fx.SubString(10,fx.Length());
         int p = Pos("'",fx);
         fx = fx.SubString(p+1,fx.Length());
@@ -6842,7 +6864,7 @@ void __fastcall Tf::LI_MODEL_LOGICAL_EXTENDEDClick(TObject *Sender)
 		bool ex = false;
         for ( int c = 0; c < CB_MODEL_LOGICAL_EXTENDED->Items->Count; c++ )
         {
-            str dataline = CB_MODEL_LOGICAL_EXTENDED->Items->Strings[c];
+            String dataline = CB_MODEL_LOGICAL_EXTENDED->Items->Strings[c];
             if ( dataline == fx )
 			{
 				ex = true;
@@ -6867,7 +6889,7 @@ void __fastcall Tf::B_MODEL_LOGICAL_VARIANTS_APPLYClick(TObject *Sender)
     {
         LI_MODEL_LOGICAL_VARIANTS->Items->Strings[index] = E_MODEL_LOGICAL_VARIANTS_ADD->Text;
 
-        str var = main->GetVarFrom(index);
+        String var = main->GetVarFrom(index);
 
         main->VARIANTS->Delete(index);
         main->IFVARIANTS->Delete(index);
@@ -6928,7 +6950,7 @@ void __fastcall Tf::E_MODEL_AUTOANS_DEFAULTChange(TObject *Sender)
 
 		TStringList *L = new TStringList;
 		g.GetFiles( main->p_robots, L );
-		str file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoAnsDefault.txt";
+		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoAnsDefault.txt";
 		X->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
         
 		delete L;
@@ -6949,7 +6971,7 @@ void __fastcall Tf::b_MODEL_IMPORTClick(TObject *Sender)
 	if ( main->f_od_import_robot_model != "NULL" && 
          Pos("\\",main->f_od_import_robot_model) != 0 )
 	{
-		str dir = main->f_od_import_robot_model + "\\";  // g.Sm(dir);
+		String dir = main->f_od_import_robot_model + "\\";  // g.Sm(dir);
 		TStringList *SOURCEFILES = new TStringList;
 		g.GetFiles( dir, SOURCEFILES );
 
@@ -6957,23 +6979,23 @@ void __fastcall Tf::b_MODEL_IMPORTClick(TObject *Sender)
 		{
 			if ( f->LV_WORKGROUPS->Items->Item[c]->Checked )
 			{
-				str NeededGroup = Trim(f->LV_WORKGROUPS->Items->Item[c]->Caption);
+				String NeededGroup = Trim(f->LV_WORKGROUPS->Items->Item[c]->Caption);
 
 				TStringList *L = new TStringList;
 				g.GetFiles( f->main->p_robots, L );
-				str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelFile, Online, LastOnline;  
+				String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelFile, Online, LastOnline;  
                 bool freeze;
 				for ( int x = 0; x < L->Count; x++ )
 				{
-					str CurrentRobotPath = f->main->p_robots + L->Strings[x] + "\\";
+					String CurrentRobotPath = f->main->p_robots + L->Strings[x] + "\\";
 					f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 					if ( GroupName == NeededGroup )
 					{
 						for ( int i = 0; i < SOURCEFILES->Count; i++ )
 						{
-							str src  = dir + SOURCEFILES->Strings[i];
-							str dest = CurrentRobotPath + SOURCEFILES->Strings[i];
+							String src  = dir + SOURCEFILES->Strings[i];
+							String dest = CurrentRobotPath + SOURCEFILES->Strings[i];
 
 							CopyFile( src.c_str(), dest.c_str(), false );
 						}
@@ -7009,7 +7031,7 @@ void __fastcall Tf::i_about_b_1Click(TObject *Sender)
 {
 	try
 	{
-        str url = "http://www.youtube.com/channel/UCvNUz0gcIU5iEiPIiZ68P5g";
+        String url = "http://www.youtube.com/channel/UCvNUz0gcIU5iEiPIiZ68P5g";
 		g.ShellExecute1( url );
 	}
 	catch (...)
@@ -7021,7 +7043,7 @@ void __fastcall Tf::i_about_b_2Click(TObject *Sender)
 {
 	try
 	{
-        str url = "http://jenya.in.ua/";
+        String url = "http://jenya.in.ua/";
 		g.ShellExecute1( url );
 	}
 	catch (...)
@@ -7033,7 +7055,7 @@ void __fastcall Tf::i_about_b_3Click(TObject *Sender)
 {
 	try
 	{
-        str url = "http://vk.robots.jenya.in.ua/";
+        String url = "http://vk.robots.jenya.in.ua/";
 		g.ShellExecute1( url );
 	}
 	catch (...)
@@ -7132,7 +7154,7 @@ void __fastcall Tf::N2Click(TObject *Sender)
 	int index = LV_SERVERS->ItemIndex;
 	if ( index != -1 )
 	{
-		str X = LV_SERVERS->Items->Item[index]->SubItems->Strings[0];
+		String X = LV_SERVERS->Items->Item[index]->SubItems->Strings[0];
 		main->buffer_write( X );
 	}
 }
@@ -7143,7 +7165,7 @@ void __fastcall Tf::N3Click(TObject *Sender)
 	int index = LV_SERVERS->ItemIndex;
 	if ( index != -1 )
 	{
-		str X = LV_SERVERS->Items->Item[index]->SubItems->Strings[1];
+		String X = LV_SERVERS->Items->Item[index]->SubItems->Strings[1];
 		main->buffer_write( X );
 	}
 }
@@ -7154,7 +7176,7 @@ void __fastcall Tf::N4Click(TObject *Sender)
 	int index = LV_SERVERS->ItemIndex;
 	if ( index != -1 )
 	{
-		str X = LV_SERVERS->Items->Item[index]->SubItems->Strings[2];
+		String X = LV_SERVERS->Items->Item[index]->SubItems->Strings[2];
 		main->buffer_write( X );
 	}
 }
@@ -7208,14 +7230,14 @@ void __fastcall Tf::N18Click(TObject *Sender)
 	{
 		bool DialogsDelete = MessageDlg(L"Удалить все диалоги связанные с этим роботом?",mtWarning,TMsgDlgButtons() << mbCancel << mbOK , 0) == 1;
 
-		str NeededRobotName = Trim( LV_CONF_ROBOTS->Items->Item[index]->Caption );
+		String NeededRobotName = Trim( LV_CONF_ROBOTS->Items->Item[index]->Caption );
 
 		TStringList *L = new TStringList;
 		g.GetFiles( main->p_robots, L );
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+			String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
             bool freeze;
 			main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
@@ -7246,8 +7268,8 @@ void __fastcall Tf::N20Click(TObject *Sender)
 
 	if ( index != -1 )
 	{
-		str NeededRobotName = Trim(LV_CONF_ROBOTS->Items->Item[index]->Caption);
-		str token;
+		String NeededRobotName = Trim(LV_CONF_ROBOTS->Items->Item[index]->Caption);
+		String token;
         if(f->LV_SERVERS->Items->Count > 0)
         {
             if ( proc->Establish( NeededRobotName, &token ) )
@@ -7276,8 +7298,8 @@ void __fastcall Tf::N58Click(TObject *Sender)
 	TStringList *L = new TStringList;
 	for ( int c = 0; c < LV_CONF_ROBOTS->Items->Count; c++ )
 	{
-		str NeededRobotName = Trim(LV_CONF_ROBOTS->Items->Item[c]->Caption);
-		str token;
+		String NeededRobotName = Trim(LV_CONF_ROBOTS->Items->Item[c]->Caption);
+		String token;
 		if ( proc->Establish( NeededRobotName, &token ) )
 		{
 			main->conf_robots(LV_CONF_GROUPS->ItemIndex,false);
@@ -7301,7 +7323,7 @@ void __fastcall Tf::N10Click(TObject *Sender)
 
 	if ( index != -1 )
 	{
-		str id = Trim(LV_CONF_USERS->Items->Item[index]->SubItems->Strings[0]);
+		String id = Trim(LV_CONF_USERS->Items->Item[index]->SubItems->Strings[0]);
 
 		TStringList *L = new TStringList;
         if(FileExists(main->f_users))
@@ -7310,7 +7332,7 @@ void __fastcall Tf::N10Click(TObject *Sender)
         }
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str uid = g.Encrypt(2,5,"#",L->Strings[c]);
+			String uid = g.Encrypt(2,5,"#",L->Strings[c]);
 			if ( uid == id )
 			{
 				L->Delete(c);
@@ -7333,7 +7355,7 @@ void __fastcall Tf::N9Click(TObject *Sender)
 	int index = LV_CONF_USERS->ItemIndex;
 	if ( index != -1 )
 	{
-		str id = Trim(LV_CONF_USERS->Items->Item[index]->Caption);
+		String id = Trim(LV_CONF_USERS->Items->Item[index]->Caption);
 		g.ShellExecute1( "https://vk.com/id"+id );
 	}
 
@@ -7356,7 +7378,7 @@ void __fastcall Tf::N23Click(TObject *Sender)
 
 	for ( int i = 0; i < LV_CONF_USERS->Items->Count; i++ )
 	{
-		str id = Trim(LV_CONF_USERS->Items->Item[i]->SubItems->Strings[0]);
+		String id = Trim(LV_CONF_USERS->Items->Item[i]->SubItems->Strings[0]);
 
 		TStringList *L = new TStringList;
         if(FileExists(main->f_users))
@@ -7365,7 +7387,7 @@ void __fastcall Tf::N23Click(TObject *Sender)
         }
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str uid = g.Encrypt(2,5,"#",L->Strings[c]);
+			String uid = g.Encrypt(2,5,"#",L->Strings[c]);
 			if ( uid == id )
 			{
 				L->Delete(c);
@@ -7392,15 +7414,15 @@ void __fastcall Tf::N26Click(TObject *Sender)
 		g.GetFiles( main->p_robots, L );
 		for ( int c = 0; c < L->Count; c++ )
 		{
-			str GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+			String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
             bool freeze;
 			main->get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 			if ( RobotName == Trim(LV_CONF_ROBOTS->Items->Item[index]->Caption) )
 			{
-				str t = main->p_robots + L->Strings[c] + "\\";
+				String t = main->p_robots + L->Strings[c] + "\\";
 
-				wchar_t *wc = t.t_str();
+				wchar_t *wc = t.c_str();
 				char c[500];
 				wcstombs(c, wc, wcslen(wc)+1);
 				ShellExecuteA( NULL, "open", c, NULL, NULL, SW_SHOW );
@@ -7508,7 +7530,7 @@ void __fastcall Tf::N33Click(TObject *Sender)
 		main->MODEL_HELLO->Delete( index );
         TStringList *L = new TStringList;
 		g.GetFiles( main->p_robots, L );
-        str file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\Hello.txt";
+        String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\Hello.txt";
         delete L;
 		main->MODEL_HELLO->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
 
@@ -7583,7 +7605,7 @@ void __fastcall Tf::N53Click(TObject *Sender)
 {
 	// PM TREE - DELETE
 
-	str DSTAGE = TREE->Selected->Text;
+	String DSTAGE = TREE->Selected->Text;
 	main->ModelLogicalDeleteStage( DSTAGE );
 }
 void __fastcall Tf::N55Click(TObject *Sender)
@@ -7700,7 +7722,7 @@ void __fastcall Tf::N49Click(TObject *Sender)
 		main->MODEL_AUTOANS->Delete( index );
         TStringList *L = new TStringList;
 		g.GetFiles( main->p_robots, L );
-		str file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoAnsRules.txt";
+		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoAnsRules.txt";
         delete L;
         
 		main->MODEL_AUTOANS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
@@ -7723,7 +7745,7 @@ void __fastcall Tf::N59Click(TObject *Sender)
 		main->MODEL_AUTOSTOP_KEYS->Delete( index );
 		TStringList *L = new TStringList;
 		g.GetFiles( main->p_robots, L );
-		str file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopKeys.txt";
+		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopKeys.txt";
 		delete L;
         
 		main->MODEL_AUTOSTOP_KEYS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
@@ -7737,7 +7759,7 @@ void __fastcall Tf::N60Click(TObject *Sender)
 	main->MODEL_AUTOSTOP_KEYS->Clear();
 	TStringList *L = new TStringList;
 	g.GetFiles( main->p_robots, L );
-	str file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopKeys.txt";
+	String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopKeys.txt";
 	delete L;
     
 	main->MODEL_AUTOSTOP_KEYS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
@@ -7753,7 +7775,7 @@ void __fastcall Tf::N61Click(TObject *Sender)
 		main->MODEL_AUTOSTOP_POSTS->Delete( index );
 		TStringList *L = new TStringList;
 		g.GetFiles( main->p_robots, L );
-		str file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopPosts.txt";
+		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopPosts.txt";
 		delete L;
         
 		main->MODEL_AUTOSTOP_POSTS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
@@ -7767,7 +7789,7 @@ void __fastcall Tf::N62Click(TObject *Sender)
 	main->MODEL_AUTOSTOP_POSTS->Clear();
 	TStringList *L = new TStringList;
 	g.GetFiles( main->p_robots, L );
-	str file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopPosts.txt";
+	String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopPosts.txt";
 	delete L;
     
 	main->MODEL_AUTOSTOP_POSTS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
@@ -7806,7 +7828,7 @@ void __fastcall Tf::N75Click(TObject *Sender)
 	g.GetFiles( main->p_robots, L );
 	for ( int c = 0; c < L->Count; c++ )
 	{
-		str robotpath = main->p_robots + L->Strings[c] + "\\" + "Conf.ini";
+		String robotpath = main->p_robots + L->Strings[c] + "\\" + "Conf.ini";
         TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath),TEncoding::UTF8 );
         INI->WriteBool( UnicodeString("MAIN"), UnicodeString("freeze"), true );
         INI->UpdateFile();
@@ -7832,7 +7854,7 @@ void __fastcall Tf::BTEST1Click(TObject *Sender)
 	HTTP->ConnectTimeout = 500;
 	HTTP->ReadTimeout = 500;
 
-	str j = "NULL";
+	String j = "NULL";
 
 	try
 	{
@@ -7855,7 +7877,7 @@ void __fastcall Tf::B_TEST_01Click(TObject *Sender)
 	TStringList *AUDIOLIST = new TStringList;
 	TStringList *RECORDLIST = new TStringList;
 
-	str PostLine = L"POST'$25 сутки. Паспорт в залог обязателен![IMAGE=Demotivators\\Image1.jpg][RECORD=Voices-1\\ogg_sound_effect_56.ogg]";
+	String PostLine = L"POST'$25 сутки. Паспорт в залог обязателен![IMAGE=Demotivators\\Image1.jpg][RECORD=Voices-1\\ogg_sound_effect_56.ogg]";
 
 	PostLine = g.Encrypt(2,2,"'",PostLine);
 

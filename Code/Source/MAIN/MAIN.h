@@ -1,45 +1,35 @@
 #ifndef MAINH
 #define MAINH
+#include <vcl.h>
+
 #include "MyTHREAD_TWO.h"
 #include "MyTHREAD_ONLINE.h"
+
 #include <System.Classes.hpp>
+
 #include <Vcl.Controls.hpp>
 #include <Vcl.StdCtrls.hpp>
 #include <Vcl.Forms.hpp>
-#include "sSkinManager.hpp"
-#include "sPageControl.hpp"
 #include <Vcl.ComCtrls.hpp>
 #include <System.ImageList.hpp>
 #include <Vcl.ImgList.hpp>
 #include <Vcl.ExtCtrls.hpp>
 #include <Vcl.Menus.hpp>
-#include <clipbrd.hpp>
 #include <Vcl.Dialogs.hpp>
-#include "sBitBtn.hpp"
 #include <Vcl.Buttons.hpp>
+#include <Vcl.IdAntiFreeze.hpp>
+#include <Vcl.WinXCtrls.hpp>
+#include "sBitBtn.hpp"
 #include "sCheckBox.hpp"
 #include "sComboBox.hpp"
-#include "acProgressBar.hpp"
-#include <IdAntiFreezeBase.hpp>
-#include <IdBaseComponent.hpp>
-#include <Vcl.IdAntiFreeze.hpp>
-#include <IdThreadComponent.hpp>
+#include "acProgressBar.hpp"  
+#include "sSkinManager.hpp"
+#include "sPageControl.hpp"
 #include "sTreeView.hpp"
-#include <Vcl.WinXCtrls.hpp>
 #include "sListBox.hpp"
 #include "sLabel.hpp"
 #include "sRadioButton.hpp"
-#include <IdComponent.hpp>
-#include <IdIOHandler.hpp>
-#include <IdIOHandlerSocket.hpp>
-#include <IdIOHandlerStack.hpp>
-#include <IdSSL.hpp>
-#include <IdSSLOpenSSL.hpp>
-#include <System.JSON.hpp>
-#include <Data.DBXJSON.hpp>
 #include "sDialogs.hpp"
-#include "acPNG.hpp"
-#include <IdAntiFreeze.hpp>
 #include "sSkinManager.hpp"
 #include "sPageControl.hpp"
 #include "sRichEdit.hpp"
@@ -47,32 +37,38 @@
 #include "sListView.hpp"
 #include "sEdit.hpp"
 #include "sButton.hpp"
+#include "acPNG.hpp"
+#include <IdAntiFreezeBase.hpp>
+#include <IdBaseComponent.hpp>
+#include <clipbrd.hpp>
 
-typedef String str;
 
 // class c_main
 class c_main
 {
 	public:
 
-		str HTTPDOMAIN;
+		String HTTPDOMAIN;
 
-		MyTHREAD_TWO    	*iMyTHREAD_TWO;                     bool TERMINATED; int  TINT_CURR; str PREFIX, BUFF_CURRENTLOG;
+		MyTHREAD_TWO    	*iMyTHREAD_TWO;                     
+        bool TERMINATED; 
+        int  TINT_CURR; 
+        String PREFIX, BUFF_CURRENTLOG;
 		MyTHREAD_ONLINE     *iMyTHREAD_ONLINE;
 
 		TClipboard *clp;     TStringList *INBOX, *AUTOANSOUTBOX;
 
 		TStringList *AUTOANSBUFF; // robotName, Token, file, dialog, message, uid, uname, usurname
 
-		int RobotPathID;     str APIV;
+		int RobotPathID;     String APIV;
 
 		//////////////////////////////
 
-		str f_ini,            f_servers, f_groups, f_workgroups, f_worktasks, f_users,           f_globaluserscache, f_currentlog, f_soundcaptcha;
+		String f_ini,            f_servers, f_groups, f_workgroups, f_worktasks, f_users,           f_globaluserscache, f_currentlog, f_soundcaptcha;
 
-		str f_od_import_robot_model, f_od_import_robots;
+		String f_od_import_robot_model, f_od_import_robots;
 
-		str p_robots, p_dialogs, p_dialogs_test, p_logs, p_resources_audio, p_resources_records, p_resources_images;
+		String p_robots, p_dialogs, p_dialogs_test, p_logs, p_resources_audio, p_resources_records, p_resources_images;
 
 		//////////////////////////////
 
@@ -95,7 +91,7 @@ class c_main
 		void conf_workgroups(bool save);
 		void conf_worktasks(bool save);
 		void conf_robots(int index, bool save);
-		void conf_robots_import(int groupindex,str name, str login, str pass);
+		void conf_robots_import(int groupindex,String name, String login, String pass);
 		void conf_users(int index, bool save);
 		void conf_dialogs(bool save);
 		void conf_models(bool save);
@@ -105,47 +101,47 @@ class c_main
 		void show_current_server();
 		void increment_server();
 
-		void get_robotdata( int index, str *GroupName, str *RobotName, str *Server_ID, str *Login, str *Password, str *Token, str *Activity, str *Online, str *LastOnline, bool *freeze );
-		int  get_robotnext( str GroupName ); int TGC;
+		void get_robotdata( int index, String *GroupName, String *RobotName, String *Server_ID, String *Login, String *Password, String *Token, String *Activity, String *Online, String *LastOnline, bool *freeze );
+		int  get_robotnext( String GroupName ); int TGC;
         long int getUnix();
 
         //////////////////////////////
 
-		void GlobalUsersCache_Add(str id);       TStringList *GLOBAL_USERS_CACHE;
-		bool GlobalUsersCache_Exist(str id);
-		void GlobalUsersCache_Delete(str id);
+		void GlobalUsersCache_Add(String id);       TStringList *GLOBAL_USERS_CACHE;
+		bool GlobalUsersCache_Exist(String id);
+		void GlobalUsersCache_Delete(String id);
 
 		//////////////////////////////
 
-		void log( str data ); 
+		void log( String data ); 
         TStringList *LOG;
-		void iSleep(int index, str token);
-		void logline( str data );
-        str  jsonfix( str data );
-		void buffer_write( str data );
-		void search_request( str RequestUrl, str OffSet, str Count, int iteration );   int countOfprocessed;
-		void response_read(str response, TStringList *L, str Count, str OffSet, str RequestUrl, int iteration);
-		str  include_actual_bdata(int m, int d, str request);
-		str  get_vkurl_param(str ParamName, str Data);
-		str  getCountOfMesages(str Dialog);
-		int  getCountOfHello(str GroupName);
-		void DrawMessageBox(str Name, str Surname, str RobotGID, TStringList *DIALOGS);
-		void DeleteUserFromQueueAndPutToDialogs(str UserID, str UserName, str UserSurname, str RobotName, bool msghello, str Text);
-		void WriteInboxList(str Token);
-		void WriteOutboxAutoAnsList(str Token, str RobotName);
-		void GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, str Token, str RobotName);
-		void GetHistory(TStringList *LIST, str UID, int OUT_3, int Count, str Token, str RobotName);
+		void iSleep(int index, String token);
+		void logline( String data );
+        String  jsonfix( String data );
+		void buffer_write( String data );
+		void search_request( String RequestUrl, String OffSet, String Count, int iteration );   int countOfprocessed;
+		void response_read(String response, TStringList *L, String Count, String OffSet, String RequestUrl, int iteration);
+		String  include_actual_bdata(int m, int d, String request);
+		String  get_vkurl_param(String ParamName, String Data);
+		String  getCountOfMesages(String Dialog);
+		int  getCountOfHello(String GroupName);
+		void DrawMessageBox(String Name, String Surname, String RobotGID, TStringList *DIALOGS);
+		void DeleteUserFromQueueAndPutToDialogs(String UserID, String UserName, String UserSurname, String RobotName, bool msghello, String Text);
+		void WriteInboxList(String Token);
+		void WriteOutboxAutoAnsList(String Token, String RobotName);
+		void GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String Token, String RobotName);
+		void GetHistory(TStringList *LIST, String UID, int OUT_3, int Count, String Token, String RobotName);
 		void SetAsRead(TStringList *DIALOG);
-		str  GetLastStageName(TStringList *DIALOG);
-		void GetOnlyOneStage(TStringList *MODEL, str StageName);
+		String  GetLastStageName(TStringList *DIALOG);
+		void GetOnlyOneStage(TStringList *MODEL, String StageName);
         int  GetMaxLevelsOfStages();
 		void GetListOfLevel(int level,TStringList *L);
-        str  CutLastLevel(str data);
-        str  ConvertToVars(str extline);
-        str  GetVarFrom(int index);
-        str  CreateStageName(str data);
-        bool ifStageNameExist(str StageName);
-		str  getLastStage(str data);
+        String  CutLastLevel(String data);
+        String  ConvertToVars(String extline);
+        String  GetVarFrom(int index);
+        String  CreateStageName(String data);
+        bool ifStageNameExist(String StageName);
+		String  getLastStage(String data);
 		void log_transform();
 		void generatelogname();
 		void createStandartDataHello(TStringList *L);
@@ -157,21 +153,21 @@ class c_main
 		void createStandartDataAutoStopPosts(TStringList *L);
 		void checkLinkedStages();
 		void make_new_inbox(TStringList *ALL, TStringList *DEST);
-		void deleteDialogsPerRobot(str robotname);
-		str  from_list_to_str(TStringList *L);
-		int  getrobotindex(str robotname, TStringList *L);
-		bool if_imbanned(str Token, str uid);
-		void sended_count_add(str robotname);         TStringList *AUTOANS_LIMIT;
-		bool sended_count_iflimit(str robotname);
+		void deleteDialogsPerRobot(String robotname);
+		String  from_list_to_str(TStringList *L);
+		int  getrobotindex(String robotname, TStringList *L);
+		bool if_imbanned(String Token, String uid);
+		void sended_count_add(String robotname);         TStringList *AUTOANS_LIMIT;
+		bool sended_count_iflimit(String robotname);
 
-												TTreeNode *NODE; str FMODEL, MYPARENT;
+												TTreeNode *NODE; String FMODEL, MYPARENT;
         void LoadModel(int index);
 		void LoadModelHello();               	TStringList *MODEL_HELLO;
 		void LoadModelLogical();             	TStringList *MODEL_LOGICAL;
 		void LoadModelLogicalTree(int level);
 		void LoadModelGlobal();                 TStringList *MODEL_GLOBAL;
 												bool MOD, IFCREATE, IFROOT;
-        void LoadModelStage(str StageName);
+        void LoadModelStage(String StageName);
         void LoadModelStagePosts();         	TStringList *POSTS;
         void LoadModelStageVariants();      	TStringList *VARIANTS;
         void LoadModelStageIfVariants();    	TStringList *IFVARIANTS;
@@ -180,13 +176,13 @@ class c_main
 
 		void ModelLogicalAddStage(TStringList *STAGE);
 		void ModelLogicalChangeStage(TStringList *STAGE);
-		void ModelLogicalDeleteStage(str StageName);
-		void ModelLogicalDeleteStageDo(str StageName, TStringList *MODEL);
-		void ModelLogicalDeleteStageDeleteLinked(str StageName, TStringList *MODEL);
+		void ModelLogicalDeleteStage(String StageName);
+		void ModelLogicalDeleteStageDo(String StageName, TStringList *MODEL);
+		void ModelLogicalDeleteStageDeleteLinked(String StageName, TStringList *MODEL);
 		void ModelSaveAndReloadInterface();
 
-		void LoadModelAutoAnsRules();           TStringList *MODEL_AUTOANS; str FAUTOANS;
-		void LoadModelAutoAnsDefault(str file);
+		void LoadModelAutoAnsRules();           TStringList *MODEL_AUTOANS; String FAUTOANS;
+		void LoadModelAutoAnsDefault(String file);
 
 		void LoadModelAutoStopKeys();           TStringList *MODEL_AUTOSTOP_KEYS, *MODEL_AUTOSTOP_POSTS;
 		void LoadModelAutoStopPosts();
@@ -196,18 +192,18 @@ class c_main
 		void Robots_Freeze();
 		void Robots_UnFreeze();
 
-		void import_robots(str file);
-		str  get_fromfile(int i, str data);
+		void import_robots(String file);
+		String  get_fromfile(int i, String data);
 
 		void GlobalUsersCache_DublicatesDelete();
 
-		str  ConvertErrors(str edata);
+		String  ConvertErrors(String edata);
 
-        str  GetPHPLINE(str data);
+        String  GetPHPLINE(String data);
 		void GetServersFromNET(TStringList *L);
 
-		void asplit(TStringList* lout, str s, str separator);
-        void checkDirectoryExisting(str directoryPath);
+		void asplit(TStringList* lout, String s, String separator);
+        void checkDirectoryExisting(String directoryPath);
         void conf_dialogs_test(bool save);
 };
 
@@ -219,41 +215,41 @@ class c_process
 		c_process();
 
         void CCleanerGO();
-		bool Establish( str RobotName, str *Token );
-		str  SendMessage( str UserID, str Message, str Token );
-		str  AddToFriends( str UserID, str Message, str Token );
-		str  RequestsFriends( str Token );
+		bool Establish( String RobotName, String *Token );
+		String  SendMessage( String UserID, String Message, String Token );
+		String  AddToFriends( String UserID, String Message, String Token );
+		String  RequestsFriends( String Token );
 
 		void ProcessTwoOpen();
-		void ProcessHello(str GroupName);
-		void ProcessHelloDo(str Group, str UserID, str UserName, str UserSurname);
-		void ProcessHelloDoSend(str Group, str UserID, str UserName, str UserSurname, str RobotName, str Token, str RobotPath);
-		void ProcessFriendConfirm(str GroupName, str RobotName, str Server_ID, str Login, str Password, str Token, str Activity, str ModelFile);
-		void ProcessAutoAnswer(str GroupName, str RobotName, str Server_ID, str Login, str Password, str Token, str Activity, str ModelFile);
-		void ProcessAutoAnswerCheckNew(str RobotName, str Token);
-		void ProcessAutoAnswerAddToDialogs(TStringList *NEWBOX, str RobotName, str Token, str Uid);
+		void ProcessHello(String GroupName);
+		void ProcessHelloDo(String Group, String UserID, String UserName, String UserSurname);
+		void ProcessHelloDoSend(String Group, String UserID, String UserName, String UserSurname, String RobotName, String Token, String RobotPath);
+		void ProcessFriendConfirm(String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity, String ModelFile);
+		void ProcessAutoAnswer(String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity, String ModelFile);
+		void ProcessAutoAnswerCheckNew(String RobotName, String Token);
+		void ProcessAutoAnswerAddToDialogs(TStringList *NEWBOX, String RobotName, String Token, String Uid);
 		void ProcessAutoAnswerRunBuffer();
-		void ProcessSpeech(str _GroupName);
-		void ProcessSpeech(str GroupName, str RobotName, str Server_ID, str Login, str Password, str Token, str Activity, str ModelGlobalFile, str ModelFile, str AutoStopKeysFile, str AutoStopPostsFile);
-		void ProcessSpeechUser(str RobotGID, str Name, str SurName, str UserID, TStringList *DIALOG, str Token, str RobotModelGlobalFile, str RobotModelFile, bool *SaveDialog, str AutoStopKeysFile, str AutoStopPostsFile);
-		void ProcessSpeechUserDo(str UserID, TStringList *DIALOG, str STACK, str Token, str RobotGlobalModelFile, str RobotModelFile, bool *SaveDialog, str AutoStopKeysFile, str AutoStopPostsFile, bool *MakeReaded);
-		void ProcessMessages_UIDS_To_GlobalUsersCache( str RobotName, str Token );
+		void ProcessSpeech(String _GroupName);
+		void ProcessSpeech(String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity, String ModelGlobalFile, String ModelFile, String AutoStopKeysFile, String AutoStopPostsFile);
+		void ProcessSpeechUser(String RobotGID, String Name, String SurName, String UserID, TStringList *DIALOG, String Token, String RobotModelGlobalFile, String RobotModelFile, bool *SaveDialog, String AutoStopKeysFile, String AutoStopPostsFile);
+		void ProcessSpeechUserDo(String UserID, TStringList *DIALOG, String STACK, String Token, String RobotGlobalModelFile, String RobotModelFile, bool *SaveDialog, String AutoStopKeysFile, String AutoStopPostsFile, bool *MakeReaded);
+		void ProcessMessages_UIDS_To_GlobalUsersCache( String RobotName, String Token );
 		void ProcessTwoClose();
 
-		void SendStage1(str UserID, TStringList *DIALOG, str STACK, str Token, TStringList *MODEL);
+		void SendStage1(String UserID, TStringList *DIALOG, String STACK, String Token, TStringList *MODEL);
 
-		void SendGlobalPost(str UserID, TStringList *DIALOG, str POSTTEXT, str Token, TStringList *MODEL, str CURRENT_STAGE);
+		void SendGlobalPost(String UserID, TStringList *DIALOG, String POSTTEXT, String Token, TStringList *MODEL, String CURRENT_STAGE);
 
-		void SendStageX(str UserID, TStringList *DIALOG, str STACK, str Token, TStringList *MODEL, str TARGET_STAGE);
+		void SendStageX(String UserID, TStringList *DIALOG, String STACK, String Token, TStringList *MODEL, String TARGET_STAGE);
 
-		void SendAutoAns(str RobotName, str UserID, str MessageData, str Token, TStringList *DIALOG, bool *success, bool *e900, bool *e902);
+		void SendAutoAns(String RobotName, String UserID, String MessageData, String Token, TStringList *DIALOG, bool *success, bool *e900, bool *e902);
 
-		void SendAutoStop(str UserID, TStringList *DIALOG, str STACK, str Token, str AutoStopPostsFile);
+		void SendAutoStop(String UserID, TStringList *DIALOG, String STACK, String Token, String AutoStopPostsFile);
 
-		void SendImage(str UserID, TStringList *IMAGELIST, str Token);
+		void SendImage(String UserID, TStringList *IMAGELIST, String Token);
 
-		void SendAudio(str UserID, TStringList *AUDIOLIST, str Token);
-		void SendAudioRec(str UserID, TStringList *AUDIOLIST, str Token);
+		void SendAudio(String UserID, TStringList *AUDIOLIST, String Token);
+		void SendAudioRec(String UserID, TStringList *AUDIOLIST, String Token);
 };
 
 // class c_ii
@@ -263,36 +259,36 @@ class c_ii
 
 		c_ii();
 
-		str  GetGlobalPostText(str STACK, TStringList *GLOBALMODEL, TStringList *DIALOG);
+		String  GetGlobalPostText(String STACK, TStringList *GLOBALMODEL, TStringList *DIALOG);
 		bool LastMessageIsGlobal(TStringList *DIALOG);
 
-		str  GetStage(str STACK, TStringList *STAGE);
+		String  GetStage(String STACK, TStringList *STAGE);
 
 		void MakeMass(TStringList *STAGE, TStringList *LinesIF);
-		str  GetTarget(TStringList *LinesIF, str STACK);
+		String  GetTarget(TStringList *LinesIF, String STACK);
 
-		void GetDefault(TStringList *STAGE, str *TARGETSTAGE);
+		void GetDefault(TStringList *STAGE, String *TARGETSTAGE);
 
-		str  GetOldStage(str uid, str token, TStringList *RobotModel, str Message);
-		void GetAutoAns(str *iodata, str *targetstage, str Token, str uid);
+		String  GetOldStage(String uid, String token, TStringList *RobotModel, String Message);
+		void GetAutoAns(String *iodata, String *targetstage, String Token, String uid);
 
-		bool IfAutoStop(str message, str file);
-		str  GetAutoStopMessage(str file);
+		bool IfAutoStop(String message, String file);
+		String  GetAutoStopMessage(String file);
 
-		str  do_randomize(str text);
-		str  get_alpha_keys(str text);
+		String  do_randomize(String text);
+		String  get_alpha_keys(String text);
 
-		str  MakePostLine(str post_variables_line);
-		str  MakePostLineGetOne(str buffer, int uppercount, int *memory_j);
+		String  MakePostLine(String post_variables_line);
+		String  MakePostLineGetOne(String buffer, int uppercount, int *memory_j);
 
-		bool if_EqualPosts(str ModelPost, str MyPost);
-		void MakePostLineGetAll(str buffer, TStringList *JPOSTVARIABLES_A);
+		bool if_EqualPosts(String ModelPost, String MyPost);
+		void MakePostLineGetAll(String buffer, TStringList *JPOSTVARIABLES_A);
 
-		void WritePostDataIn(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStringList *RECORDLIST, str *postline);
+		void WritePostDataIn(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStringList *RECORDLIST, String *postline);
 		void ShowDataLNS(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStringList *RECORDLIST);
 		void ShowDataLNS(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStringList *RECORDLIST,TStringList *POSTS);
 
-		str  CutMediaTags(str data);
+		String  CutMediaTags(String data);
 };
 
 // class c_online
@@ -304,10 +300,10 @@ class c_online
 
 		c_online();
 
-		void addtobuffer(str token);
+		void addtobuffer(String token);
 
 		void processing();
-		void make_online(str robotname, str token, bool *success);
+		void make_online(String robotname, String token, bool *success);
 
 		void buffer_clear(int unix);
 
@@ -333,21 +329,21 @@ class c_vcl
 		void groupechoReadRobots();
 		void groupechoReadUsers();
 
-		void Dialog_Add_User(str User);
+		void Dialog_Add_User(String User);
 		void Dialog_Add_Text(TStringList *TEXT);
-		void Dialog_Add_Date(str Date);
+		void Dialog_Add_Date(String Date);
 
 		void EchoStatistic();
 
-		str  FixInbox(str data);
+		String  FixInbox(String data);
 
         void ModelsSET(bool set);
-        void GoToModels(str RobotName, int PositionView);
+        void GoToModels(String RobotName, int PositionView);
         void ModelStageClear();
         void GetAllStages(TsComboBox *CB);
 		void GetAllRobots(TsComboBox *CB);
 
-		void InputCaptchaOpenForm(str file);
+		void InputCaptchaOpenForm(String file);
 };
 
 // class c_captcha
@@ -359,10 +355,10 @@ class c_captcha
 
 	c_captcha();
 
-	str GetAnswer( str CaptchaIMGURL );
+	String GetAnswer( String CaptchaIMGURL );
 
-	str FixURL( str Url );
-	str SaveToFile( str Url );
+	String FixURL( String Url );
+	String SaveToFile( String Url );
 };
 
 // class t_form
