@@ -249,7 +249,7 @@ void c_main::conf(bool save)
 }
 void c_main::conf_ini(bool save)
 {
-	TMemIniFile *INI = new TMemIniFile( UnicodeString(f_ini),TEncoding::UTF8 );
+	std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(f_ini),TEncoding::UTF8 ));
 
 	if ( save )
 	{
@@ -296,12 +296,10 @@ void c_main::conf_ini(bool save)
 		f_od_import_robots 			  = INI->ReadString( UnicodeString("IODIALOGS"), UnicodeString("import_robots"), UnicodeString("") );
         f->e_ccleanerpath->Text       = INI->ReadString( UnicodeString("OTHER"),  UnicodeString("ccleaner_path"), UnicodeString("") );
 	}
-
-	delete INI;
 }
 void c_main::conf_intervals(bool save)
 {
-	TMemIniFile *INI = new TMemIniFile( UnicodeString(f_ini), TEncoding::UTF8 );
+	std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(f_ini), TEncoding::UTF8 ));
 
 	if ( save )
 	{
@@ -323,8 +321,6 @@ void c_main::conf_intervals(bool save)
 		f->ch_entimer->Checked      = INI->ReadInteger( UnicodeString("INTERVALS"), UnicodeString("entimer"), 	     0	 );
 	}
 
-	delete INI;
-
 	TINT_CURR = 0;
 	f->TINTERVAL->Enabled = false;
 	f->TINTERVAL->Enabled = f->ch_entimer->Checked;
@@ -336,7 +332,7 @@ void c_main::conf_intervals(bool save)
 }
 void c_main::conf_captcha(bool save)
 {
-	TMemIniFile *INI = new TMemIniFile( UnicodeString(f_ini), TEncoding::UTF8 );
+	std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(f_ini), TEncoding::UTF8 ));
 
 	if ( save )
 	{
@@ -362,12 +358,10 @@ void c_main::conf_captcha(bool save)
         f->GroupBox4->Visible = false; 
         f->GroupBox3->Visible = true; 
     }
-    
-	delete INI;
 }
 void c_main::conf_servers(bool save)
 {
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
 
 	if ( save )
 	{
@@ -393,7 +387,7 @@ void c_main::conf_servers(bool save)
 			f->e_servers_login->Enabled 	= false;
 			f->e_servers_password->Enabled  = false;
 
-			GetServersFromNET( L );
+			GetServersFromNET( L.get() );
 
 			f->lbl_DATAFROM->Caption = L"Данные были получены с сервера программы.";
 		}
@@ -418,12 +412,10 @@ void c_main::conf_servers(bool save)
 			ListItem->SubItems->Add( g.Encrypt(3,3,"#",line) );
         }
 	}
-
-	delete L;
 }
 void c_main::conf_groups(bool save)
 {
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
 
 	if ( save )
 	{
@@ -454,14 +446,11 @@ void c_main::conf_groups(bool save)
 		f->vcl->groupechoReadRobots();
 		f->vcl->groupechoReadUsers();
 	}
-
-	delete L;
-
 	conf_workgroups(false);
 }
 void c_main::conf_workgroups(bool save)
 {
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
 
 	if ( save )
 	{
@@ -496,22 +485,13 @@ void c_main::conf_workgroups(bool save)
                 }
 			}
 
-			if ( ex ) 
-            {
-                f->LV_WORKGROUPS->Items->Item[c]->Checked = true;
-            }
-			else      
-            {
-                f->LV_WORKGROUPS->Items->Item[c]->Checked = false;
-            }
+			f->LV_WORKGROUPS->Items->Item[c]->Checked = ex;
 		}
 	}
-
-	delete L;
 }
 void c_main::conf_worktasks(bool save)
 {
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
 
 	if ( save )
 	{
@@ -550,12 +530,10 @@ void c_main::conf_worktasks(bool save)
 		    f->LV_WORKTASKS->Items->Item[pos]->Checked = (L->Strings[pos] == "1");
         }
 	}
-
-	delete L;
 }
 void c_main::conf_robots(int index, bool save)
 {
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
 
 	if ( save )
 	{
@@ -565,7 +543,7 @@ void c_main::conf_robots(int index, bool save)
 		RobotPathID++;
 		conf_ini( true );
 
-		TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath + "Conf.ini"), TEncoding::UTF8 );
+		std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(robotpath + "Conf.ini"), TEncoding::UTF8 ));
 		INI->WriteString( UnicodeString("MAIN"),       UnicodeString("owner"),     UnicodeString(Trim(f->LV_CONF_GROUPS->Items->Item[index]->Caption)) );
 		INI->WriteString( UnicodeString("MAIN"),       UnicodeString("name"),      UnicodeString(f->e_conf_robots_create_name->Text) );
         INI->WriteBool(   UnicodeString("MAIN"),       UnicodeString("freeze"),     false );
@@ -577,7 +555,6 @@ void c_main::conf_robots(int index, bool save)
 		INI->WriteString( UnicodeString("CONNECTION"), UnicodeString("client_id"), UnicodeString("NULL") );
 		INI->WriteString( UnicodeString("CONNECTION"), UnicodeString("token"),     UnicodeString("NULL") );
         INI->UpdateFile();
-		delete INI;
 
 		conf_robots( index, false );
 
@@ -586,25 +563,25 @@ void c_main::conf_robots(int index, bool save)
 		f->e_conf_robots_create_password->Clear();
 		f->ch_robot_online->ItemIndex = 1;
 
-		createStandartDataHello(L);
+		createStandartDataHello(L.get());
 		L->SaveToFile(robotpath+"Hello.txt");
 
-		createGlobalDataModel(L);
+		createGlobalDataModel(L.get());
 		L->SaveToFile(robotpath+"Global.txt");
 
-		createStandartDataModel(L);
+		createStandartDataModel(L.get());
 		L->SaveToFile(robotpath+"Model.txt");
 
-		createStandartDataAutoAnsRules(L);
+		createStandartDataAutoAnsRules(L.get());
 		L->SaveToFile(robotpath+"AutoAnsRules.txt");
 
-		createStandartDataAutoAnsDefault(L);
+		createStandartDataAutoAnsDefault(L.get());
 		L->SaveToFile(robotpath+"AutoAnsDefault.txt");
 
-		createStandartDataAutoStopKeys(L);
+		createStandartDataAutoStopKeys(L.get());
 		L->SaveToFile(robotpath+"AutoStopKeys.txt");
 
-		createStandartDataAutoStopPosts(L);
+		createStandartDataAutoStopPosts(L.get());
 		L->SaveToFile(robotpath+"AutoStopPosts.txt");
 
         conf_models(false);
@@ -613,7 +590,7 @@ void c_main::conf_robots(int index, bool save)
 	{
 		f->LV_CONF_ROBOTS->Items->Clear();
 		String NeededGroupName = Trim(f->LV_CONF_GROUPS->Items->Item[index]->Caption);
-		g.GetFiles( p_robots, L );
+		g.GetFiles( p_robots, L.get() );
 
         for ( int c = 0; c < L->Count; c++ )
 		{
@@ -669,18 +646,16 @@ void c_main::conf_robots(int index, bool save)
 			}
 		}
 	}
-
-	delete L;
 }
 void c_main::conf_robots_import(int groupindex, String name, String login, String pass)
 {
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
     String robotpath = p_robots + IntToStr(RobotPathID) + "_" + g.GetMD5(RobotPathID) + "\\";
     CreateDir( robotpath );
     RobotPathID++;
     conf_ini( true );
 
-    TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath + "Conf.ini"), TEncoding::UTF8 );
+    std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(robotpath + "Conf.ini"), TEncoding::UTF8 ));
     INI->WriteString( UnicodeString("MAIN"),    UnicodeString("owner"), UnicodeString(Trim(f->LV_CONF_GROUPS->Items->Item[groupindex]->Caption)) );
     INI->WriteString( UnicodeString("MAIN"),    UnicodeString("name"),  UnicodeString(name) );
     INI->WriteString( UnicodeString("ACCOUNT"), UnicodeString("login"),     UnicodeString(login) );
@@ -691,7 +666,6 @@ void c_main::conf_robots_import(int groupindex, String name, String login, Strin
     INI->WriteString( UnicodeString("CONNECTION"), UnicodeString("client_id"), UnicodeString("NULL") );
     INI->WriteString( UnicodeString("CONNECTION"), UnicodeString("token"),     UnicodeString("NULL") );
     INI->UpdateFile();
-    delete INI;
 
     conf_robots( groupindex, false );
 
@@ -700,34 +674,32 @@ void c_main::conf_robots_import(int groupindex, String name, String login, Strin
     f->e_conf_robots_create_password->Clear();
     f->ch_robot_online->ItemIndex = 1;
 
-    createStandartDataHello(L);
+    createStandartDataHello(L.get());
     L->SaveToFile(UnicodeString(robotpath+"Hello.txt"), TEncoding::UTF8);
 
-    createGlobalDataModel(L);
+    createGlobalDataModel(L.get());
     L->SaveToFile(UnicodeString(robotpath+"Global.txt"), TEncoding::UTF8);
 
-    createStandartDataModel(L);
+    createStandartDataModel(L.get());
     L->SaveToFile(UnicodeString(robotpath+"Model.txt"), TEncoding::UTF8);
 
-    createStandartDataAutoAnsRules(L);
+    createStandartDataAutoAnsRules(L.get());
     L->SaveToFile(UnicodeString(robotpath+"AutoAnsRules.txt"), TEncoding::UTF8);
 
-    createStandartDataAutoAnsDefault(L);
+    createStandartDataAutoAnsDefault(L.get());
     L->SaveToFile(UnicodeString(robotpath+"AutoAnsDefault.txt"), TEncoding::UTF8);
 
-    createStandartDataAutoStopKeys(L);
+    createStandartDataAutoStopKeys(L.get());
     L->SaveToFile(UnicodeString(robotpath+"AutoStopKeys.txt"), TEncoding::UTF8);
 
-    createStandartDataAutoStopPosts(L);
+    createStandartDataAutoStopPosts(L.get());
     L->SaveToFile(UnicodeString(robotpath+"AutoStopPosts.txt"), TEncoding::UTF8);
 
     conf_models(false);
-
-	delete L;
 }
 void c_main::conf_users(int index, bool save)
 {
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
 	String NeededGroupName = Trim(f->LV_CONF_GROUPS->Items->Item[index]->Caption);
 
 	if ( ! save )
@@ -761,18 +733,16 @@ void c_main::conf_users(int index, bool save)
             }
         }
 	}
-
-	delete L;
 }
 void c_main::conf_dialogs(bool save)
 {
-	TStringList *L = new TStringList;
-	TStringList *X = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
+	std::auto_ptr<TStringList> X(new TStringList);
 
 	if ( ! save )
 	{
 		f->LV_DIALOGS->Items->Clear();
-		g.GetFiles( p_dialogs, L );
+		g.GetFiles( p_dialogs, L.get() );
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
@@ -781,7 +751,7 @@ void c_main::conf_dialogs(bool save)
             {
 			    X->LoadFromFile( p_dialogs + id );
 
-			    String name 		 = X->Strings[1];
+			    String name      = X->Strings[1];
 			    String surname 	 = X->Strings[2];
 
 			    TListItem *ListItem;
@@ -797,9 +767,6 @@ void c_main::conf_dialogs(bool save)
 		f->LV_DIALOGS->Refresh();
 		f->LV_DIALOGS->Repaint();
 	}
-
-	delete L;
-	delete X;
 }
 void c_main::conf_models(bool save)
 {
@@ -808,8 +775,8 @@ void c_main::conf_models(bool save)
 		int index = f->CB_MODELS_ROBOTS->ItemIndex;
 		f->CB_MODELS_ROBOTS->Items->Clear();
 
-        TStringList *L = new TStringList;
-    	g.GetFiles( p_robots, L );
+        std::auto_ptr<TStringList> L(new TStringList);
+    	g.GetFiles( p_robots, L.get() );
         for ( int c = 0; c < L->Count; c++ )
 		{
 			String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
@@ -817,7 +784,6 @@ void c_main::conf_models(bool save)
 			get_robotdata( c, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
             f->CB_MODELS_ROBOTS->Items->Add( RobotName );
     	}
-		delete L;
 
 		if ( index == -1 || index >= f->CB_MODELS_ROBOTS->Items->Count ) 
         {
@@ -900,7 +866,7 @@ void c_main::GlobalUsersCache_Delete(String id)
 void c_main::GlobalUsersCache_DublicatesDelete()
 {
 	int acount = GLOBAL_USERS_CACHE->Count;
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
 	for ( int c = 0; c < GLOBAL_USERS_CACHE->Count; c++ )
 	{
 		String a = GLOBAL_USERS_CACHE->Strings[c];
@@ -911,37 +877,29 @@ void c_main::GlobalUsersCache_DublicatesDelete()
 	}
 
 	GLOBAL_USERS_CACHE->Text = L->Text;
-	delete L;
 	GLOBAL_USERS_CACHE->SaveToFile( f_globaluserscache );
     
 	ShowMessage(L"Выполнено.\n\nДо очистки: "+IntToStr(acount)+L"\nПосле очистки: "+IntToStr(GLOBAL_USERS_CACHE->Count));
 }
 void c_main::log( String data )
 {
-	try
-	{
-        if ( PREFIX.Length() > 0 ) 
-        {
-            data = PREFIX + data;
-        }
+	if ( PREFIX.Length() > 0 ) 
+    {
+        data = PREFIX + data;
+    }
         
-		log_transform();
+    log_transform();
 
-		TDateTime T = Time();
+    TDateTime T = Time();
 
-		LOG->Add( UnicodeString(TimeToStr(T) + ": " + data) );
-		LOG->SaveToFile( UnicodeString(f_currentlog), TEncoding::UTF8 );
+    LOG->Add( UnicodeString(TimeToStr(T) + ": " + data) );
+    LOG->SaveToFile( UnicodeString(f_currentlog), TEncoding::UTF8 );
 
-		if ( f->CH_LOG->Checked )
-		{
-			f->ME_LOG->Lines->Add( TimeToStr(T) + ": " + data );
-			Application->ProcessMessages();
-		}
-	}
-	catch (...)
-	{
-
-	}
+    if ( f->CH_LOG->Checked )
+    {
+        f->ME_LOG->Lines->Add( TimeToStr(T) + ": " + data );
+        Application->ProcessMessages();
+    }
 }
 
 void c_main::checkDirectoryExisting(String directoryPath)
@@ -971,8 +929,6 @@ void c_main::iSleep(int index, String token)
 
 	if ( x > 0 )
 	{
-		//f->BARSMOOTH->Visible = true;
-
 		if ( f->CH_LOG_PAUSES->Checked ) 
         {
             log( a+L" :: Пауза" );
@@ -985,8 +941,7 @@ void c_main::iSleep(int index, String token)
 			Sleep(1);
 			g.ProcessMessages();
         }
-
-		//f->BARSMOOTH->Visible = false;
+        
 		g.ProcessMessages();
 	}
 }
@@ -1041,11 +996,11 @@ void c_main::buffer_write( String data )
 }
 void c_main::get_robotdata( int index, String *GroupName, String *RobotName, String *Server_ID, String *Login, String *Password, String *Token, String *Activity, String *Online, String *LastOnline, bool *freeze )
 {
-	TStringList *L = new TStringList;
-	g.GetFiles( p_robots, L );
+	std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( p_robots, L.get() );
 	String robotpath = p_robots + L->Strings[index] + "\\";
 
-	TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath + "Conf.ini"),TEncoding::UTF8 );
+	std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(robotpath + "Conf.ini"),TEncoding::UTF8 ));
 
     *freeze     = INI->ReadBool(   UnicodeString("MAIN"), 		UnicodeString("freeze"),    true );
 	*GroupName 	= INI->ReadString( UnicodeString("MAIN"),       UnicodeString("owner"),     UnicodeString("0") );
@@ -1057,16 +1012,13 @@ void c_main::get_robotdata( int index, String *GroupName, String *RobotName, Str
 	*Activity 	= INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("activity"),  UnicodeString("0") );
 	*Server_ID 	= INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("client_id"), UnicodeString("0") );
 	*Token     	= INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("token"),     UnicodeString("0") );
-    
-	delete INI;
-	delete L;
 }
 int  c_main::get_robotnext( String GroupName )
 {
 	int CNT = 0;
 
-	TStringList *L = new TStringList;
-	g.GetFiles(p_robots,L);
+	std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles(p_robots,L.get());
 	for ( int c = 0; c < L->Count; c++ )
 	{
 		String CurGroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
@@ -1077,8 +1029,6 @@ int  c_main::get_robotnext( String GroupName )
             CNT++;
         }
 	}
-
-    delete L;
 
 	if ( TGC >= CNT ) 
     {
@@ -1096,7 +1046,7 @@ long int c_main::getUnix()
 }
 void c_main::search_request( String RequestUrl, String OffSet, String Count, int iteration )
 {
-	logline( "ADD USERS BY VK SEARCH URL" );
+	log( "ADD USERS BY VK SEARCH URL" );
 
 	log("ITERATION: "+IntToStr(iteration));
 	log("OFFSET:    "+OffSet);
@@ -1104,8 +1054,8 @@ void c_main::search_request( String RequestUrl, String OffSet, String Count, int
 
 	String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline; 
     bool freeze;
-	TStringList *L = new TStringList;
-	g.GetFiles( p_robots, L );
+	std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( p_robots, L.get() );
 	get_robotdata( Random(L->Count), &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
 	if ( f->proc->Establish(RobotName,&Token) )
@@ -1212,7 +1162,7 @@ void c_main::search_request( String RequestUrl, String OffSet, String Count, int
             }
 
             Application->ProcessMessages();
-            response_read(response,L,Count,OffSet,RequestUrl,iteration);
+            response_read(response,L.get(),Count,OffSet,RequestUrl,iteration);
         }
         else
 		{
@@ -1235,15 +1185,11 @@ void c_main::search_request( String RequestUrl, String OffSet, String Count, int
                     }
 
                     Application->ProcessMessages();
-                    response_read(response,L,Count,OffSet,RequestUrl,iteration);
+                    response_read(response,L.get(),Count,OffSet,RequestUrl,iteration);
                 }
             }
         }
 	}
-
-	delete L;
-
-	logline( "" );
 }
 String  c_main::include_actual_bdata(int m, int d, String request)
 {
@@ -1368,7 +1314,7 @@ String  c_main::get_vkurl_param(String ParamName, String Data)
 }
 String  c_main::getCountOfMesages(String Dialog)
 {
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
 	L->Text = Dialog;
 
 	int mess_count = 0;
@@ -1383,8 +1329,6 @@ String  c_main::getCountOfMesages(String Dialog)
             new_count++;
 	}
 
-	delete L;
-
 	String J;
 	if ( new_count == 0 ) 
         J = IntToStr(mess_count);
@@ -1397,7 +1341,7 @@ int  c_main::getCountOfHello(String GroupName)
 {
 	int C = 0;
 
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
     if(FileExists(f_users))
     {
 	    L->LoadFromFile( f_users );
@@ -1409,8 +1353,6 @@ int  c_main::getCountOfHello(String GroupName)
 		if ( CurGroup == GroupName ) 
             C++;
 	}
-
-	delete L;
 	return C;
 }
 void c_main::DrawMessageBox(String Name, String Surname, String RobotGID, TStringList *DIALOGS)
@@ -1420,19 +1362,19 @@ void c_main::DrawMessageBox(String Name, String Surname, String RobotGID, TStrin
 		String dataline = DIALOGS->Strings[c];
 		if ( dataline == "#MESSAGE" )
 		{
+            std::auto_ptr<TStringList> L(new TStringList);
 			bool Out = true;
 			if ( DIALOGS->Strings[c+1] == "#INC" ) 
                 Out = false;
+                
 			String  DATE = DIALOGS->Strings[c+2].SubString(7,50);
-
-			TStringList *TEXT = new TStringList;
 			int START_C = c + 7;
 			while ( true )
 			{
 				String S = DIALOGS->Strings[START_C];
 				if ( S == "#END" ) 
                     break;
-				TEXT->Add(S);
+				L->Add(S);
 				START_C++;
 			}
 
@@ -1441,16 +1383,14 @@ void c_main::DrawMessageBox(String Name, String Surname, String RobotGID, TStrin
                 Usr = Name+" "+Surname+" :";
 
 			f->vcl->Dialog_Add_User(Usr);
-			f->vcl->Dialog_Add_Text(TEXT);
+			f->vcl->Dialog_Add_Text(L.get());
 			f->vcl->Dialog_Add_Date(DATE);
-
-			delete TEXT;
 		}
 	}
 }
 void c_main::DeleteUserFromQueueAndPutToDialogs(String UserID, String UserName, String UserSurname, String RobotName, bool msghello, String Text)
 {
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
     if(FileExists(f_users))
     {
 	    L->LoadFromFile( f_users );
@@ -1465,7 +1405,6 @@ void c_main::DeleteUserFromQueueAndPutToDialogs(String UserID, String UserName, 
         }
 	}
 	L->SaveToFile( UnicodeString(f_users), TEncoding::UTF8 );
-	delete L;
 
 	f->PAGES_CONFIGURATION->ActivePageIndex = 0;
 	f->LV_CONF_GROUPS->ItemIndex            = -1;
@@ -1473,7 +1412,7 @@ void c_main::DeleteUserFromQueueAndPutToDialogs(String UserID, String UserName, 
 	TDateTime D = Date();
 	TDateTime T = Time();
 	String DT = DateToStr(D) + " - " + TimeToStr(T);
-	TStringList *X = new TStringList;
+	std::auto_ptr<TStringList> X(new TStringList);
 	X->Add(RobotName);
 	X->Add(UserName);
 	X->Add(UserSurname);
@@ -1493,7 +1432,6 @@ void c_main::DeleteUserFromQueueAndPutToDialogs(String UserID, String UserName, 
 	X->Add(Text);
 	X->Add("#END");
 	X->SaveToFile( UnicodeString(p_dialogs + UserID),TEncoding::UTF8 );
-	delete X;
 }
 void c_main::SetAsRead(TStringList *DIALOG)
 {
@@ -1505,7 +1443,7 @@ void c_main::SetAsRead(TStringList *DIALOG)
 		}
 	}
 }
-void c_main::WriteInboxList(String Token)
+void c_main::WriteInboxList(String RobotName, String Token)
 {
 	bool ex = false;
 	for ( int c = 0; c < INBOX->Count; c++ )
@@ -1518,110 +1456,18 @@ void c_main::WriteInboxList(String Token)
         }
     }
 
-	if ( ! ex )
+	if ( !ex )
 	{
 		log(L"Получение входящих сообщений и заполнение буффера..");
 		g.ProcessMessages();
+        
+        std::auto_ptr<TStringList> UIDS(new TStringList);
+		f->main->GetDialogs( UIDS.get(), 0, 0, Token, RobotName );
 
-		int max_count_of = 0;
-		int current_offset_of = 0;
-		while ( true )
+		for ( int c = 0; c < UIDS->Count; c++ )
 		{
-			String response;
-			bool success = false;
-			while ( ! success )
-			{
-				response = vk.messages_get(&success,current_offset_of,200,Token);
-				iSleep(1,Token);
-				if ( ! success ) 
-                {
-                    log(L"Сервер не ответил на запрос. Повтор..");
-                }
-			}
-
-			if ( f->CH_APIRET->Checked ) 
-            {
-                f->main->log(L"Ответ сервера: ["+response+"]");
-            }
-
-			String vMid = "id";
-			String vUid = "user_id";
-			if ( Pos(vUid,response) == 0 ) 
-            { 
-                vMid = "mid"; 
-                vUid = "uid"; 
-            }
-			// JSON //////////////////////////////////////////////////////////////////////////////
-			String messcount = "0";
-
-			try
-			{
-				std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
-				TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
-				messcount = obj_response->GetValue("count")->ToString();
-				TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
-				for ( int c = 0; c < obj_items->Count; c++ )
-				{
-					TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Items[c]);
-
-					String mid 			= x_obj_items->GetValue(vMid)->ToString();
-					String uid 			= x_obj_items->GetValue(vUid)->ToString();
-					String read_state 		= x_obj_items->GetValue("read_state")->ToString();
-					String title 	   		= x_obj_items->GetValue("title")->ToString();
-					String body 			= x_obj_items->GetValue("body")->ToString();
-
-					INBOX->Add( Token+"#"+mid+"#"+uid+"#"+read_state+"#"+title+"#"+body );
-
-					if ( ! GlobalUsersCache_Exist(uid) ) 
-                    { 
-                        GlobalUsersCache_Add(uid); 
-                    }
-				}
-			}
-			catch (...)
-			{
-				try
-				{
-					std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
-					TJSONArray *obj_response = static_cast<TJSONArray*>(json->Get("response")->JsonValue);
-					messcount = IntToStr( obj_response->Count - 1 );
-					for ( int c = 1; c < obj_response->Count; c++ )
-					{
-						TJSONObject* x_arr_item = static_cast<TJSONObject*>(obj_response->Items[c]);
-
-						String mid 			= x_arr_item->GetValue(vMid)->ToString();
-						String uid 			= x_arr_item->GetValue(vUid)->ToString();
-						String read_state 		= x_arr_item->GetValue("read_state")->ToString();
-						String title 	   		= x_arr_item->GetValue("title")->ToString();
-						String body 			= x_arr_item->GetValue("body")->ToString();
-
-						INBOX->Add( Token+"#"+mid+"#"+uid+"#"+read_state+"#"+title+"#"+body );
-
-						if ( ! GlobalUsersCache_Exist(uid) ) 
-                        { 
-                            GlobalUsersCache_Add(uid); 
-                        }
-					}
-				}
-				catch (...) 
-                { 
-                }
-			}
-			// //////////////////////////////////////////////////////////////////////////////////
-
-			if ( max_count_of == 0 ) 
-            {
-                max_count_of = StrToInt(messcount);  
-            }
-            
-			log(L"Смещение: [ "+IntToStr(current_offset_of)+L" ] Количество в стеке: [ "+messcount+" ]");
-
-			current_offset_of = current_offset_of + 200;
-			if ( max_count_of == 0 || 
-                 max_count_of < current_offset_of ) 
-            {
-                break;
-            }
+			String UID = UIDS->Strings[c];
+			f->main->GetHistory( INBOX, UID, 1, 10, Token, RobotName );
 		}
 
 		log(L"Список сообщений получен. Буффер наполнен. Общее количество: [ "+IntToStr(f->main->INBOX->Count)+" ]");
@@ -1631,30 +1477,7 @@ void c_main::WriteInboxList(String Token)
 		log(L"Список сообщений был получен ранее. Буффер наполнен.");
 	}
 }
-void c_main::WriteOutboxAutoAnsList(String Token, String RobotName)
-{
-    String PX = f->main->PREFIX;
-	f->main->PREFIX = L"Автоответчик : [ "+RobotName+" ] ";
 
-	if ( Pos(Token,AUTOANSOUTBOX->Text) == 0 )
-	{
-		TStringList *UIDS = new TStringList;
-		GetDialogs( UIDS, 0, 0, Token, RobotName );
-
-		for ( int c = 0; c < UIDS->Count; c++ )
-		{
-			String UID = UIDS->Strings[c];
-			GetHistory( AUTOANSOUTBOX, UID, 1, 10, Token, RobotName );
-		}
-		delete UIDS;
-	}
-	else
-	{
-		log(L"Список диалогов и сообщений был получен ранее. Буффер наполнен.");
-	}
-
-	f->main->PREFIX = PX;
-}
 void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String Token, String RobotName)
 {
 	log(L"Получение диалогов..");
@@ -1689,49 +1512,27 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String To
 		TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
 		for ( int c = 0; c < obj_items->Count; c++ )
 		{
-			TJSONObject *obj_root = static_cast<TJSONObject*>(obj_items->Items[c]);
-			String unread          = "0"; 
-            try 
-            { 
-                unread = obj_root->GetValue("unread")->ToString(); 
-            } 
-            catch (...) 
-            { 
-            }
-
-			TJSONObject *obj_message = static_cast<TJSONObject*>(obj_root->Get("message")->JsonValue);
-			String mid 	     = obj_message->GetValue("id")->ToString();
+			TJSONObject *obj_message = static_cast<TJSONObject*>(obj_items->Items[c]);
+			String mid 	         = obj_message->GetValue("id")->ToString();
 			String date 	     = obj_message->GetValue("date")->ToString();
-			String out 	     = obj_message->GetValue("out")->ToString();
-			String user_id 	 = obj_message->GetValue("user_id")->ToString();
+			String out 	         = obj_message->GetValue("out")->ToString();
+			String user_id 	     = obj_message->GetValue("user_id")->ToString();
 			String read_state 	 = obj_message->GetValue("read_state")->ToString();
 			String title 	     = obj_message->GetValue("title")->ToString();
 			String body 	     = obj_message->GetValue("body")->ToString();
 
 			bool go1 = false; // OUT_3
-			if ( OUT_3 == 0 && out == "0" ) 
-            {
-                go1 = true;
-            }
-			if ( OUT_3 == 1 && out == "1" )
-            {
-                go1 = true;
-            }
-			if ( OUT_3 == 2 ) 
+			if ( (OUT_3 == 0 && out == "0") ||
+                 (OUT_3 == 1 && out == "1") ||  
+                  OUT_3 == 2 ) 
             {
                 go1 = true;
             }
 
 			bool go2 = false; // READSTATE_3
-			if ( READSTATE_3 == 0 && read_state == "0" ) 
-            {
-                go2 = true;
-            }
-			if ( READSTATE_3 == 1 && read_state == "1" ) 
-            {
-                go2 = true;
-            }
-			if ( READSTATE_3 == 2                      ) 
+			if ( (READSTATE_3 == 0 && read_state == "0") ||
+                 (READSTATE_3 == 1 && read_state == "1") ||
+                  READSTATE_3 == 2 ) 
             {
                 go2 = true;
             }
@@ -1747,7 +1548,10 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String To
             max_count_of = StrToInt(messcount);
         }
 
-		log(L"Смещение: [ "+IntToStr(current_offset_of)+L" ] Количество в стеке: [ "+obj_items->Count+" ]");
+        if ( f->CH_APIRET->Checked ) 
+        {
+		    log(L"Смещение: [ "+IntToStr(current_offset_of)+L" ] Количество в стеке: [ "+obj_items->Count+" ]");
+        }
 
 		current_offset_of = current_offset_of + 200;
 
@@ -1799,38 +1603,34 @@ void c_main::GetHistory(TStringList *LIST, String UID, int OUT_3, int Count, Str
 		for ( int c = 0; c < obj_items->Count; c++ )
 		{
 			TJSONObject *obj_root = static_cast<TJSONObject*>(obj_items->Items[c]);
-			String mid 		= obj_root->GetValue("id")->ToString();
+			String mid 		    = obj_root->GetValue("id")->ToString();
 			String body  		= obj_root->GetValue("body")->ToString();
-			String user_id 	= obj_root->GetValue("user_id")->ToString();
-			String from_id 	= obj_root->GetValue("from_id")->ToString();
+			String user_id 	    = obj_root->GetValue("user_id")->ToString();
+			String from_id 	    = obj_root->GetValue("from_id")->ToString();
 			String date 		= obj_root->GetValue("date")->ToString();
 			String read_state 	= obj_root->GetValue("read_state")->ToString();
-			String out 		= obj_root->GetValue("out")->ToString();
+			String out 		    = obj_root->GetValue("out")->ToString();
+            String title 		= "NULL";
 
 			bool go = false; // OUT_3
-			if ( OUT_3 == 0 && out == "0" ) 
+			if ( (OUT_3 == 0 && out == "0") ||
+                 (OUT_3 == 1 && out == "1") ||
+                  OUT_3 == 2 ) 
             {
-                go = true;
-            }
-			if ( OUT_3 == 1 && out == "1" ) 
-            {
-                go = true;
-            }
-			if ( OUT_3 == 2               ) 
-            {
-                go = true;
-            }
+                LIST->Add( Token+"#"+mid+"#"+from_id+"#"+read_state+"#"+title+"#"+body );
 
-			if ( go )
-			{
-				AUTOANSOUTBOX->Add( Token+"#"+mid+"#"+UID+"#"+read_state+"#NULL#"+body );
+                if ( !GlobalUsersCache_Exist(from_id) ) 
+                { 
+                    GlobalUsersCache_Add(from_id);
+                }
+                
                 gotch_cnt++;
 				if ( gotch_cnt >= Count ) 
                 { 
                     breaked = true; 
                     break; 
                 }
-			}
+            }
 		}
 		if ( breaked ) 
         {
@@ -1841,18 +1641,21 @@ void c_main::GetHistory(TStringList *LIST, String UID, int OUT_3, int Count, Str
             max_count_of = StrToInt(messcount);
         }
 
-		log(L"Смещение: [ "+IntToStr(current_offset_of)+L" ] Количество в стеке: [ "+obj_items->Count+" ]");
+        if ( f->CH_APIRET->Checked ) 
+        {
+		    log(L"Смещение: [ "+IntToStr(current_offset_of)+L" ] Количество в стеке: [ "+obj_items->Count+" ]");
+        }
 
 		current_offset_of = current_offset_of + 200;
 
-		if (  max_count_of == 0 || 
-              max_count_of < current_offset_of ) 
+		if ( max_count_of == 0 || 
+             max_count_of < current_offset_of ) 
         {
             break;
         }
 	}
 
-	log(L"Получено от [ "+UID+L" ] сообщений [ "+IntToStr( gotch_cnt )+L" ] по заданному фильтру.");
+	log(L"Получено от [ "+UID+L" ] сообщений [ "+IntToStr( gotch_cnt )+L" ]");
 }
 String  c_main::GetLastStageName(TStringList *DIALOG)
 {
@@ -1869,7 +1672,7 @@ String  c_main::GetLastStageName(TStringList *DIALOG)
 }
 void c_main::GetOnlyOneStage(TStringList *MODEL, String StageName)
 {
-	TStringList *A = new TStringList;                                            //log("GetOnlyOneStage - start");
+	std::auto_ptr<TStringList> A(new TStringList);                                            //log("GetOnlyOneStage - start");
 
 	bool ex = false;
 	bool wr = false;
@@ -1911,8 +1714,6 @@ void c_main::GetOnlyOneStage(TStringList *MODEL, String StageName)
 		f->main->log("FATAL ERROR: STAGE [ "+StageName+" ] NOT FINDED!");
 		MODEL->Text = "NULL";
     }
-
-	delete A;                                                                                
 }
 int  c_main::GetMaxLevelsOfStages()
 {
@@ -1977,7 +1778,7 @@ String  c_main::ConvertToVars(String extline)
 {
     String j = "";
 
-    TStringList *L = new TStringList;
+    std::auto_ptr<TStringList> L(new TStringList);
     L->Text = g.EncryptToList(",",extline);
     for ( int c = 0; c < L->Count; c++ )
     {
@@ -2048,7 +1849,7 @@ String  c_main::getLastStage(String data)
 {
     String j = "NULL";
 
-    TStringList *L = new TStringList;
+    std::auto_ptr<TStringList> L(new TStringList);
     L->Text = data;
 
     for ( int c = 0; c < L->Count; c++ )
@@ -2063,8 +1864,8 @@ String  c_main::getLastStage(String data)
 }
 void c_main::log_transform()
 {
-	TMemoryStream *ms = new TMemoryStream();
-	LOG->SaveToStream(ms);
+	std::auto_ptr<TMemoryStream> ms(new TMemoryStream());
+	LOG->SaveToStream(ms.get());
 	ms->Position = 0;
 
 	if ( ms->Size > 2000000 )
@@ -2079,8 +1880,6 @@ void c_main::log_transform()
 
 		generatelogname();
 	}
-
-	delete ms;
 }
 void c_main::generatelogname()
 {
@@ -2159,7 +1958,7 @@ void c_main::createStandartDataAutoStopPosts(TStringList *L)
 }
 void c_main::checkLinkedStages()
 {
-	TStringList *J = new TStringList;
+	std::auto_ptr<TStringList> J(new TStringList);
 
 	String CurrSTAGE;
 
@@ -2249,7 +2048,6 @@ void c_main::checkLinkedStages()
 	{
 		ShowMessage( J->Text );
 	}
-	delete J;
 }
 void c_main::make_new_inbox(TStringList *ALL, TStringList *DEST)
 {
@@ -2275,24 +2073,21 @@ void c_main::make_new_inbox(TStringList *ALL, TStringList *DEST)
 }
 void c_main::deleteDialogsPerRobot(String robotname)
 {
-	TStringList *DIALOGS = new TStringList;
-	g.GetFiles( p_dialogs ,DIALOGS);
+    std::auto_ptr<TStringList> DIALOGS(new TStringList);
+	g.GetFiles( p_dialogs ,DIALOGS.get());
 
 	for ( int c = 0; c < DIALOGS->Count; c++ )
 	{
 		String DialogFile = p_dialogs + DIALOGS->Strings[c];
-		TStringList *DIALOG = new TStringList;
+        std::auto_ptr<TStringList> DIALOG(new TStringList);
 		DIALOG->LoadFromFile( DialogFile );
 		String ROBOTGID = DIALOG->Strings[0];
-		delete DIALOG;
 
 		if ( ROBOTGID == robotname )
 		{
 			DeleteFile( DialogFile.c_str() );
         }
 	}
-
-	delete DIALOGS;
 	conf_dialogs(false);
 }
 String  c_main::from_list_to_str(TStringList *L)
@@ -2389,8 +2184,8 @@ bool c_main::sended_count_iflimit(String robotname)
 }
 void c_main::LoadModel(int index)
 {
-	TStringList *L = new TStringList;
-	g.GetFiles( p_robots, L );
+	std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( p_robots, L.get() );
 
     String file_a = p_robots + L->Strings[index] + "\\Hello.txt";
 	String file_b = p_robots + L->Strings[index] + "\\Model.txt";
@@ -2400,7 +2195,6 @@ void c_main::LoadModel(int index)
 	String file_f = p_robots + L->Strings[index] + "\\AutoStopPosts.txt";
     String file_g = p_robots + L->Strings[index] + "\\Global.txt";
 
-	delete L;
     if(FileExists(file_a))
     {
 	    MODEL_HELLO->LoadFromFile(file_a);
@@ -2462,8 +2256,8 @@ void c_main::LoadModelLogical()
 }
 void c_main::LoadModelLogicalTree(int level)
 {
-	TStringList *L = new TStringList;
-    GetListOfLevel(level,L);
+	std::auto_ptr<TStringList> L(new TStringList);
+    GetListOfLevel(level,L.get());
 
     if ( level == 1 )
     {
@@ -2511,7 +2305,7 @@ void c_main::LoadModelAutoAnsRules()
 }
 void c_main::LoadModelAutoAnsDefault(String file)
 {
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
 
     if(FileExists(file))
     {
@@ -2519,8 +2313,6 @@ void c_main::LoadModelAutoAnsDefault(String file)
     }
 
 	f->E_MODEL_AUTOANS_DEFAULT->Text = Trim( L->Strings[0] );
-
-	delete L;
 }
 void c_main::LoadModelAutoStopKeys()
 {
@@ -2551,7 +2343,7 @@ void c_main::LoadModelStage(String StageName)
 {
     f->vcl->ModelStageClear();
     f->E_MODEL_LOGICAL_STAGE->Text = StageName;
-	TStringList *A = new TStringList;
+	std::auto_ptr<TStringList> A(new TStringList);
 
     bool REC = false;
     for ( int c = 0; c < MODEL_LOGICAL->Count; c++ )
@@ -2586,8 +2378,6 @@ void c_main::LoadModelStage(String StageName)
     LoadModelStageIfVariants();
     LoadModelStageExtendeds();
     LoadModelStageDefault();
-
-    delete A;
 }
 void c_main::LoadModelStagePosts()
 {
@@ -2673,8 +2463,8 @@ void c_main::ModelLogicalAddStage(TStringList *STAGE)
 }
 void c_main::ModelLogicalChangeStage(TStringList *STAGE)
 {
-	TStringList *A = new TStringList;
-	TStringList *T = new TStringList;
+	std::auto_ptr<TStringList> A(new TStringList);
+	std::auto_ptr<TStringList> T(new TStringList);
 
     int index;
 
@@ -2688,7 +2478,7 @@ void c_main::ModelLogicalChangeStage(TStringList *STAGE)
         if ( Pos("#",dataline) != 0 && dataline != MYPARENT )
         {
 			T->Text = MODEL_LOGICAL->Text;
-            GetOnlyOneStage(T,dataline.SubString(2,dataline.Length()));
+            GetOnlyOneStage(T.get(),dataline.SubString(2,dataline.Length()));
 
             for ( int i = 0; i < T->Count; i++ )
             {
@@ -2703,13 +2493,10 @@ void c_main::ModelLogicalChangeStage(TStringList *STAGE)
         MODEL_LOGICAL->Insert( index, STAGE->Strings[c] );
         index++;
 	}
-
-	delete A;
-	delete T;
 }
 void c_main::ModelLogicalDeleteStage(String StageName)
 {
-	TStringList *DESTMODEL = new TStringList;
+	std::auto_ptr<TStringList> DESTMODEL(new TStringList);
 	DESTMODEL->Text = MODEL_LOGICAL->Text;
 
 	for ( int c = 0; c < MODEL_LOGICAL->Count; c++ )
@@ -2717,14 +2504,11 @@ void c_main::ModelLogicalDeleteStage(String StageName)
 		String dataline = MODEL_LOGICAL->Strings[c];
 		if ( Pos(StageName,dataline) != 0  )
 		{
-			ModelLogicalDeleteStageDo(dataline,DESTMODEL);
+			ModelLogicalDeleteStageDo(dataline,DESTMODEL.get());
         }
     }
 
 	MODEL_LOGICAL->Text = DESTMODEL->Text;
-
-    delete DESTMODEL;
-
 	MODEL_LOGICAL->SaveToFile( UnicodeString(FMODEL), TEncoding::UTF8 );
 	f->vcl->ModelsSET(false);
 	f->vcl->ModelStageClear();
@@ -2733,7 +2517,7 @@ void c_main::ModelLogicalDeleteStage(String StageName)
 }
 void c_main::ModelLogicalDeleteStageDo(String StageName, TStringList *MODEL)
 {
-	TStringList *T = new TStringList;
+	std::auto_ptr<TStringList> T(new TStringList);
 
 	bool start_fi = false;
 	int stophere = 0;
@@ -2761,10 +2545,8 @@ void c_main::ModelLogicalDeleteStageDo(String StageName, TStringList *MODEL)
             T->Add(line);
 	}
 
-	ModelLogicalDeleteStageDeleteLinked(StageName,T);
+	ModelLogicalDeleteStageDeleteLinked(StageName,T.get());
 	MODEL->Text = T->Text;
-
-    delete T;
 }
 void c_main::ModelLogicalDeleteStageDeleteLinked(String StageName, TStringList *MODEL)
 {
@@ -2803,14 +2585,14 @@ void c_main::Robot_Freeze(int index)
 	String iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
 	String iName  = Trim( f->LV_CONF_ROBOTS->Items->Item[f->LV_CONF_ROBOTS->ItemIndex]->Caption );
 
-	TStringList *L = new TStringList;
-	g.GetFiles( p_robots, L );
+	std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( p_robots, L.get() );
 
 	bool breaked = false;
 	for ( int c = 0; c < L->Count; c++ )
 	{
 		String robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
-		TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 );
+		std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 ));
 		String xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
 		String xName  = INI->ReadString( UnicodeString("MAIN"), UnicodeString("name"), UnicodeString("") );
 
@@ -2820,15 +2602,13 @@ void c_main::Robot_Freeze(int index)
             INI->UpdateFile();
 			breaked = true;
 		}
-		delete INI;
 
 		if ( breaked ) 
         {
             break;
         }
 	}
-
-	delete L;
+    
 	conf_robots( f->LV_CONF_GROUPS->ItemIndex, false);
 	f->vcl->groupechoReadRobots();
 }
@@ -2837,14 +2617,14 @@ void c_main::Robot_UnFreeze(int index)
 	String iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
 	String iName  = Trim( f->LV_CONF_ROBOTS->Items->Item[f->LV_CONF_ROBOTS->ItemIndex]->Caption );
 
-	TStringList *L = new TStringList;
-	g.GetFiles( p_robots, L );
+	std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( p_robots, L.get() );
 
 	bool breaked = false;
 	for ( int c = 0; c < L->Count; c++ )
 	{
 		String robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
-		TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 );
+		std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 ));
 		String xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
 		String xName  = INI->ReadString( UnicodeString("MAIN"), UnicodeString("name"), UnicodeString("") );
 
@@ -2855,15 +2635,11 @@ void c_main::Robot_UnFreeze(int index)
 			breaked = true;
 		}
 
-		delete INI;
-
 		if ( breaked ) 
         {
             break;
         }
 	}
-
-	delete L;
 	conf_robots( f->LV_CONF_GROUPS->ItemIndex, false);
 	f->vcl->groupechoReadRobots();
 }
@@ -2871,13 +2647,13 @@ void c_main::Robots_Freeze()
 {
 	String iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
 
-	TStringList *L = new TStringList;
-	g.GetFiles( p_robots, L );
+	std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( p_robots, L.get() );
 
 	for ( int c = 0; c < L->Count; c++ )
 	{
 		String robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
-		TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 );
+		std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 ));
 		String xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
 
 		if ( iGroup == xGroup ) 
@@ -2885,10 +2661,7 @@ void c_main::Robots_Freeze()
             INI->WriteBool( UnicodeString("MAIN"), UnicodeString("freeze"), true );
             INI->UpdateFile();
         }
-		delete INI;
 	}
-
-	delete L;
 	conf_robots( f->LV_CONF_GROUPS->ItemIndex, false);
 	f->vcl->groupechoReadRobots();
 }
@@ -2896,13 +2669,13 @@ void c_main::Robots_UnFreeze()
 {
 	String iGroup = Trim( f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption );
 
-	TStringList *L = new TStringList;
-	g.GetFiles( p_robots, L );
+	std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( p_robots, L.get() );
 
 	for ( int c = 0; c < L->Count; c++ )
 	{
 		String robotpath = p_robots + L->Strings[c] + "\\" + "Conf.ini";
-        TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 );
+        std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 ));
 		String xGroup = INI->ReadString( UnicodeString("MAIN"), UnicodeString("owner"), UnicodeString("") );
 
 		if ( iGroup == xGroup ) 
@@ -2910,10 +2683,7 @@ void c_main::Robots_UnFreeze()
             INI->WriteBool( UnicodeString("MAIN"), UnicodeString("freeze"), false );
             INI->UpdateFile();
         }
-		delete INI;
 	}
-
-	delete L;
 	conf_robots( f->LV_CONF_GROUPS->ItemIndex, false);
 	f->vcl->groupechoReadRobots();
 }
@@ -2921,7 +2691,7 @@ void c_main::import_robots(String file)
 {
 	try
 	{
-		TStringList *L = new TStringList;
+		std::auto_ptr<TStringList> L(new TStringList);
         if(FileExists(file))
         {
 		    L->LoadFromFile(file);
@@ -2939,8 +2709,6 @@ void c_main::import_robots(String file)
 		}
 
 		f->vcl->groupechoReadRobots();
-
-		delete L;
 	}
 	catch (...)
 	{
@@ -3020,19 +2788,16 @@ void c_main::GetServersFromNET(TStringList *L)
 {
 	try
 	{
-		TIdHTTP *HTTP = new TIdHTTP(NULL);
+		std::auto_ptr<TIdHTTP> HTTP(new TIdHTTP(NULL));
 		HTTP->HandleRedirects = true;
 		HTTP->ConnectTimeout 	= 10000;
 		HTTP->ReadTimeout 		= 10000;
 
 		String URL = HTTPDOMAIN + "API/get_servers.php";
 		String J = HTTP->Get( URL );
-
-		delete HTTP;
-
 		J = GetPHPLINE( J );
 
-		TStringList *A = new TStringList;
+		std::auto_ptr<TStringList> A(new TStringList);
 		A->Text = g.EncryptToList("~",J);
 		A->Delete(A->Count-1);
 
@@ -3076,11 +2841,13 @@ c_process::c_process()
 }
 bool c_process::Establish( String RobotName, String *Token )
 {
+    f->main->PREFIX = "[ "+RobotName+L" ] Соединение : ";
+
 	String IniFile, GroupName, CurRobotName, Server_ID, Login, Password, Activity, token, Online, LastOnline;  
     bool freeze;
 
-	TStringList *L = new TStringList;
-	g.GetFiles( f->main->p_robots, L );
+	std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( f->main->p_robots, L.get() );
 	for ( int c = 0; c < L->Count; c++ )
 	{
 		f->main->get_robotdata( c, &GroupName, &CurRobotName, &Server_ID, &Login, &Password, &token, &Activity, &Online, &LastOnline, &freeze );
@@ -3090,7 +2857,6 @@ bool c_process::Establish( String RobotName, String *Token )
 			break;
         }
 	}
-	delete L;
 
 	String client_id = f->LV_SERVERS->Items->Item[ f->main->CurrentServer ]->SubItems->Strings[0];
 	bool WasConnectedEarly;
@@ -3106,12 +2872,11 @@ bool c_process::Establish( String RobotName, String *Token )
 			TDateTime T = Time();
 			String DT = DateToStr(D) + " - " + TimeToStr(T);
 
-            TMemIniFile *INI = new TMemIniFile( UnicodeString(IniFile), TEncoding::UTF8 );
+            std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(IniFile), TEncoding::UTF8 ));
 			INI->WriteString(UnicodeString("CONNECTION"), UnicodeString("activity"),  UnicodeString(DT));
 			INI->WriteString(UnicodeString("CONNECTION"), UnicodeString("client_id"), UnicodeString(client_id));
 			INI->WriteString(UnicodeString("CONNECTION"), UnicodeString("token"),     UnicodeString(token));
             INI->UpdateFile();
-			delete INI;
 
 			f->main->increment_server();
 			f->main->show_current_server();
@@ -3246,12 +3011,10 @@ String  c_process::RequestsFriends( String Token )
 void c_process::ProcessTwoOpen()
 {
     f->main->log(L"");
-	f->main->log(L"");
-	f->main->logline(L"[ ПРОЦЕСС ЗАПУЩЕН ]");
+	f->main->log(L"[ ПРОЦЕСС ЗАПУЩЕН ]");
 
 	f->main->AUTOANSBUFF->Clear();
 	f->main->AUTOANSOUTBOX->Clear();
-
 	f->main->INBOX->Clear();
 
 	for ( int c = 0; c < f->LV_WORKGROUPS->Items->Count; c++ )
@@ -3260,38 +3023,37 @@ void c_process::ProcessTwoOpen()
 		{
 			String ActiveGroup = Trim(f->LV_WORKGROUPS->Items->Item[c]->Caption);
 
-			f->main->logline(L"");
+			f->main->log(L"");
 			f->main->log(L"ГРУППА : [ "+ActiveGroup+" ]");
-			f->main->logline(L"");
-			f->main->logline(L"");
+			f->main->log(L"");
 
-			try
-			{
-				if ( f->LV_WORKTASKS->Items->Item[0]->Checked )
-				{
-					f->main->PREFIX = L"Приветствия : ";
-					ProcessHello(ActiveGroup);
-				}
-				if ( f->main->TERMINATED ) 
-                {
-                    break;
-                }
-			}
-			catch ( Exception *ex ) 
-            { 
-                f->main->log(L"FATAL ERROR: [ МОДУЛЬ : ПРИВЕТСТВИЯ ]"); 
+			if ( f->LV_WORKTASKS->Items->Item[0]->Checked )
+            {
+                ProcessHello(ActiveGroup);
+            }
+            if ( f->main->TERMINATED ) 
+            {
+                break;
             }
 
-			TStringList *L_ROBOTS = new TStringList;
-			g.GetFiles( f->main->p_robots, L_ROBOTS );
-			String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelFile, Online, LastOnline;  
-            bool freeze;
+            std::auto_ptr<TStringList> L_ROBOTS(new TStringList);
+			g.GetFiles( f->main->p_robots, L_ROBOTS.get() );
+			
 			for ( int x = 0; x < L_ROBOTS->Count; x++ )
 			{
-				ModelFile             = f->main->p_robots + L_ROBOTS->Strings[x] + "\\Model.txt";
-				String AutoStopKeysFile  = f->main->p_robots + L_ROBOTS->Strings[x] + "\\AutoStopKeys.txt";
-				String AutoStopPostsFile = f->main->p_robots + L_ROBOTS->Strings[x] + "\\AutoStopPosts.txt";
-				f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
+                String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
+                bool freeze;
+				f->main->get_robotdata( x, 
+                                        &GroupName, 
+                                        &RobotName, 
+                                        &Server_ID, 
+                                        &Login, 
+                                        &Password, 
+                                        &Token, 
+                                        &Activity, 
+                                        &Online, 
+                                        &LastOnline, 
+                                        &freeze );
 
 				if ( freeze ) 
                 { 
@@ -3305,62 +3067,74 @@ void c_process::ProcessTwoOpen()
 						 f->LV_WORKTASKS->Items->Item[3]->Checked  )
 					{
 						f->main->log(L"РОБОТ : [ "+RobotName+" ] SERVER : [ "+Server_ID+" ]");
-						f->main->logline(L"");
 					}
 
-					f->main->PREFIX = "[ "+RobotName+L" ] Соединение : ";
-
+					
 					if ( Establish(RobotName,&Token) )
 					{
-						try
-						{
-							if ( f->LV_WORKTASKS->Items->Item[1]->Checked )
-							{
-								f->main->PREFIX = "[ "+RobotName+L" ] Приём заявок : ";
-								ProcessFriendConfirm(GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelFile);
-							}
-							if ( f->main->TERMINATED ) 
-                            {
-                                break;
-                            }
-						}
-						catch ( Exception *ex ) 
-                        { 
-                            f->main->log(L"FATAL ERROR: [ МОДУЛЬ : ПРИЁМ ЗАЯВОК ]"); 
+						if ( f->LV_WORKTASKS->Items->Item[1]->Checked )
+                        {
+                            ProcessFriendConfirm(x,
+                                                 GroupName, 
+                                                 RobotName, 
+                                                 Server_ID, 
+                                                 Login, 
+                                                 Password, 
+                                                 Token, 
+                                                 Activity);
+                        }
+                        if ( f->main->TERMINATED ) 
+                        {
+                            break;
                         }
 
-						try
-						{
-							if ( f->LV_WORKTASKS->Items->Item[2]->Checked )
-							{
-								f->main->PREFIX = "[ "+RobotName+L" ] Автоответчик : ";
-								ProcessAutoAnswer(GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelFile);
-							}
-							if ( f->main->TERMINATED ) 
+						
+                        if ( f->LV_WORKTASKS->Items->Item[2]->Checked )
+                        {
+                            ProcessAutoAnswerCheckNew(RobotName, Token);
+                        }
+                        if ( f->main->TERMINATED ) 
+                        {
+                            break;
+                        }
+						
+
+						if ( f->LV_WORKTASKS->Items->Item[6]->Checked )
+                        {
+                            f->main->PREFIX = "[ "+RobotName+L" ] Сообщ -> GlobalUsersCache : ";
+                            
+                            std::auto_ptr<TStringList> UIDS(new TStringList);
+                            f->main->GetDialogs(UIDS.get(), 2, 2, Token, RobotName);
+                            
+                            for ( int c = 0; c < UIDS->Count; c++ )
                             {
-                                break;
+                                String UID = UIDS->Strings[c];
+                                if ( ! f->main->GlobalUsersCache_Exist( UID ) )
+                                {
+                                    f->main->GlobalUsersCache_Add( UID );
+                                }
                             }
-						}
-						catch ( Exception *ex ) 
-                        { 
-                            f->main->log(L"FATAL ERROR: [ МОДУЛЬ : АВТООТВЕТЧИК ]"); 
+                        }
+                        if ( f->main->TERMINATED ) 
+                        {
+                            break;
                         }
 
-						try
-						{
-							if ( f->LV_WORKTASKS->Items->Item[6]->Checked )
-							{
-								f->main->PREFIX = "[ "+RobotName+L" ] Сообщ -> GlobalUsersCache : ";
-								ProcessMessages_UIDS_To_GlobalUsersCache(RobotName, Token);
-							}
-							if ( f->main->TERMINATED ) 
-                            {
-                                break;
-                            }
-						}
-						catch ( Exception *ex ) 
-                        { 
-                            f->main->log(L"FATAL ERROR: [ МОДУЛЬ : Сообщ -> GlobalUsersCache ]"); 
+                        
+                        if ( f->LV_WORKTASKS->Items->Item[3]->Checked )
+                        {
+                            ProcessSpeech(x,
+                                          GroupName,
+                                          RobotName,
+                                          Server_ID,
+                                          Login,
+                                          Password,
+                                          Token,
+                                          Activity);
+                        }
+                        if ( f->main->TERMINATED ) 
+                        {
+                            break;
                         }
 					}
                     else 
@@ -3368,62 +3142,32 @@ void c_process::ProcessTwoOpen()
                         f->main->log("ProcessTwoOpen::Establish return FALSE");
                     }
 				}
-
 				if ( f->main->TERMINATED ) 
                 {
                     break;
                 }
 			}
-
-            delete L_ROBOTS;
-
-            try
-            {
-                if ( f->LV_WORKTASKS->Items->Item[3]->Checked )
-                {
-                    ProcessSpeech( ActiveGroup );
-                }
-
-                if ( f->main->TERMINATED ) 
-                {
-                    break;
-                }
-            }
-            catch ( Exception *ex ) 
-            { 
-                f->main->log(L"FATAL ERROR: [ МОДУЛЬ : ОБЩЕНИЕ ]"); 
-            }
 		}
-
 		if ( f->main->TERMINATED ) 
         {
             break;
         }
 	}
 
-	if ( f->main->AUTOANSBUFF->Count > 0 ) 
-    {
-        ProcessAutoAnswerRunBuffer();
-    }
+	ProcessAutoAnswerRunBuffer();
 
 	f->main->PREFIX = "";
-
-	if ( f->main->TERMINATED ) 
-    {
-        f->main->logline(L"[ ПРОЦЕСС БЫЛ ПРЕРВАН ]");
-    }
-	else                         
-    {
-        f->main->logline(L"[ ПРОЦЕСС УСПЕШНО ЗАВЕРШЕН ]");
-    }
+	f->main->log(f->main->TERMINATED ? L"[ ПРОЦЕСС БЫЛ ПРЕРВАН ]" : L"[ ПРОЦЕСС УСПЕШНО ЗАВЕРШЕН ]");
 }
 void c_process::ProcessHello(String GroupName)
 {
+    f->main->PREFIX = L"Приветствия : ";
+        
 	f->BAR->Position = 0;
 	f->BAR->Max      = f->main->getCountOfHello(GroupName);
 	g.ProcessMessages();
 
-	TStringList *L = new TStringList;
+    std::auto_ptr<TStringList> L(new TStringList);
     if(FileExists(f->main->f_users))
     {
 	    L->LoadFromFile( f->main->f_users );
@@ -3433,13 +3177,14 @@ void c_process::ProcessHello(String GroupName)
 	for ( int x = 0; x < L->Count; x++ )
 	{
 		String GROUP    = Trim( g.Encrypt(1,5,"#",L->Strings[x]) );
-		String UID 	 = Trim( g.Encrypt(2,5,"#",L->Strings[x]) );
+		String UID 	    = Trim( g.Encrypt(2,5,"#",L->Strings[x]) );
 		String NAME     = Trim( g.Encrypt(3,5,"#",L->Strings[x]) );
 		String SURNAME  = Trim( g.Encrypt(4,5,"#",L->Strings[x]) );
 
 		if ( GROUP == GroupName )
 		{
 			ProcessHelloDo(GROUP,UID,NAME,SURNAME);
+            
 			f->BAR->Position++;
 			f->vcl->EchoStatistic();
 			g.ProcessMessages();
@@ -3459,20 +3204,29 @@ void c_process::ProcessHello(String GroupName)
 	f->vcl->groupechoReadUsers();
 	f->vcl->set_enabled_dialogs(false);
 
-	delete L;
 	g.ProcessMessages();
 }
 void c_process::ProcessHelloDo(String Group, String UserID, String UserName, String UserSurname)
 {
-	TStringList *XL = new TStringList;
-	TStringList *L = new TStringList;
-	g.GetFiles(f->main->p_robots,L);
+    std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles(f->main->p_robots,L.get());
     
+    std::auto_ptr<TStringList> XL(new TStringList);
 	for ( int c = 0; c < L->Count; c++ )
 	{
 		String CurGroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
         bool freeze;
-		f->main->get_robotdata( c, &CurGroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
+		f->main->get_robotdata( c, 
+                                &CurGroupName, 
+                                &RobotName, 
+                                &Server_ID, 
+                                &Login, 
+                                &Password, 
+                                &Token, 
+                                &Activity, 
+                                &Online, 
+                                &LastOnline, 
+                                &freeze );
 		if ( CurGroupName == Group ) 
         {
             XL->Add(L->Strings[c]);
@@ -3483,7 +3237,7 @@ void c_process::ProcessHelloDo(String Group, String UserID, String UserName, Str
 	String RobotPath   = f->main->p_robots + XL->Strings[robotIndex] + "\\";
 	String RobotConfig = RobotPath + "Conf.ini";
 
-	TMemIniFile *INI = new TMemIniFile( UnicodeString(RobotConfig),TEncoding::UTF8 );
+	std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(RobotConfig),TEncoding::UTF8 ));
 	String iGroupName 	= INI->ReadString( UnicodeString("MAIN"),       UnicodeString("owner"),     UnicodeString("0") );
 	String iRobotName  = INI->ReadString( UnicodeString("MAIN"),       UnicodeString("name"),  	  UnicodeString("0") );
 	String iLogin 		= INI->ReadString( UnicodeString("ACCOUNT"),    UnicodeString("login"),     UnicodeString("0") );
@@ -3491,19 +3245,14 @@ void c_process::ProcessHelloDo(String Group, String UserID, String UserName, Str
 	String iActivity 	= INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("activity"),  UnicodeString("0") );
 	String iServer_ID 	= INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("client_id"), UnicodeString("0") );
 	String iToken     	= INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("token"),     UnicodeString("0") );
-	delete INI;
-	delete L;
-	delete XL;
 
 	ProcessHelloDoSend(Group,UserID,UserName,UserSurname,iRobotName,iToken,RobotPath);
 }
 void c_process::ProcessHelloDoSend(String Group, String UserID, String UserName, String UserSurname, String RobotName, String Token, String RobotPath)
 {
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
 	L->LoadFromFile(RobotPath+"Hello.txt");
 	String LINE = L->Strings[ Random( L->Count ) ];
-
-	f->main->log(L"Робот : [ " + RobotName + " ]");
 
 	if ( Establish(RobotName,&Token) )
 	{
@@ -3534,14 +3283,11 @@ void c_process::ProcessHelloDoSend(String Group, String UserID, String UserName,
 				f->main->DeleteUserFromQueueAndPutToDialogs(UserID,UserName,UserSurname,RobotName,false,LINE);
 			}
 		}
-
-		f->main->logline(L"");
 	}
-
-	delete L;
 }
-void c_process::ProcessFriendConfirm(String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity, String ModelFile)
+void c_process::ProcessFriendConfirm(int robotIndex, String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity)
 {
+    f->main->PREFIX = "[ "+RobotName+L" ] Приём заявок : ";
 	String response = RequestsFriends(Token);
 
 	if ( Pos("error",response) == 0 )
@@ -3663,123 +3409,105 @@ void c_process::ProcessFriendConfirm(String GroupName, String RobotName, String 
 	{
 		f->main->log(L"Невозможно просмотреть заявки..");
 	}
-
-	f->main->logline(L"");
 }
-void c_process::ProcessAutoAnswer(String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity, String ModelFile)
+void c_process::ProcessAutoAnswerCheckNew(String RobotName, String Token)
 {
-	f->main->WriteInboxList(Token);
+    f->main->PREFIX = "[ "+RobotName+L" ] Автоответчик : ";
+
+    f->main->WriteInboxList(RobotName, Token);
 
 	f->BAR->Position = 0;
 	f->BAR->Max      = f->main->INBOX->Count;
 	g.ProcessMessages();
 
-	if ( ! f->main->TERMINATED ) 
+	std::auto_ptr<TStringList> NEW(new TStringList);
+    std::auto_ptr<TStringList> DIALOGS(new TStringList);
+    g.GetFiles( f->main->p_dialogs ,DIALOGS.get());
+
+    for ( int c = f->main->INBOX->Count-1; c >= 0 ; c-- )
     {
-        ProcessAutoAnswerCheckNew(RobotName,Token);
-    }
-	f->main->logline(L"");
-}
-void c_process::ProcessAutoAnswerCheckNew(String RobotName, String Token)
-{
-	TStringList *NEW = new TStringList;
+        String utoken           = g.Encrypt(1,6,"#",f->main->INBOX->Strings[c]);
+        String mid 			    = g.Encrypt(2,6,"#",f->main->INBOX->Strings[c]);
+        String uid 			    = g.Encrypt(3,6,"#",f->main->INBOX->Strings[c]);
+        String read_state 		= g.Encrypt(4,6,"#",f->main->INBOX->Strings[c]);
+        String title            = g.Encrypt(5,6,"#",f->main->INBOX->Strings[c]);
+        String body             = g.Encrypt(6,6,"#",f->main->INBOX->Strings[c]);
 
-    TStringList *DIALOGS = new TStringList;
-	g.GetFiles( f->main->p_dialogs ,DIALOGS);
+        bool ex = false;
 
-	for ( int c = f->main->INBOX->Count-1; c >= 0 ; c-- )
-	{
-		String utoken          = g.Encrypt(1,6,"#",f->main->INBOX->Strings[c]);
-		String mid 			= g.Encrypt(2,6,"#",f->main->INBOX->Strings[c]);
-		String uid 			= g.Encrypt(3,6,"#",f->main->INBOX->Strings[c]);
-		String read_state 		= g.Encrypt(4,6,"#",f->main->INBOX->Strings[c]);
-		String title           = g.Encrypt(5,6,"#",f->main->INBOX->Strings[c]);
-		String body            = g.Encrypt(6,6,"#",f->main->INBOX->Strings[c]);
+        for ( int j = 0; j < DIALOGS->Count; j++ )
+        {
+            if ( uid == DIALOGS->Strings[j] )
+            {
+                ex = true;
+                break;
+            }
+        }
 
-		bool ex = false;
-
-		for ( int j = 0; j < DIALOGS->Count; j++ )
-		{
-			if ( uid == DIALOGS->Strings[j] )
-			{
-				ex = true;
-				break;
-			}
-		}
-
-		if ( ! ex && read_state == "1" ) 
+        if ( ! ex && read_state == "1" ) 
         {
             ex = true;
         }
 
-		if ( ! ex ) 
+        if ( ! ex ) 
         {
             NEW->Add( f->main->INBOX->Strings[c] );
         }
 
-		f->BAR->Position++;
-		f->vcl->EchoStatistic();
-		g.ProcessMessages();
+        f->BAR->Position++;
+        f->vcl->EchoStatistic();
+        g.ProcessMessages();
 
-		if ( f->main->TERMINATED ) 
+        if ( f->main->TERMINATED ) 
         {
             break;
         }
-	}
-
-	delete DIALOGS;
+    }
 
     f->main->log(L"Новых сообщений от пользователей [ "+IntToStr( NEW->Count )+" ]");
+    if ( NEW->Count > 0 )
+    {
+        std::auto_ptr<TStringList> USERS(new TStringList);
+        f->main->make_new_inbox(NEW.get(),USERS.get());
+        for ( int c = 0; c < USERS->Count; c++ )
+        {
+            String uid = USERS->Strings[c];
 
-	if ( NEW->Count > 0 )
-	{
-		TStringList *USERS = new TStringList;
-		f->main->make_new_inbox(NEW,USERS);
-		for ( int c = 0; c < USERS->Count; c++ )
-		{
-			String uid = USERS->Strings[c];
-
-			if ( f->main->TERMINATED ) 
+            if ( f->main->TERMINATED ) 
             {
                 break;
             }
-
-			TStringList *USERMESSAGES = new TStringList;
-			for ( int i = 0; i < NEW->Count; i++ )
-			{
-				String nuid = g.Encrypt(3,6,"#",NEW->Strings[i]);
-				if ( nuid == uid ) 
+            
+            std::auto_ptr<TStringList> USERMESSAGES(new TStringList);
+            for ( int i = 0; i < NEW->Count; i++ )
+            {
+                String nuid = g.Encrypt(3,6,"#",NEW->Strings[i]);
+                if ( nuid == uid ) 
                 {
                     USERMESSAGES->Add( NEW->Strings[i] );
                 }
-			}
+            }
 
-			f->main->log(L"Сообщения от нового пользователя [ "+uid+" ] [ "+IntToStr(USERMESSAGES->Count)+" ]");
-			ProcessAutoAnswerAddToDialogs(USERMESSAGES,RobotName,Token,uid);
-			f->main->GlobalUsersCache_Add(uid);
+            f->main->log(L"Сообщения от нового пользователя [ "+uid+" ] [ "+IntToStr(USERMESSAGES->Count)+" ]");
+            ProcessAutoAnswerAddToDialogs(USERMESSAGES.get(),RobotName,Token,uid);
+            f->main->GlobalUsersCache_Add(uid);
 
-			delete USERMESSAGES;
-
-			if ( f->main->TERMINATED ) 
+            if ( f->main->TERMINATED ) 
             {
                 break;
             }
         }
-		delete USERS;
-	}
-	else
-	{
-		f->main->log(L"Сообщений от новых пользователей [ 0 ]");
-	}
-
-	delete NEW;
+    }
+    else
+    {
+        f->main->log(L"Сообщений от новых пользователей [ 0 ]");
+    }
 }
 void c_process::ProcessAutoAnswerAddToDialogs(TStringList *NEWBOX, String RobotName, String Token, String Uid)
 {
 	String file = f->main->p_dialogs;
-
-	TStringList *DIALOG = new TStringList;
-	TStringList *MESSAGEDATA = new TStringList;
+    std::auto_ptr<TStringList> DIALOG(new TStringList);
+    std::auto_ptr<TStringList> MESSAGEDATA(new TStringList);
 
 	DIALOG->Add(RobotName);
 	DIALOG->Add("A_NULL");
@@ -3790,13 +3518,13 @@ void c_process::ProcessAutoAnswerAddToDialogs(TStringList *NEWBOX, String RobotN
 
 	for ( int c = 0; c < NEWBOX->Count; c++ )
 	{
-		String utoken          = g.Encrypt(1,6,"#",NEWBOX->Strings[c]);
-		String mid 			= g.Encrypt(2,6,"#",NEWBOX->Strings[c]);        
+		String utoken           = g.Encrypt(1,6,"#",NEWBOX->Strings[c]);
+		String mid 			    = g.Encrypt(2,6,"#",NEWBOX->Strings[c]);        
         lastmid = mid;
-		String uid 			= g.Encrypt(3,6,"#",NEWBOX->Strings[c]);
+		String uid 			    = g.Encrypt(3,6,"#",NEWBOX->Strings[c]);
 		String read_state 		= g.Encrypt(4,6,"#",NEWBOX->Strings[c]);
-		String title           = g.Encrypt(5,6,"#",NEWBOX->Strings[c]);
-		String body            = g.Encrypt(6,6,"#",NEWBOX->Strings[c]);
+		String title            = g.Encrypt(5,6,"#",NEWBOX->Strings[c]);
+		String body             = g.Encrypt(6,6,"#",NEWBOX->Strings[c]);
 
 		TDateTime D = Date();
 		TDateTime T = Time();
@@ -3809,7 +3537,8 @@ void c_process::ProcessAutoAnswerAddToDialogs(TStringList *NEWBOX, String RobotN
 		DIALOG->Add("#ID="+mid);
 		DIALOG->Add("#STAGEDATA=AUTOANS");
 		DIALOG->Add("#BEGIN");
-		TStringList *INCDATA = new TStringList; 
+		
+        std::auto_ptr<TStringList> INCDATA(new TStringList);
         INCDATA->Text = body;
         
 		for ( int i = 0; i < INCDATA->Count; i++ ) 
@@ -3817,196 +3546,160 @@ void c_process::ProcessAutoAnswerAddToDialogs(TStringList *NEWBOX, String RobotN
             DIALOG->Add( INCDATA->Strings[i] ); 
         } 
         
-        delete INCDATA;
-        
 		DIALOG->Add("#END");
 		MESSAGEDATA->Add(body);
 	}
 
-	f->main->AUTOANSBUFF->Add( RobotName+"|"+Token+"|"+file+Uid+"|"+f->main->from_list_to_str(DIALOG)+"|"+f->main->from_list_to_str(MESSAGEDATA)+"|"+Uid+"|"+lastmid );
+	f->main->AUTOANSBUFF->Add( RobotName+"|"+Token+"|"+file+Uid+"|"+f->main->from_list_to_str(DIALOG.get())+"|"+f->main->from_list_to_str(MESSAGEDATA.get())+"|"+Uid+"|"+lastmid );
 	f->main->log( L"Добавлено в буффер выполнения." );
-
-	delete DIALOG;
-	delete MESSAGEDATA;
 }
 void c_process::ProcessAutoAnswerRunBuffer()
 {
-	f->main->PREFIX = L"Автоответчик : ";
-	f->main->log(L"Отправка сообщений из буффера:");
+    if ( f->main->AUTOANSBUFF->Count > 0 ) 
+    {
+        f->main->PREFIX = L"Автоответчик : ";
+        f->main->log(L"Отправка сообщений из буффера:");
 
-	TStringList *L = new TStringList;
-	while ( f->main->AUTOANSBUFF->Count > 0 )
-	{
-		int indexToAdd = 0; 
-        int indexToAddLevel = 999999999;
-
-		for ( int c = 0; c < f->main->AUTOANSBUFF->Count; c++ )
-		{
-			String robot = g.Encrypt(1,2,"|",f->main->AUTOANSBUFF->Strings[c]);
-
-			int thisIndex = f->main->getrobotindex(robot,L);
-			if ( thisIndex < indexToAddLevel )
-			{
-				indexToAddLevel = thisIndex;
-				indexToAdd = c;
-			}
-		}
-
-		L->Add( f->main->AUTOANSBUFF->Strings[indexToAdd] );
-		f->main->AUTOANSBUFF->Delete( indexToAdd );
-    }
-
-	f->main->AUTOANS_LIMIT->Clear();
-	for ( int c = 0; c < L->Count; c++ )
-	{
-        TStringList *MESSAGEDATA 	= new TStringList;
-		TStringList *DIALOG      	= new TStringList;
-
-		String RobotName 	= g.Encrypt(1,7,"|",L->Strings[c]);
-		String Token 		= g.Encrypt(2,7,"|",L->Strings[c]);
-		String file 		= g.Encrypt(3,7,"|",L->Strings[c]);
-		String dialog 		= g.Encrypt(4,7,"|",L->Strings[c]);
-		String message 	= g.Encrypt(5,7,"|",L->Strings[c]);
-		String uid 		= g.Encrypt(6,7,"|",L->Strings[c]);
-		String lastmid  	= g.Encrypt(7,7,"|",L->Strings[c]);
-
-		if ( ! f->main->sended_count_iflimit(RobotName) )
-		{
-			String responsedatax;
-
-			bool asuccess = false;
-			while ( ! asuccess )
-			{
-				responsedatax = vk.users_get(&asuccess,uid,Token,false);
-				f->main->iSleep(1,Token);
-				if ( ! asuccess ) 
-                {
-                    f->main->log(L"Сервер не ответил на запрос. Повтор..");
-                }
-			}
-
-			bool rec;
-			String uname    = vk.GetParameter("first_name",&responsedatax,false,false,&rec);
-			String usurname = vk.GetParameter("last_name",&responsedatax,false,false,&rec);
-
-			DIALOG->Text 		= g.EncryptToList("~",dialog);
-			MESSAGEDATA->Text 	= g.EncryptToList("~",message);
-
-			DIALOG->Strings[1] = uname;
-			DIALOG->Strings[2] = usurname;
-
-			f->main->PREFIX = L"Автоответчик : [ "+RobotName+ " - " + uname + " " + usurname + " ] ";
-
-			bool success = true;
-			bool e900 = false;
-			bool e902 = false;
-			SendAutoAns(RobotName,uid,MESSAGEDATA->Text,Token,DIALOG,&success,&e900,&e902);
-			if ( success )
-			{
-				DIALOG->SaveToFile(file);
-				f->main->sended_count_add(RobotName);
-			}
-			else
-			{
-				f->main->log(L"Файл диалога создан не был.(");
-				if ( f->main->if_imbanned(Token,uid) )
-				{
-					f->main->log(L"Пользователь занёс робота в ЧС.(");
-
-					bool bsuccess = false;
-					while ( ! bsuccess )
-					{
-						vk.messages_markAsRead(&bsuccess,lastmid,Token);
-						f->main->iSleep(1,Token);
-						if ( ! bsuccess ) 
-                        {
-                            f->main->log(L"Сервер не ответил на запрос. Повтор..");
-                        }
-					}
-				}
-
-				if ( e900 )
-				{
-					f->main->log(L"Ошибка 900.(");
-
-					bool jsuccess = false;
-					while ( ! jsuccess )
-					{
-						vk.messages_markAsRead(&jsuccess,lastmid,Token);
-						f->main->iSleep(1,Token);
-						if ( ! jsuccess ) 
-                        {
-                            f->main->log(L"Сервер не ответил на запрос. Повтор..");
-                        }
-					}
-				}
-
-				if ( e902 )
-				{
-					f->main->log(L"Ошибка 902.(");
-
-					bool jsuccess = false;
-					while ( ! jsuccess )
-					{
-						vk.messages_markAsRead(&jsuccess,lastmid,Token);
-						f->main->iSleep(1,Token);
-						if ( ! jsuccess ) 
-                        {
-                            f->main->log(L"Сервер не ответил на запрос. Повтор..");
-                        }
-					}
-				}
-			}
-
-			delete MESSAGEDATA;
-			delete DIALOG;
-
-			if ( f->main->TERMINATED ) 
-            {
-                break;
-            }
-		}
-	}
-
-	delete L;
-}
-void c_process::ProcessSpeech(String _GroupName)
-{
-	TStringList *L = new TStringList;
-	g.GetFiles( f->main->p_robots, L );
-	String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelGlobal, ModelFile, Online, LastOnline;  
-    bool freeze;
-	for ( int x = 0; x < L->Count; x++ )
-	{
-		ModelGlobal           = f->main->p_robots + L->Strings[x] + "\\Global.txt";
-		ModelFile             = f->main->p_robots + L->Strings[x] + "\\Model.txt";
-		String AutoStopKeysFile  = f->main->p_robots + L->Strings[x] + "\\AutoStopKeys.txt";
-		String AutoStopPostsFile = f->main->p_robots + L->Strings[x] + "\\AutoStopPosts.txt";
-		f->main->get_robotdata( x, &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
-
-		if ( freeze ) 
-        { 
-            continue; 
-        }
-
-		if ( GroupName == _GroupName )
-		{
-			f->main->PREFIX = "[ "+RobotName+L" ] Общение : ";
-			ProcessSpeech(GroupName,RobotName,Server_ID,Login,Password,Token,Activity,ModelGlobal,ModelFile,AutoStopKeysFile,AutoStopPostsFile);
-		}
-
-		if ( f->main->TERMINATED ) 
+        std::auto_ptr<TStringList> L(new TStringList);
+        while ( f->main->AUTOANSBUFF->Count > 0 )
         {
-            break;
-        }
-	}
-}
-void c_process::ProcessSpeech(String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity, String ModelGlobalFile, String ModelFile, String AutoStopKeysFile, String AutoStopPostsFile)
-{
-	f->main->WriteInboxList(Token);
+            int indexToAdd = 0; 
+            int indexToAddLevel = 999999999;
 
-	TStringList *DIALOGS = new TStringList;
-	g.GetFiles( f->main->p_dialogs ,DIALOGS);
+            for ( int c = 0; c < f->main->AUTOANSBUFF->Count; c++ )
+            {
+                String robot = g.Encrypt(1,2,"|",f->main->AUTOANSBUFF->Strings[c]);
+
+                int thisIndex = f->main->getrobotindex(robot,L.get());
+                if ( thisIndex < indexToAddLevel )
+                {
+                    indexToAddLevel = thisIndex;
+                    indexToAdd = c;
+                }
+            }
+
+            L->Add( f->main->AUTOANSBUFF->Strings[indexToAdd] );
+            f->main->AUTOANSBUFF->Delete( indexToAdd );
+        }
+
+        f->main->AUTOANS_LIMIT->Clear();
+        for ( int c = 0; c < L->Count; c++ )
+        {
+            std::auto_ptr<TStringList> MESSAGEDATA(new TStringList);
+            std::auto_ptr<TStringList> DIALOG(new TStringList);
+
+            String RobotName 	= g.Encrypt(1,7,"|",L->Strings[c]);
+            String Token 		= g.Encrypt(2,7,"|",L->Strings[c]);
+            String file 		= g.Encrypt(3,7,"|",L->Strings[c]);
+            String dialog 		= g.Encrypt(4,7,"|",L->Strings[c]);
+            String message 	= g.Encrypt(5,7,"|",L->Strings[c]);
+            String uid 		= g.Encrypt(6,7,"|",L->Strings[c]);
+            String lastmid  	= g.Encrypt(7,7,"|",L->Strings[c]);
+
+            if ( ! f->main->sended_count_iflimit(RobotName) )
+            {
+                String responsedatax;
+
+                bool asuccess = false;
+                while ( ! asuccess )
+                {
+                    responsedatax = vk.users_get(&asuccess,uid,Token,false);
+                    f->main->iSleep(1,Token);
+                    if ( ! asuccess ) 
+                    {
+                        f->main->log(L"Сервер не ответил на запрос. Повтор..");
+                    }
+                }
+
+                bool rec;
+                String uname    = vk.GetParameter("first_name",&responsedatax,false,false,&rec);
+                String usurname = vk.GetParameter("last_name",&responsedatax,false,false,&rec);
+
+                DIALOG->Text 		= g.EncryptToList("~",dialog);
+                MESSAGEDATA->Text 	= g.EncryptToList("~",message);
+
+                DIALOG->Strings[1] = uname;
+                DIALOG->Strings[2] = usurname;
+
+                f->main->PREFIX = L"Автоответчик : [ "+RobotName+ " - " + uname + " " + usurname + " ] ";
+
+                bool success = true;
+                bool e900 = false;
+                bool e902 = false;
+                SendAutoAns(RobotName,uid,MESSAGEDATA->Text,Token,DIALOG.get(),&success,&e900,&e902);
+                if ( success )
+                {
+                    DIALOG->SaveToFile(file);
+                    f->main->sended_count_add(RobotName);
+                }
+                else
+                {
+                    f->main->log(L"Файл диалога создан не был.(");
+                    if ( f->main->if_imbanned(Token,uid) )
+                    {
+                        f->main->log(L"Пользователь занёс робота в ЧС.(");
+
+                        bool bsuccess = false;
+                        while ( ! bsuccess )
+                        {
+                            vk.messages_markAsRead(&bsuccess,lastmid,Token);
+                            f->main->iSleep(1,Token);
+                            if ( ! bsuccess ) 
+                            {
+                                f->main->log(L"Сервер не ответил на запрос. Повтор..");
+                            }
+                        }
+                    }
+
+                    if ( e900 )
+                    {
+                        f->main->log(L"Ошибка 900.(");
+
+                        bool jsuccess = false;
+                        while ( ! jsuccess )
+                        {
+                            vk.messages_markAsRead(&jsuccess,lastmid,Token);
+                            f->main->iSleep(1,Token);
+                            if ( ! jsuccess ) 
+                            {
+                                f->main->log(L"Сервер не ответил на запрос. Повтор..");
+                            }
+                        }
+                    }
+
+                    if ( e902 )
+                    {
+                        f->main->log(L"Ошибка 902.(");
+
+                        bool jsuccess = false;
+                        while ( ! jsuccess )
+                        {
+                            vk.messages_markAsRead(&jsuccess,lastmid,Token);
+                            f->main->iSleep(1,Token);
+                            if ( ! jsuccess ) 
+                            {
+                                f->main->log(L"Сервер не ответил на запрос. Повтор..");
+                            }
+                        }
+                    }
+                }
+
+                if ( f->main->TERMINATED ) 
+                {
+                    break;
+                }
+            }
+        }
+    }
+}
+void c_process::ProcessSpeech(int robotIndex, String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity)
+{
+    f->main->PREFIX = "[ "+RobotName+L" ] Общение : ";
+    
+	f->main->WriteInboxList(RobotName, Token);
+
+    std::auto_ptr<TStringList> DIALOGS(new TStringList);
+	g.GetFiles( f->main->p_dialogs ,DIALOGS.get());
 
 	f->BAR->Position = 0;
 	f->BAR->Max      = DIALOGS->Count;
@@ -4015,7 +3708,7 @@ void c_process::ProcessSpeech(String GroupName, String RobotName, String Server_
 	for ( int c = 0; c < DIALOGS->Count; c++ )
 	{
 		String DialogFile = f->main->p_dialogs + DIALOGS->Strings[c];
-		TStringList *DIALOG = new TStringList;
+        std::auto_ptr<TStringList> DIALOG(new TStringList);
 		DIALOG->LoadFromFile( DialogFile );
 
 		String ROBOTGID = DIALOG->Strings[0];
@@ -4028,7 +3721,14 @@ void c_process::ProcessSpeech(String GroupName, String RobotName, String Server_
 			if ( Pos("#STAGEDATA=FIN",DIALOG->Text) == 0 )
 			{
 				bool SaveDialog = true;
-				ProcessSpeechUser(ROBOTGID,NAME,SURNAME,USERID,DIALOG,Token,ModelGlobalFile,ModelFile,&SaveDialog,AutoStopKeysFile,AutoStopPostsFile);
+				ProcessSpeechUser(robotIndex,
+                                  ROBOTGID,
+                                  NAME,
+                                  SURNAME,
+                                  USERID,
+                                  DIALOG.get(),
+                                  Token,
+                                  &SaveDialog);
 
 				if ( SaveDialog ) 
                 {
@@ -4045,8 +3745,6 @@ void c_process::ProcessSpeech(String GroupName, String RobotName, String Server_
 			}
 		}
 
-		delete DIALOG;
-
 		f->BAR->Position++;
 		g.ProcessMessages();
 
@@ -4055,28 +3753,25 @@ void c_process::ProcessSpeech(String GroupName, String RobotName, String Server_
             break;
         }
 	}
-
-	delete DIALOGS;
-
-	f->main->logline("");
 }
-void c_process::ProcessSpeechUser(String RobotGID, String Name, String SurName, String UserID, TStringList *DIALOG, String Token, String RobotModelGlobalFile, String RobotModelFile, bool *SaveDialog, String AutoStopKeysFile, String AutoStopPostsFile)
+void c_process::ProcessSpeechUser(int robotIndex, String RobotGID, String Name, String SurName, String UserID, TStringList *DIALOG, String Token, bool *SaveDialog)
 {
 	f->main->log(L"Обработка диалога [ "+Name+" "+SurName+" ] [ "+UserID+" ]");
     
-	TStringList *NEWSTACK = new TStringList;
+    std::auto_ptr<TStringList> NEWSTACK(new TStringList);
 	String inboxIDS = "";
 
 	for ( int c = f->main->INBOX->Count-1; c >= 0 ; c-- )
 	{
 		String utoken          = g.Encrypt(1,6,"#",f->main->INBOX->Strings[c]);
-		String mid 			= g.Encrypt(2,6,"#",f->main->INBOX->Strings[c]);
-		String uid 			= g.Encrypt(3,6,"#",f->main->INBOX->Strings[c]);
-		String read_state 		= g.Encrypt(4,6,"#",f->main->INBOX->Strings[c]);
+		String mid 			   = g.Encrypt(2,6,"#",f->main->INBOX->Strings[c]);
+		String uid 			   = g.Encrypt(3,6,"#",f->main->INBOX->Strings[c]);
+		String read_state 	   = g.Encrypt(4,6,"#",f->main->INBOX->Strings[c]);
 		String title           = g.Encrypt(5,6,"#",f->main->INBOX->Strings[c]);
 		String body            = g.Encrypt(6,6,"#",f->main->INBOX->Strings[c]);
 
-		if ( utoken == Token && uid == UserID && 
+		if ( utoken == Token && 
+             uid == UserID && 
              Pos("#ID="+mid,DIALOG->Text) == 0 )
 		{
 			f->main->log(L"Новое входящее сообщение: [ ID:" + mid + L" ] Текст: [ "+body+" ]");
@@ -4094,14 +3789,14 @@ void c_process::ProcessSpeechUser(String RobotGID, String Name, String SurName, 
 			DIALOG->Add("#ID="+mid);
 			DIALOG->Add("#STAGEDATA=INC");
 			DIALOG->Add("#BEGIN");
-			TStringList *INCDATA = new TStringList; 
+			
+            std::auto_ptr<TStringList> INCDATA(new TStringList); 
             INCDATA->Text = body;
 			for ( int i = 0; i < INCDATA->Count; i++ ) 
             { 
                 DIALOG->Add( INCDATA->Strings[i] ); 
                 NEWSTACK->Add( INCDATA->Strings[i] ); 
             } 
-            delete INCDATA;
 			DIALOG->Add("#END");
 		}
 	}
@@ -4109,7 +3804,13 @@ void c_process::ProcessSpeechUser(String RobotGID, String Name, String SurName, 
 	bool makereaded = false;
 	if ( inboxIDS.Length() != 0 ) 
     {
-        ProcessSpeechUserDo(UserID,DIALOG,NEWSTACK->Text,Token,RobotModelGlobalFile,RobotModelFile,SaveDialog,AutoStopKeysFile,AutoStopPostsFile,&makereaded);
+        ProcessSpeechUserDo(robotIndex,
+                            UserID,
+                            DIALOG,
+                            NEWSTACK->Text,
+                            Token,
+                            SaveDialog,
+                            &makereaded);
     }
 
 	if ( *SaveDialog )
@@ -4119,7 +3820,7 @@ void c_process::ProcessSpeechUser(String RobotGID, String Name, String SurName, 
 			String tidmsgs = inboxIDS.SubString(1,inboxIDS.Length()-1);
 
 			bool csuccess = false;
-			while ( ! csuccess )
+			while ( !csuccess )
 			{
 				vk.messages_markAsRead(&csuccess,tidmsgs,Token);
 				f->main->iSleep(1,Token);
@@ -4153,17 +3854,22 @@ void c_process::ProcessSpeechUser(String RobotGID, String Name, String SurName, 
 			f->main->log(L"Сообщения помечены прочитанными: [ ID:"+tidmsgs+" ]");
         }
 	}
-
-	delete NEWSTACK;
 }
-void c_process::ProcessSpeechUserDo(String UserID, TStringList *DIALOG, String STACK, String Token, String RobotGlobalModelFile, String RobotModelFile, bool *SaveDialog, String AutoStopKeysFile, String AutoStopPostsFile, bool *MakeReaded)
+void c_process::ProcessSpeechUserDo(int robotIndex, String UserID, TStringList *DIALOG, String STACK, String Token, bool *SaveDialog, bool *MakeReaded)
 {
-	TStringList *GLOBALMODEL = new TStringList;
-	TStringList *MODEL = new TStringList;
-	TStringList *STAGE = new TStringList;
+    std::auto_ptr<TStringList> L_ROBOTS(new TStringList);
+    g.GetFiles( f->main->p_robots, L_ROBOTS.get() );
+    String ModelGlobalFile = f->main->p_robots + L_ROBOTS->Strings[robotIndex] + "\\Global.txt";
+    String ModelFile = f->main->p_robots + L_ROBOTS->Strings[robotIndex] + "\\Model.txt";
+    String AutoStopKeysFile  = f->main->p_robots + L_ROBOTS->Strings[robotIndex] + "\\AutoStopKeys.txt";
+    String AutoStopPostsFile = f->main->p_robots + L_ROBOTS->Strings[robotIndex] + "\\AutoStopPosts.txt";
+
+    std::auto_ptr<TStringList> GLOBALMODEL(new TStringList);
+    std::auto_ptr<TStringList> MODEL(new TStringList);
+    std::auto_ptr<TStringList> STAGE(new TStringList);
     
-	GLOBALMODEL->LoadFromFile(RobotGlobalModelFile);
-	MODEL->LoadFromFile(RobotModelFile);
+	GLOBALMODEL->LoadFromFile(ModelGlobalFile);
+	MODEL->LoadFromFile(ModelFile);
 	STAGE->Text = MODEL->Text;
 
 	String CURRENT_STAGE = f->main->GetLastStageName(DIALOG);
@@ -4171,14 +3877,14 @@ void c_process::ProcessSpeechUserDo(String UserID, TStringList *DIALOG, String S
 
 	if ( CURRENT_STAGE == "HELLO" ) 
     {
-        SendStage1(UserID,DIALOG,STACK,Token,MODEL);
+        SendStage1(UserID,DIALOG,STACK,Token,MODEL.get());
     }
 	else
 	{
-		f->main->GetOnlyOneStage(STAGE,CURRENT_STAGE);
+		f->main->GetOnlyOneStage(STAGE.get(),CURRENT_STAGE);
 		if ( STAGE->Strings[0] != "NULL" )
 		{
-			String TARGET_STAGE = f->ii->GetStage(STACK,STAGE);
+			String TARGET_STAGE = f->ii->GetStage(STACK,STAGE.get());
 			if ( TARGET_STAGE == "NULL" || 
                  Pos("FIN",TARGET_STAGE) != 0 )
 			{
@@ -4198,14 +3904,14 @@ void c_process::ProcessSpeechUserDo(String UserID, TStringList *DIALOG, String S
 			{
 				if ( ! f->ii->IfAutoStop(STACK,AutoStopKeysFile) )
 				{
-					String GLOGALPOST = f->ii->GetGlobalPostText(STACK,GLOBALMODEL,DIALOG);
+					String GLOGALPOST = f->ii->GetGlobalPostText(STACK,GLOBALMODEL.get(),DIALOG);
 					if ( GLOGALPOST == "NULL" ) 
                     {
-                        SendStageX(UserID,DIALOG,STACK,Token,MODEL,TARGET_STAGE);
+                        SendStageX(UserID,DIALOG,STACK,Token,MODEL.get(),TARGET_STAGE);
                     }
 					else                        
                     {
-                        SendGlobalPost(UserID,DIALOG,GLOGALPOST,Token,MODEL,CURRENT_STAGE);
+                        SendGlobalPost(UserID,DIALOG,GLOGALPOST,Token,MODEL.get(),CURRENT_STAGE);
                     }
 				}
 				else 
@@ -4215,23 +3921,6 @@ void c_process::ProcessSpeechUserDo(String UserID, TStringList *DIALOG, String S
 			}
 		}
 	}
-
-	delete GLOBALMODEL;
-	delete MODEL;
-	delete STAGE;
-}
-void c_process::ProcessMessages_UIDS_To_GlobalUsersCache( String RobotName, String Token )
-{
-	TStringList *UIDS = new TStringList;
-	f->main->GetDialogs(UIDS, 2, 2, Token, RobotName);
-	for ( int c = 0; c < UIDS->Count; c++ )
-	{
-		String UID = UIDS->Strings[c];
-		if ( ! f->main->GlobalUsersCache_Exist( UID ) )
-		{
-			f->main->GlobalUsersCache_Add( UID );
-        }
-    }
 }
 void c_process::ProcessTwoClose()
 {
@@ -4244,22 +3933,21 @@ void c_process::SendStage1(String UserID, TStringList *DIALOG, String STACK, Str
 {
 	f->main->log(L"Отправка первого stage.");
 
-	String STAGENAME;
-
-	TStringList *STAGE = new TStringList;                  
+    std::auto_ptr<TStringList> IMAGELIST(new TStringList);
+    std::auto_ptr<TStringList> AUDIOLIST(new TStringList);
+    std::auto_ptr<TStringList> RECORDLIST(new TStringList);
+    std::auto_ptr<TStringList> POST(new TStringList);
+    std::auto_ptr<TStringList> STAGE(new TStringList);
     STAGE->Text = MODEL->Text;
-	TStringList *POST = new TStringList;
-    TStringList *IMAGELIST = new TStringList;
-	TStringList *AUDIOLIST = new TStringList;
-	TStringList *RECORDLIST = new TStringList;
 
+    String STAGENAME;
 	for ( int c = 0; c < MODEL->Count; c++ )
 	{
 		String l = MODEL->Strings[c];
 		if ( Pos("#",l) != 0 )
 		{
 			STAGENAME = l.SubString(2,l.Length());
-			f->main->GetOnlyOneStage(STAGE,STAGENAME);
+			f->main->GetOnlyOneStage(STAGE.get(),STAGENAME);
 
 			for ( int x = 0; x < STAGE->Count; x++ )
 			{
@@ -4267,7 +3955,7 @@ void c_process::SendStage1(String UserID, TStringList *DIALOG, String STACK, Str
 				if ( Pos("POST'",ln) != 0 )
 				{
 					String PostLine = g.Encrypt(2,2,"'",ln);
-					f->ii->WritePostDataIn(IMAGELIST,AUDIOLIST,RECORDLIST,&PostLine);
+					f->ii->WritePostDataIn(IMAGELIST.get(),AUDIOLIST.get(),RECORDLIST.get(),&PostLine);
 					POST->Add( PostLine );
 				}
 				else
@@ -4321,15 +4009,9 @@ void c_process::SendStage1(String UserID, TStringList *DIALOG, String STACK, Str
 		f->main->log(L"Невозможно отправить сообщение.. (");
 	}
 
-    SendImage(UserID,IMAGELIST,Token);
-	SendAudio(UserID,AUDIOLIST,Token);
-	SendAudioRec(UserID,RECORDLIST,Token);
-
-    delete STAGE;
-	delete POST;
-	delete IMAGELIST;
-	delete AUDIOLIST;
-	delete RECORDLIST;
+    SendImage(UserID,IMAGELIST.get(),Token);
+	SendAudio(UserID,AUDIOLIST.get(),Token);
+	SendAudioRec(UserID,RECORDLIST.get(),Token);
 }
 void c_process::SendGlobalPost(String UserID, TStringList *DIALOG, String POSTTEXT, String Token, TStringList *MODEL, String CURRENT_STAGE)
 {
@@ -4368,21 +4050,21 @@ void c_process::SendStageX(String UserID, TStringList *DIALOG, String STACK, Str
 {
 	f->main->log(L"Отправка stage: [ #"+TARGET_STAGE+" ]");
 
-	TStringList *STAGE = new TStringList;
-	STAGE->Text = MODEL->Text;
-	TStringList *POST = new TStringList;
-    TStringList *IMAGELIST = new TStringList;
-	TStringList *AUDIOLIST = new TStringList;
-	TStringList *RECORDLIST = new TStringList;
+    std::auto_ptr<TStringList> POST(new TStringList);
+    std::auto_ptr<TStringList> IMAGELIST(new TStringList);
+    std::auto_ptr<TStringList> AUDIOLIST(new TStringList);
+    std::auto_ptr<TStringList> RECORDLIST(new TStringList);
+    std::auto_ptr<TStringList> STAGE(new TStringList);
+    STAGE->Text = MODEL->Text;
 
-	f->main->GetOnlyOneStage(STAGE,TARGET_STAGE);
+	f->main->GetOnlyOneStage(STAGE.get(),TARGET_STAGE);
 	for ( int x = 0; x < STAGE->Count; x++ )
 	{
 		String ln = STAGE->Strings[x];
 		if ( Pos("POST'",ln) != 0 )
 		{
 			String PostLine = g.Encrypt(2,2,"'",ln);
-			f->ii->WritePostDataIn(IMAGELIST,AUDIOLIST,RECORDLIST,&PostLine);
+			f->ii->WritePostDataIn(IMAGELIST.get(),AUDIOLIST.get(),RECORDLIST.get(),&PostLine);
 			POST->Add( PostLine );
 		}
 		else
@@ -4433,30 +4115,44 @@ void c_process::SendStageX(String UserID, TStringList *DIALOG, String STACK, Str
 		f->main->log(L"Невозможно отправить сообщение.. (");
 	}
 
-    SendImage(UserID,IMAGELIST,Token);
-	SendAudio(UserID,AUDIOLIST,Token);
-	SendAudioRec(UserID,RECORDLIST,Token);
-
-    delete STAGE;
-	delete POST;
-	delete IMAGELIST;
-	delete AUDIOLIST;
-	delete RECORDLIST;
+    SendImage(UserID,IMAGELIST.get(),Token);
+	SendAudio(UserID,AUDIOLIST.get(),Token);
+	SendAudioRec(UserID,RECORDLIST.get(),Token);
 }
 void c_process::SendAutoAns(String RobotName, String UserID, String MessageData, String Token, TStringList *DIALOG, bool *success, bool *e900, bool *e902)
 {
-	f->main->WriteOutboxAutoAnsList(Token,RobotName);
+    String PX = f->main->PREFIX;
+	f->main->PREFIX = L"Автоответчик : [ "+RobotName+" ] ";
+    
+	if ( Pos(Token,f->main->AUTOANSOUTBOX->Text) == 0 )
+	{
+        std::auto_ptr<TStringList> UIDS(new TStringList);
+		f->main->GetDialogs( UIDS.get(), 0, 0, Token, RobotName );
+
+		for ( int c = 0; c < UIDS->Count; c++ )
+		{
+			String UID = UIDS->Strings[c];
+			f->main->GetHistory( f->main->AUTOANSOUTBOX, UID, 1, 10, Token, RobotName );
+		}
+	}
+	else
+	{
+		f->main->log(L"Список диалогов и сообщений был получен ранее. Буффер наполнен.");
+	}
+
+	f->main->PREFIX = PX;
+    
 	f->main->log(L"Входящий текст: [ "+ Trim( MessageData.SubString(1,MessageData.Length()-3) ) +" ]");
 
 	String TARGETSTAGE = "NULL";
 	f->ii->GetAutoAns(&MessageData,&TARGETSTAGE,Token,UserID);
 	f->main->log(L"Отправка stage: [ "+TARGETSTAGE+" ]");
 
-    TStringList *IMAGELIST = new TStringList;
-	TStringList *AUDIOLIST = new TStringList;
-	TStringList *RECORDLIST = new TStringList;
+    std::auto_ptr<TStringList> IMAGELIST(new TStringList);
+    std::auto_ptr<TStringList> AUDIOLIST(new TStringList);
+    std::auto_ptr<TStringList> RECORDLIST(new TStringList);
 
-	f->ii->WritePostDataIn(IMAGELIST,AUDIOLIST,RECORDLIST,&MessageData);
+	f->ii->WritePostDataIn(IMAGELIST.get(),AUDIOLIST.get(),RECORDLIST.get(),&MessageData);
 	MessageData = f->ii->MakePostLine(MessageData);
 	String MESSID = SendMessage( UserID, MessageData, Token );
 
@@ -4482,9 +4178,9 @@ void c_process::SendAutoAns(String RobotName, String UserID, String MessageData,
         f->main->CNT_MESSAGES++;
 		f->vcl->EchoStatistic();
 
-        SendImage(UserID,IMAGELIST,Token);
-		SendAudio(UserID,AUDIOLIST,Token);
-		SendAudioRec(UserID,RECORDLIST,Token);
+        SendImage(UserID,IMAGELIST.get(),Token);
+		SendAudio(UserID,AUDIOLIST.get(),Token);
+		SendAudioRec(UserID,RECORDLIST.get(),Token);
 	}
 	else
 	{
@@ -4501,10 +4197,6 @@ void c_process::SendAutoAns(String RobotName, String UserID, String MessageData,
             *e902 = true;
         }
 	}
-
-    delete IMAGELIST;
-	delete AUDIOLIST;
-	delete RECORDLIST;
 }
 void c_process::SendAutoStop(String UserID, TStringList *DIALOG, String STACK, String Token, String AutoStopPostsFile)
 {
@@ -4780,8 +4472,8 @@ String  c_ii::GetGlobalPostText(String STACK, TStringList *GLOBALMODEL, TStringL
 
 	if ( ! LastMessageIsGlobal(DIALOG) )
 	{
-		TStringList *IFS   = new TStringList;
-		TStringList *POSTS = new TStringList;
+        std::auto_ptr<TStringList> IFS(new TStringList);
+        std::auto_ptr<TStringList> POSTS(new TStringList);
 
 		for ( int c = 0; c < GLOBALMODEL->Count; c++ )
 		{
@@ -4794,9 +4486,10 @@ String  c_ii::GetGlobalPostText(String STACK, TStringList *GLOBALMODEL, TStringL
 					for ( int c = 0; c < IFS->Count; c++ )
 					{
 						String LINE_IF = IFS->Strings[c];
-						TStringList *ARR = new TStringList;
-						f->main->asplit(ARR, LINE_IF, "'");
-						TStringList *ARRC = new TStringList;
+                        std::auto_ptr<TStringList> ARR(new TStringList);
+                        
+						f->main->asplit(ARR.get(), LINE_IF, "'");
+                        std::auto_ptr<TStringList> ARRC(new TStringList);
 						for ( int x = 0; x < ARR->Count; x++ )
 						{
 							if (  ARR->Strings[x] != "IF" && ARR->Strings[x] != "OR" ) 
@@ -4815,8 +4508,6 @@ String  c_ii::GetGlobalPostText(String STACK, TStringList *GLOBALMODEL, TStringL
 								j = rc.SubString(6,rc.Length());
 							}
 						}
-						delete ARR;
-						delete ARRC;
 					}
 				}
 
@@ -4835,18 +4526,14 @@ String  c_ii::GetGlobalPostText(String STACK, TStringList *GLOBALMODEL, TStringL
                 }
 			}
 		}
-
-		delete IFS;
-		delete POSTS;
 	}
-
 	return j;
 }
 bool c_ii::LastMessageIsGlobal(TStringList *DIALOG)
 {
 	bool j = false;
 	int mc = 0;
-	TStringList *X = new TStringList;
+    std::auto_ptr<TStringList> X(new TStringList);
 
 	for ( int c = DIALOG->Count-1; c >= 0; c-- )
 	{
@@ -4865,8 +4552,6 @@ bool c_ii::LastMessageIsGlobal(TStringList *DIALOG)
 			break;
         }
 	}
-
-	delete X;
 	return j;
 }
 String  c_ii::GetStage(String STACK, TStringList *STAGE)
@@ -4875,10 +4560,10 @@ String  c_ii::GetStage(String STACK, TStringList *STAGE)
 
 	try
 	{
-		TStringList *LinesIF = new TStringList;
-		MakeMass(STAGE,LinesIF);
+        std::auto_ptr<TStringList> LinesIF(new TStringList);
+		MakeMass(STAGE,LinesIF.get());
 
-		J = GetTarget(LinesIF,STACK);
+		J = GetTarget(LinesIF.get(),STACK);
 
 		if ( J != "NULL" )
 		{
@@ -4889,8 +4574,6 @@ String  c_ii::GetStage(String STACK, TStringList *STAGE)
 			GetDefault(STAGE,&J);
 			f->main->log(L"IF не найден. Цель по умолчанию: [ #"+J+" ]");
 		}
-
-		delete LinesIF;
 	}
 	catch ( Exception *ex )
 	{
@@ -4918,10 +4601,10 @@ String  c_ii::GetTarget(TStringList *LinesIF, String STACK)
 	for ( int c = 0; c < LinesIF->Count; c++ )
 	{
 		String LINE_IF = LinesIF->Strings[c];
-		TStringList *ARR = new TStringList;
-		f->main->asplit(ARR, LINE_IF, "'");
-
-		TStringList *ARRC = new TStringList;
+        std::auto_ptr<TStringList> ARR(new TStringList);
+		f->main->asplit(ARR.get(), LINE_IF, "'");
+        std::auto_ptr<TStringList> ARRC(new TStringList);
+        
 		for ( int x = 0; x < ARR->Count; x++ )
 		{
 			if (  ARR->Strings[x] != "IF" && ARR->Strings[x] != "OR" ) 
@@ -4937,9 +4620,6 @@ String  c_ii::GetTarget(TStringList *LinesIF, String STACK)
 				J = ARRC->Strings[ARRC->Count-1];
             }
 		}
-
-		delete ARR;
-		delete ARRC;
 	}
 
 	return J;
@@ -5022,11 +4702,10 @@ String  c_ii::GetOldStage(String uid, String token, TStringList *RobotModel, Str
 
 			if ( WASSTAGE != "NULL" )
 			{
-				TStringList *AAA = new TStringList;
-				AAA->Text = RobotModel->Text;
-				f->main->GetOnlyOneStage(AAA,WASSTAGE);
-				J = "#"+f->ii->GetStage(Message,AAA);
-				delete AAA;
+				std::auto_ptr<TStringList> L(new TStringList);
+				L->Text = RobotModel->Text;
+				f->main->GetOnlyOneStage(L.get(),WASSTAGE);
+				J = "#"+f->ii->GetStage(Message,L.get());
 			}
 			else
 			{
@@ -5041,13 +4720,14 @@ void c_ii::GetAutoAns(String *iodata, String *targetstage, String Token, String 
 {
 	String data = *iodata;                        
     String DEF;                                  
-
-	TStringList *ANSMODEL = new TStringList;
-	TStringList *DEFAULT = new TStringList;    
-	TStringList *ROBOTMODEL = new TStringList;
-
-	TStringList *L = new TStringList;
-	g.GetFiles( f->main->p_robots, L );
+    
+    std::auto_ptr<TStringList> CLEAR(new TStringList);
+    std::auto_ptr<TStringList> ANSMODEL(new TStringList);
+    std::auto_ptr<TStringList> DEFAULT(new TStringList);
+    std::auto_ptr<TStringList> ROBOTMODEL(new TStringList);
+    std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( f->main->p_robots, L.get() );
+    
 	String GroupName, RobotName, Server_ID, Login, Password, xToken, Activity, ModelFile, Online, LastOnline;  bool freeze;
 	for ( int x = 0; x < L->Count; x++ )
 	{
@@ -5063,10 +4743,8 @@ void c_ii::GetAutoAns(String *iodata, String *targetstage, String Token, String 
 		}
 	}
 
-	delete DEFAULT;
-
 	f->main->log(L"Попытка определить прежний Stage." );
-	String target = GetOldStage(uid,xToken,ROBOTMODEL,data);
+	String target = GetOldStage(uid,xToken,ROBOTMODEL.get(),data);
 	if ( target == "NULL" ) 
     {
         f->main->log( L"Прежний Stage не найден. (" );
@@ -5086,15 +4764,13 @@ void c_ii::GetAutoAns(String *iodata, String *targetstage, String Token, String 
 		}
 	}
 
-	delete ANSMODEL;
-
 	if ( target == "NULL" ) 
     {
         target = DEF;
 	}
 
 	*targetstage = target;
-	TStringList *CLEAR = new TStringList;
+    
 	bool breaked = false;
 	for ( int i = 0; i < ROBOTMODEL->Count; i++ )
 	{
@@ -5128,9 +4804,6 @@ void c_ii::GetAutoAns(String *iodata, String *targetstage, String Token, String 
 	String J = CLEAR->Strings[ Random( CLEAR->Count ) ];
 	J = g.Encrypt(2,2,"'",J);
 	*iodata = J;
-    
-    delete CLEAR;
-	delete ROBOTMODEL;                                                                             //f->main->plog("GetAutoAns - stop");
 }
 bool c_ii::IfAutoStop(String message, String file)
 {
@@ -5138,7 +4811,7 @@ bool c_ii::IfAutoStop(String message, String file)
 
 	if ( f->LV_WORKTASKS->Items->Item[4]->Checked )
 	{
-		TStringList *L = new TStringList;
+        std::auto_ptr<TStringList> L(new TStringList);
 		L->LoadFromFile(file);
 
 		message = message;
@@ -5154,13 +4827,12 @@ bool c_ii::IfAutoStop(String message, String file)
 				break;
 			}
 		}
-		delete L;
 	}
 	return stop;
 }
 String  c_ii::GetAutoStopMessage(String file)
 {
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
 	L->LoadFromFile(file);
 
 	String j = "NULL";
@@ -5168,8 +4840,6 @@ String  c_ii::GetAutoStopMessage(String file)
     {
         j = L->Strings[ Random( L->Count ) ];
     }
-
-	delete L;
 	return Trim(j);
 }
 String  c_ii::do_randomize(String text)
@@ -5339,7 +5009,7 @@ bool c_ii::if_EqualPosts(String ModelPost, String MyPost)
 {                                                                        
 	bool eq = false;
 
-	TStringList *JPOSTVARIABLES = new TStringList;
+    std::auto_ptr<TStringList> JPOSTVARIABLES(new TStringList);
 	JPOSTVARIABLES->Add("");
 
 	String  buff = "";
@@ -5354,7 +5024,7 @@ bool c_ii::if_EqualPosts(String ModelPost, String MyPost)
 			if ( ch == ")" )
 			{
 				w = false;
-				MakePostLineGetAll(buff,JPOSTVARIABLES);
+				MakePostLineGetAll(buff,JPOSTVARIABLES.get());
 
 				try
 				{
@@ -5408,8 +5078,6 @@ bool c_ii::if_EqualPosts(String ModelPost, String MyPost)
 			}
 		}
     }
-
-	delete JPOSTVARIABLES;
 	return eq;
 }
 void c_ii::MakePostLineGetAll(String buffer, TStringList *JPOSTVARIABLES_A)
@@ -5425,8 +5093,7 @@ void c_ii::MakePostLineGetAll(String buffer, TStringList *JPOSTVARIABLES_A)
 	}
 	int parts = sc + 1;
 
-	TStringList *JPOSTVARIABLES_D = new TStringList;
-
+    std::auto_ptr<TStringList> JPOSTVARIABLES_D(new TStringList);
 	for ( int r = 1;  r <= parts; r++ )
 	{
 		String j = g.Encrypt(r,parts,"|",buffer);
@@ -5438,11 +5105,12 @@ void c_ii::MakePostLineGetAll(String buffer, TStringList *JPOSTVARIABLES_A)
 	}
 
 	JPOSTVARIABLES_A->Text = JPOSTVARIABLES_D->Text;
-	delete JPOSTVARIABLES_D;
 }
 void c_ii::WritePostDataIn(TStringList *IMAGELIST, TStringList *AUDIOLIST, TStringList *RECORDLIST, String *postline)
 {
-	String pl = *postline; String fx; int p;
+	String pl = *postline; 
+    String fx; 
+    int p;
 
 	try
 	{
@@ -5596,8 +5264,8 @@ void c_online::processing()
 
 	buffer_clear(IUNIX);
 
-	TStringList *L = new TStringList;
-	g.GetFiles( f->main->p_robots, L );
+    std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( f->main->p_robots, L.get() );
 
 	for ( int c = 0; c < L->Count; c++ )
 	{
@@ -5609,9 +5277,7 @@ void c_online::processing()
 			if ( StrToInt(LastOnline)+540+Random(60) < IUNIX )
 			{
 				bool success = false;
-
 				make_online(RobotName,Token,&success);
-
 				if ( success )
 				{
 					String tprefix = f->main->PREFIX;
@@ -5620,10 +5286,9 @@ void c_online::processing()
 					f->main->PREFIX = tprefix;
 
 					String robotpath = f->main->p_robots + L->Strings[c] + "\\" + "Conf.ini";
-                    TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 );
+                    std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(robotpath), TEncoding::UTF8 ));
 			        INI->WriteInteger(UnicodeString("ACCOUNT"), UnicodeString("lastonline"),  IUNIX);
                     INI->UpdateFile();
-			        delete INI;
 				}
 				else
 				{
@@ -5645,8 +5310,6 @@ void c_online::processing()
 			f->main->PREFIX = tprefix;
 		}
 	}
-
-	delete L;
 }
 void c_online::make_online(String robotname, String token, bool *success)
 {
@@ -5661,7 +5324,7 @@ void c_online::make_online(String robotname, String token, bool *success)
 }
 void c_online::buffer_clear(int unix)
 {
-	TStringList *L = new TStringList;
+    std::auto_ptr<TStringList> L(new TStringList);
 	for ( int c = 0; c < APIBUFFER->Count; c++ )
 	{
 		String lastapi = g.Encrypt(2,2,"#",APIBUFFER->Strings[c]);
@@ -5672,7 +5335,6 @@ void c_online::buffer_clear(int unix)
 	}
 
 	APIBUFFER->Text = L->Text;
-	delete L;
 }
 // C_VCL
 c_vcl::c_vcl()
@@ -5771,8 +5433,8 @@ void c_vcl::groupechoReadRobots()
 		String NeededGroupName = Trim(f->LV_CONF_GROUPS->Items->Item[c]->Caption);
 
 		int Count = 0;
-		TStringList *L = new TStringList;
-		g.GetFiles( f->main->p_robots, L );
+        std::auto_ptr<TStringList> L(new TStringList);
+		g.GetFiles( f->main->p_robots, L.get() );
 		for ( int x = 0; x < L->Count; x++ )
 		{
 			String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
@@ -5784,14 +5446,12 @@ void c_vcl::groupechoReadRobots()
                 Count++;
             }
 		}
-		delete L;
-
 		f->LV_CONF_GROUPS->Items->Item[c]->SubItems->Strings[0] = IntToStr(Count);
     }
 }
 void c_vcl::groupechoReadUsers()
 {
-    TStringList *L = new TStringList;
+    std::auto_ptr<TStringList> L(new TStringList);
     if(FileExists(f->main->f_users))
     {
 	    L->LoadFromFile( f->main->f_users );
@@ -5813,8 +5473,6 @@ void c_vcl::groupechoReadUsers()
 
 		f->LV_CONF_GROUPS->Items->Item[c]->SubItems->Strings[1] = IntToStr(Count);
 	}
-
-	delete L;
 }
 void c_vcl::Dialog_Add_User(String User)
 {
@@ -5948,9 +5606,9 @@ void c_vcl::GoToModels(String RobotName, int PositionView)
     }
 
     f->PAGES_MODELS_PAGEVIEW->ActivePageIndex = PositionView;
-
-    TStringList *L = new TStringList;
-    g.GetFiles( f->main->p_robots, L );
+    
+    std::auto_ptr<TStringList> L(new TStringList);
+    g.GetFiles( f->main->p_robots, L.get() );
     for ( int c = 0; c < L->Count; c++ )
     {
 		String GroupName, cRobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
@@ -5964,7 +5622,6 @@ void c_vcl::GoToModels(String RobotName, int PositionView)
 			break;
         }
     }
-	delete L;
 }
 void c_vcl::ModelStageClear()
 {
@@ -6000,8 +5657,8 @@ void c_vcl::GetAllRobots(TsComboBox *CB)
 {
     CB->Items->Clear();
 
-    TStringList *L = new TStringList;
-	g.GetFiles( f->main->p_robots, L );
+    std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( f->main->p_robots, L.get() );
     for ( int c = 0; c < L->Count; c++ )
     {
 		String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
@@ -6010,8 +5667,6 @@ void c_vcl::GetAllRobots(TsComboBox *CB)
 
         CB->Items->Add( RobotName );
     }
-
-    delete L;
 }
 void c_vcl::InputCaptchaOpenForm(String file)
 {
@@ -6096,19 +5751,14 @@ String  c_captcha::SaveToFile( String Url )
 {
 	String file = g.GetDirectoryApplicationDatapath()+"captcha.jpg";
 
-	TMemoryStream *ms = new TMemoryStream();
-
-    TIdHTTP *HTTP = new TIdHTTP(NULL);
+    std::auto_ptr<TMemoryStream> ms(new TMemoryStream);
+    std::auto_ptr<TIdHTTP> HTTP(new TIdHTTP(NULL));
 	HTTP->HandleRedirects = true;
 
-	HTTP->Get( Url, ms );
+	HTTP->Get( Url, ms.get() );
 
 	ms->Position = 0;
 	ms->SaveToFile( file );
-
-	delete ms;
-	delete HTTP;
-
 	return file;
 }
 // TRAY
@@ -6286,7 +5936,7 @@ void __fastcall Tf::LV_CONF_ROBOTSClick(TObject *Sender)
 	{
 		int cbIndex = -1;
 		String UsesGroupName = Trim(LV_CONF_GROUPS->Items->Item[LV_CONF_GROUPS->ItemIndex]->Caption);
-		TStringList *G = new TStringList;
+		std::auto_ptr<TStringList> G(new TStringList);
 		for ( int c = 0; c < LV_CONF_GROUPS->Items->Count; c++ )
 		{
 			String tGroup = Trim(LV_CONF_GROUPS->Items->Item[c]->Caption);
@@ -6298,10 +5948,9 @@ void __fastcall Tf::LV_CONF_ROBOTSClick(TObject *Sender)
 		}
 		cb_conf_robots_edit_groups->Items->Text = G->Text;
 		cb_conf_robots_edit_groups->ItemIndex = cbIndex;
-		delete G;
 
-		TStringList *L = new TStringList;
-		g.GetFiles( main->p_robots, L );
+		std::auto_ptr<TStringList> L(new TStringList);
+		g.GetFiles( main->p_robots, L.get() );
 		for ( int c = 0; c < L->Count; c++ )
 		{
 			String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
@@ -6328,7 +5977,6 @@ void __fastcall Tf::LV_CONF_ROBOTSClick(TObject *Sender)
 				break;
 			}
 		}
-		delete L;
 	}
 	else
 	{
@@ -6359,8 +6007,8 @@ void __fastcall Tf::b_CONF_ROBOTS_EDIT_APPLYClick(TObject *Sender)
 	{
 		String OldName = Trim(LV_CONF_ROBOTS->Items->Item[LV_CONF_ROBOTS->ItemIndex]->Caption);
 
-		TStringList *L = new TStringList;
-		g.GetFiles( main->p_robots, L );
+		std::auto_ptr<TStringList> L(new TStringList);
+		g.GetFiles( main->p_robots, L.get() );
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
@@ -6372,14 +6020,13 @@ void __fastcall Tf::b_CONF_ROBOTS_EDIT_APPLYClick(TObject *Sender)
 			{
                 String robotpath = main->p_robots + L->Strings[c] + "\\";
                 main->checkDirectoryExisting(robotpath);
-				TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath + "Conf.ini"),TEncoding::UTF8 );
+				std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(robotpath + "Conf.ini"),TEncoding::UTF8 ));
 				INI->WriteString( UnicodeString("MAIN"),    UnicodeString("owner"),   UnicodeString(Trim(cb_conf_robots_edit_groups->Items->Strings[cb_conf_robots_edit_groups->ItemIndex]))   );
 				INI->WriteString( UnicodeString("MAIN"),    UnicodeString("name"),    UnicodeString(f->e_conf_robots_edit_name->Text) );
 				INI->WriteString( UnicodeString("ACCOUNT"), UnicodeString("login"),   UnicodeString(f->e_conf_robots_edit_login->Text) );
 				INI->WriteString( UnicodeString("ACCOUNT"), UnicodeString("password"),UnicodeString(f->e_conf_robots_edit_password->Text) );
                 INI->WriteString( UnicodeString("ACCOUNT"), UnicodeString("online"),  UnicodeString(IntToStr( f->ch_robot_online_edit->ItemIndex) ) );
                 INI->UpdateFile();
-				delete INI;
 
 				main->conf_robots( LV_CONF_GROUPS->ItemIndex, false );
 				vcl->set_enabled_conf_robots(false);
@@ -6406,9 +6053,8 @@ void __fastcall Tf::b_CONF_USERS_SEARCHClick(TObject *Sender)
 
 		try
 		{
-			TIdHTTP *HTTP = new TIdHTTP(NULL);
+			std::auto_ptr<TIdHTTP> HTTP(new TIdHTTP(NULL));
 			URL = HTTP->URL->URLDecode(URL);
-			delete HTTP;
 
 			main->search_request( URL, e_conf_users_offSet->Text, e_conf_users_Count->Text, 1 );
 		}
@@ -6451,7 +6097,7 @@ void __fastcall Tf::LV_DIALOGSClick(TObject *Sender)
 	{
 		String id = Trim(LV_DIALOGS->Items->Item[index]->Caption);
 
-		TStringList *X = new TStringList;
+        std::auto_ptr<TStringList> X(new TStringList);
 		X->LoadFromFile( main->p_dialogs + id );
 
 		String robot_gid 	 = X->Strings[0];
@@ -6460,11 +6106,10 @@ void __fastcall Tf::LV_DIALOGSClick(TObject *Sender)
 
 		f->l_GID->Caption = robot_gid;
 
-		main->DrawMessageBox(name,surname,robot_gid,X);
-		main->SetAsRead( X );
+		main->DrawMessageBox(name,surname,robot_gid,X.get());
+		main->SetAsRead( X.get() );
 
 		X->SaveToFile( UnicodeString(main->p_dialogs + id), TEncoding::UTF8 );
-		delete X;
 
 		String inc = LV_DIALOGS->Items->Item[index]->SubItems->Strings[2];
 		LV_DIALOGS->Items->Item[index]->SubItems->Strings[2] = vcl->FixInbox( inc );
@@ -6479,8 +6124,8 @@ void __fastcall Tf::B_SENDMESSAGEClick(TObject *Sender)
 	{
 		String id = Trim(LV_DIALOGS->Items->Item[LV_DIALOGS->ItemIndex]->Caption);
 
-		TStringList *L = new TStringList;
-		g.GetFiles( main->p_robots, L );
+		std::auto_ptr<TStringList> L(new TStringList);
+		g.GetFiles( main->p_robots, L.get() );
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
@@ -6497,7 +6142,7 @@ void __fastcall Tf::B_SENDMESSAGEClick(TObject *Sender)
 					TDateTime D = Date();
 					TDateTime T = Time();
 					String DT = DateToStr(D) + " - " + TimeToStr(T);
-					TStringList *X = new TStringList;
+					std::auto_ptr<TStringList> X(new TStringList);
 					X->LoadFromFile( main->p_dialogs + id );
 					X->Add("");
 					X->Add("#MESSAGE");
@@ -6510,7 +6155,6 @@ void __fastcall Tf::B_SENDMESSAGEClick(TObject *Sender)
 					for ( int i = 0; i < ME_INPUT->Lines->Count; i++ ) X->Add( ME_INPUT->Lines->Strings[i] );
 					X->Add("#END");
 					X->SaveToFile(  main->p_dialogs + id );
-					delete X;
 
 					int DiaIndex = LV_DIALOGS->ItemIndex;
 					main->conf_dialogs(false);
@@ -6523,7 +6167,6 @@ void __fastcall Tf::B_SENDMESSAGEClick(TObject *Sender)
 				break;
 			}
 		}
-		delete L;
 	}
 
 	B_SENDMESSAGE->Enabled = true; 
@@ -6653,10 +6296,9 @@ void __fastcall Tf::B_MODEL_HELLO_ADDClick(TObject *Sender)
 	{
         main->MODEL_HELLO->Add( E_MODEL_HELLO_ADD->Text );
 		E_MODEL_HELLO_ADD->Clear();
-        TStringList *L = new TStringList;
-        g.GetFiles( main->p_robots, L );
+        std::auto_ptr<TStringList> L(new TStringList);
+        g.GetFiles( main->p_robots, L.get() );
 		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\Hello.txt";
-        delete L;
         
         main->MODEL_HELLO->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
 		main->LoadModelHello();
@@ -6669,10 +6311,9 @@ void __fastcall Tf::B_MODEL_AUTOANS_ADDClick(TObject *Sender)
 		main->MODEL_AUTOANS->Add( E_MODEL_AUTOANS_RULETEXT->Text+"~"+E_MODEL_AUTOANS_RULESTAGE->Text );
 		E_MODEL_AUTOANS_RULETEXT->Clear();
 		E_MODEL_AUTOANS_RULESTAGE->Clear();
-		TStringList *L = new TStringList;
-        g.GetFiles( main->p_robots, L );
+		std::auto_ptr<TStringList> L(new TStringList);
+        g.GetFiles( main->p_robots, L.get() );
 		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoAnsRules.txt";
-        delete L;
         
 		main->MODEL_AUTOANS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
 		main->LoadModelAutoAnsRules();
@@ -6684,10 +6325,9 @@ void __fastcall Tf::B_MODEL_AUTOSTOP_KEYSClick(TObject *Sender)
 	{
 		main->MODEL_AUTOSTOP_KEYS->Add( E_MODEL_AUTOSTOP_KEYS->Text );
 		E_MODEL_AUTOSTOP_KEYS->Clear();
-		TStringList *L = new TStringList;
-        g.GetFiles( main->p_robots, L );
+		std::auto_ptr<TStringList> L(new TStringList);
+        g.GetFiles( main->p_robots, L.get() );
 		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopKeys.txt";
-        delete L;
         
 		main->MODEL_AUTOSTOP_KEYS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
 		main->LoadModelAutoStopKeys();
@@ -6699,10 +6339,9 @@ void __fastcall Tf::B_MODEL_AUTOSTOP_POSTSClick(TObject *Sender)
 	{
 		main->MODEL_AUTOSTOP_POSTS->Add( E_MODEL_AUTOSTOP_POSTS->Text );
 		E_MODEL_AUTOSTOP_POSTS->Clear();
-		TStringList *L = new TStringList;
-        g.GetFiles( main->p_robots, L );
+		std::auto_ptr<TStringList> L(new TStringList);
+        g.GetFiles( main->p_robots, L.get() );
 		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopPosts.txt";
-        delete L;
         
 		main->MODEL_AUTOSTOP_POSTS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
 		main->LoadModelAutoStopPosts();
@@ -6717,7 +6356,7 @@ void __fastcall Tf::B_MODEL_LOGICAL_ADDEDITClick(TObject *Sender)
         {
     		B_MODEL_LOGICAL_ADDEDIT->Caption = "";
 
-    		TStringList *J = new TStringList;
+    		std::auto_ptr<TStringList> J(new TStringList);
             J->Add( StageName );
     		for ( int c = 0; c < main->POSTS->Count; c++ ) 		
             {
@@ -6746,16 +6385,14 @@ void __fastcall Tf::B_MODEL_LOGICAL_ADDEDITClick(TObject *Sender)
 
             if ( main->IFCREATE ) 
             {
-                main->ModelLogicalAddStage( J );
+                main->ModelLogicalAddStage( J.get() );
             }
             else                  
             {
-                main->ModelLogicalChangeStage( J );
+                main->ModelLogicalChangeStage( J.get() );
             }
             
             main->ModelSaveAndReloadInterface();
-            delete J;
-
             main->MOD = false;
         }
         else
@@ -6945,16 +6582,13 @@ void __fastcall Tf::E_MODEL_AUTOANS_DEFAULTChange(TObject *Sender)
 {
 	if ( E_MODEL_AUTOANS_DEFAULT->Text.Length() > 0 && LOADED )
 	{
-		TStringList *X = new TStringList;
+		std::auto_ptr<TStringList> X(new TStringList);
 		X->Text = E_MODEL_AUTOANS_DEFAULT->Text;
 
-		TStringList *L = new TStringList;
-		g.GetFiles( main->p_robots, L );
+		std::auto_ptr<TStringList> L(new TStringList);
+		g.GetFiles( main->p_robots, L.get() );
 		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoAnsDefault.txt";
 		X->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
-        
-		delete L;
-		delete X;
 	}
 }
 void __fastcall Tf::sTabSheet9Show(TObject *Sender)
@@ -6972,8 +6606,8 @@ void __fastcall Tf::b_MODEL_IMPORTClick(TObject *Sender)
          Pos("\\",main->f_od_import_robot_model) != 0 )
 	{
 		String dir = main->f_od_import_robot_model + "\\";  // g.Sm(dir);
-		TStringList *SOURCEFILES = new TStringList;
-		g.GetFiles( dir, SOURCEFILES );
+        std::auto_ptr<TStringList> SOURCEFILES(new TStringList);
+		g.GetFiles( dir, SOURCEFILES.get() );
 
 		for ( int c = 0; c < f->LV_WORKGROUPS->Items->Count; c++ )
 		{
@@ -6981,8 +6615,8 @@ void __fastcall Tf::b_MODEL_IMPORTClick(TObject *Sender)
 			{
 				String NeededGroup = Trim(f->LV_WORKGROUPS->Items->Item[c]->Caption);
 
-				TStringList *L = new TStringList;
-				g.GetFiles( f->main->p_robots, L );
+				std::auto_ptr<TStringList> L(new TStringList);
+				g.GetFiles( f->main->p_robots, L.get() );
 				String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, ModelFile, Online, LastOnline;  
                 bool freeze;
 				for ( int x = 0; x < L->Count; x++ )
@@ -7232,8 +6866,8 @@ void __fastcall Tf::N18Click(TObject *Sender)
 
 		String NeededRobotName = Trim( LV_CONF_ROBOTS->Items->Item[index]->Caption );
 
-		TStringList *L = new TStringList;
-		g.GetFiles( main->p_robots, L );
+		std::auto_ptr<TStringList> L(new TStringList);
+		g.GetFiles( main->p_robots, L.get() );
 
 		for ( int c = 0; c < L->Count; c++ )
 		{
@@ -7251,7 +6885,6 @@ void __fastcall Tf::N18Click(TObject *Sender)
             }
 		}
 
-		delete L;
 		main->conf_models(false);
 
 		if ( DialogsDelete ) 
@@ -7295,7 +6928,7 @@ void __fastcall Tf::N58Click(TObject *Sender)
 {
 	// CONF - ROBOTS - CONNECT ALL
 
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
 	for ( int c = 0; c < LV_CONF_ROBOTS->Items->Count; c++ )
 	{
 		String NeededRobotName = Trim(LV_CONF_ROBOTS->Items->Item[c]->Caption);
@@ -7313,7 +6946,6 @@ void __fastcall Tf::N58Click(TObject *Sender)
 	}
 
 	ShowMessage(L->Text);
-    delete L;
 }
 void __fastcall Tf::N10Click(TObject *Sender)
 {
@@ -7325,7 +6957,7 @@ void __fastcall Tf::N10Click(TObject *Sender)
 	{
 		String id = Trim(LV_CONF_USERS->Items->Item[index]->SubItems->Strings[0]);
 
-		TStringList *L = new TStringList;
+		std::auto_ptr<TStringList> L(new TStringList);
         if(FileExists(main->f_users))
         {
 		    L->LoadFromFile( main->f_users );
@@ -7340,7 +6972,6 @@ void __fastcall Tf::N10Click(TObject *Sender)
             }
 		}
 		L->SaveToFile( UnicodeString(main->f_users), TEncoding::UTF8 );
-		delete L;
 
 		main->GlobalUsersCache_Delete( id );
 
@@ -7380,7 +7011,7 @@ void __fastcall Tf::N23Click(TObject *Sender)
 	{
 		String id = Trim(LV_CONF_USERS->Items->Item[i]->SubItems->Strings[0]);
 
-		TStringList *L = new TStringList;
+		std::auto_ptr<TStringList> L(new TStringList);
         if(FileExists(main->f_users))
         {
 		    L->LoadFromFile( main->f_users );
@@ -7395,8 +7026,6 @@ void __fastcall Tf::N23Click(TObject *Sender)
             }
 		}
 		L->SaveToFile( UnicodeString(main->f_users), TEncoding::UTF8 );
-		delete L;
-
 		main->GlobalUsersCache_Delete( id );
 	}
 
@@ -7410,8 +7039,8 @@ void __fastcall Tf::N26Click(TObject *Sender)
 	int index = LV_CONF_ROBOTS->ItemIndex;
 	if ( index != -1 )
 	{
-		TStringList *L = new TStringList;
-		g.GetFiles( main->p_robots, L );
+		std::auto_ptr<TStringList> L(new TStringList);
+		g.GetFiles( main->p_robots, L.get() );
 		for ( int c = 0; c < L->Count; c++ )
 		{
 			String GroupName, RobotName, Server_ID, Login, Password, Token, Activity, Online, LastOnline;  
@@ -7430,7 +7059,6 @@ void __fastcall Tf::N26Click(TObject *Sender)
 				break;
 			}
 		}
-		delete L;
 	}
 }
 void __fastcall Tf::N24Click(TObject *Sender)
@@ -7480,28 +7108,24 @@ void __fastcall Tf::N27Click(TObject *Sender)
 	int index = LV_DIALOGS->ItemIndex;
 	if ( index != -1 )
 	{
-		TStringList *L = new TStringList;
-		g.GetFiles( main->p_dialogs, L );
+		std::auto_ptr<TStringList> L(new TStringList);
+		g.GetFiles( main->p_dialogs, L.get() );
 
 		DeleteFile( main->p_dialogs + L->Strings[index] );
 
 		LV_DIALOGS->Items->Delete(index);
-
-		delete L;
 	}
 }
 void __fastcall Tf::N28Click(TObject *Sender)
 {
 	// PM LV DIALOGS - DELETE ALL
 
-	TStringList *L = new TStringList;
-	g.GetFiles( main->p_dialogs, L );
+	std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( main->p_dialogs, L.get() );
 	for ( int c = 0; c < L->Count; c++ )
 	{
 		DeleteFile( main->p_dialogs + L->Strings[c] );
 	}
-	delete L;
-
 	LV_DIALOGS->Items->Clear();
 }
 void __fastcall Tf::N29Click(TObject *Sender)
@@ -7528,12 +7152,10 @@ void __fastcall Tf::N33Click(TObject *Sender)
 	if ( index != -1 )
 	{
 		main->MODEL_HELLO->Delete( index );
-        TStringList *L = new TStringList;
-		g.GetFiles( main->p_robots, L );
+        std::auto_ptr<TStringList> L(new TStringList);
+		g.GetFiles( main->p_robots, L.get() );
         String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\Hello.txt";
-        delete L;
 		main->MODEL_HELLO->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
-
 		main->LoadModelHello();
 	}
 }
@@ -7716,14 +7338,12 @@ void __fastcall Tf::N49Click(TObject *Sender)
 	// PM MODEL AUTOANS DELETE
 
 	int index = LV_MODEL_AUTOANS->ItemIndex;
-
 	if ( index != -1 )
 	{
 		main->MODEL_AUTOANS->Delete( index );
-        TStringList *L = new TStringList;
-		g.GetFiles( main->p_robots, L );
+        std::auto_ptr<TStringList> L(new TStringList);
+		g.GetFiles( main->p_robots, L.get() );
 		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoAnsRules.txt";
-        delete L;
         
 		main->MODEL_AUTOANS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
 		main->LoadModelAutoAnsRules();
@@ -7743,11 +7363,10 @@ void __fastcall Tf::N59Click(TObject *Sender)
 	if ( index != -1 )
 	{
 		main->MODEL_AUTOSTOP_KEYS->Delete( index );
-		TStringList *L = new TStringList;
-		g.GetFiles( main->p_robots, L );
+		std::auto_ptr<TStringList> L(new TStringList);
+		g.GetFiles( main->p_robots, L.get() );
 		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopKeys.txt";
-		delete L;
-        
+		
 		main->MODEL_AUTOSTOP_KEYS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
 		main->LoadModelAutoStopKeys();
 	}
@@ -7757,10 +7376,9 @@ void __fastcall Tf::N60Click(TObject *Sender)
 	// PM MODELS  AUTOSTOP KEYS DEL ALL
 
 	main->MODEL_AUTOSTOP_KEYS->Clear();
-	TStringList *L = new TStringList;
-	g.GetFiles( main->p_robots, L );
+	std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( main->p_robots, L.get() );
 	String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopKeys.txt";
-	delete L;
     
 	main->MODEL_AUTOSTOP_KEYS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
 	main->LoadModelAutoStopKeys();
@@ -7773,10 +7391,9 @@ void __fastcall Tf::N61Click(TObject *Sender)
 	if ( index != -1 )
 	{
 		main->MODEL_AUTOSTOP_POSTS->Delete( index );
-		TStringList *L = new TStringList;
-		g.GetFiles( main->p_robots, L );
+		std::auto_ptr<TStringList> L(new TStringList);
+		g.GetFiles( main->p_robots, L.get() );
 		String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopPosts.txt";
-		delete L;
         
 		main->MODEL_AUTOSTOP_POSTS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
 		main->LoadModelAutoStopPosts();
@@ -7787,10 +7404,9 @@ void __fastcall Tf::N62Click(TObject *Sender)
 	// PM MODELS  AUTOSTOP POSTS DEL ALL
 
 	main->MODEL_AUTOSTOP_POSTS->Clear();
-	TStringList *L = new TStringList;
-	g.GetFiles( main->p_robots, L );
+	std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( main->p_robots, L.get() );
 	String file = main->p_robots + L->Strings[ CB_MODELS_ROBOTS->ItemIndex ] + "\\AutoStopPosts.txt";
-	delete L;
     
 	main->MODEL_AUTOSTOP_POSTS->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
 	main->LoadModelAutoStopPosts();
@@ -7824,17 +7440,15 @@ void __fastcall Tf::N69Click(TObject *Sender)
 }
 void __fastcall Tf::N75Click(TObject *Sender)
 {
-	TStringList *L = new TStringList;
-	g.GetFiles( main->p_robots, L );
+	std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( main->p_robots, L.get() );
 	for ( int c = 0; c < L->Count; c++ )
 	{
 		String robotpath = main->p_robots + L->Strings[c] + "\\" + "Conf.ini";
-        TMemIniFile *INI = new TMemIniFile( UnicodeString(robotpath),TEncoding::UTF8 );
+        std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(robotpath),TEncoding::UTF8 ));
         INI->WriteBool( UnicodeString("MAIN"), UnicodeString("freeze"), true );
         INI->UpdateFile();
-		delete INI;
 	}
-	delete L;
 	g.Sm(L"Готово");
 }
 void __fastcall Tf::e_conf_users_CountChange(TObject *Sender)
@@ -7845,53 +7459,26 @@ void __fastcall Tf::e_conf_users_CountChange(TObject *Sender)
 	}
 }
 // TEST
-void __fastcall Tf::BTEST1Click(TObject *Sender)
-{
-	ShowMessage("T1");
-
-    TIdHTTP *HTTP = new TIdHTTP(NULL);
-	HTTP->HandleRedirects = true;
-	HTTP->ConnectTimeout = 500;
-	HTTP->ReadTimeout = 500;
-
-	String j = "NULL";
-
-	try
-	{
-		j = HTTP->Get("http://vkbot.jenya.in.ua/test.php");
-	}
-	catch (...)
-	{
-		ShowMessage("Fuck!");
-    }
-
-	ShowMessage( j );
-}
 void __fastcall Tf::BTEST2Click(TObject *Sender)
 {
 	ShowMessage("T2");
 }
 void __fastcall Tf::B_TEST_01Click(TObject *Sender)
 {
-	TStringList *IMAGELIST = new TStringList;
-	TStringList *AUDIOLIST = new TStringList;
-	TStringList *RECORDLIST = new TStringList;
+    std::auto_ptr<TStringList> IMAGELIST(new TStringList);
+    std::auto_ptr<TStringList> AUDIOLIST(new TStringList);
+    std::auto_ptr<TStringList> RECORDLIST(new TStringList);
 
 	String PostLine = L"POST'$25 сутки. Паспорт в залог обязателен![IMAGE=Demotivators\\Image1.jpg][RECORD=Voices-1\\ogg_sound_effect_56.ogg]";
 
 	PostLine = g.Encrypt(2,2,"'",PostLine);
 
-	f->ii->WritePostDataIn(IMAGELIST,AUDIOLIST,RECORDLIST,&PostLine);
+	f->ii->WritePostDataIn(IMAGELIST.get(),AUDIOLIST.get(),RECORDLIST.get(),&PostLine);
 
 	ShowMessage("postline_"+PostLine+"_");
-
 	ShowMessage("IMAGELIST_"+IMAGELIST->Text+"_");
 	ShowMessage("AUDIOLIST_"+AUDIOLIST->Text+"_");
 	ShowMessage("RECORDLIST_"+RECORDLIST->Text+"_");
-
-	delete IMAGELIST;
-	delete AUDIOLIST;
-	delete RECORDLIST;
 }
 
 

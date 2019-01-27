@@ -127,7 +127,7 @@ class c_main
 		int  getCountOfHello(String GroupName);
 		void DrawMessageBox(String Name, String Surname, String RobotGID, TStringList *DIALOGS);
 		void DeleteUserFromQueueAndPutToDialogs(String UserID, String UserName, String UserSurname, String RobotName, bool msghello, String Text);
-		void WriteInboxList(String Token);
+		void WriteInboxList(String RobotName, String Token);
 		void WriteOutboxAutoAnsList(String Token, String RobotName);
 		void GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String Token, String RobotName);
 		void GetHistory(TStringList *LIST, String UID, int OUT_3, int Count, String Token, String RobotName);
@@ -224,15 +224,14 @@ class c_process
 		void ProcessHello(String GroupName);
 		void ProcessHelloDo(String Group, String UserID, String UserName, String UserSurname);
 		void ProcessHelloDoSend(String Group, String UserID, String UserName, String UserSurname, String RobotName, String Token, String RobotPath);
-		void ProcessFriendConfirm(String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity, String ModelFile);
-		void ProcessAutoAnswer(String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity, String ModelFile);
+		void ProcessFriendConfirm(int robotIndex, String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity);
+		void ProcessAutoAnswer(int robotIndex, String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity);
 		void ProcessAutoAnswerCheckNew(String RobotName, String Token);
 		void ProcessAutoAnswerAddToDialogs(TStringList *NEWBOX, String RobotName, String Token, String Uid);
 		void ProcessAutoAnswerRunBuffer();
-		void ProcessSpeech(String _GroupName);
-		void ProcessSpeech(String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity, String ModelGlobalFile, String ModelFile, String AutoStopKeysFile, String AutoStopPostsFile);
-		void ProcessSpeechUser(String RobotGID, String Name, String SurName, String UserID, TStringList *DIALOG, String Token, String RobotModelGlobalFile, String RobotModelFile, bool *SaveDialog, String AutoStopKeysFile, String AutoStopPostsFile);
-		void ProcessSpeechUserDo(String UserID, TStringList *DIALOG, String STACK, String Token, String RobotGlobalModelFile, String RobotModelFile, bool *SaveDialog, String AutoStopKeysFile, String AutoStopPostsFile, bool *MakeReaded);
+		void ProcessSpeech(int robotIndex, String GroupName, String RobotName, String Server_ID, String Login, String Password, String Token, String Activity);
+		void ProcessSpeechUser(int robotIndex, String RobotGID, String Name, String SurName, String UserID, TStringList *DIALOG, String Token, bool *SaveDialog);
+		void ProcessSpeechUserDo(int robotIndex, String UserID, TStringList *DIALOG, String STACK, String Token, bool *SaveDialog, bool *MakeReaded);
 		void ProcessMessages_UIDS_To_GlobalUsersCache( String RobotName, String Token );
 		void ProcessTwoClose();
 
@@ -366,7 +365,6 @@ class Tf : public TForm
 {
 	__published:
 	TsSkinManager *MANAGER;
-	TButton *BTEST1;
 	TButton *BTEST2;
 	TsPageControl *PAGES;
 	TsTabSheet *sTabSheet1;
@@ -700,6 +698,7 @@ class Tf : public TForm
 	TsEdit *e_conf_users_Count;
 	TLabel *Label14;
 	TsBitBtn *B_TEST_01;
+    TButton *BTEST1;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall PAGESChange(TObject *Sender);
 	void __fastcall TRAYClick(TObject *Sender);
@@ -745,7 +744,6 @@ class Tf : public TForm
 	void __fastcall N27Click(TObject *Sender);
 	void __fastcall N28Click(TObject *Sender);
 	void __fastcall b_PROCESS_TWO_STARTClick(TObject *Sender);
-	void __fastcall BTEST1Click(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
 	void __fastcall TINTERVALTimer(TObject *Sender);
 	void __fastcall b_PROCESS_TWO_STOPClick(TObject *Sender);

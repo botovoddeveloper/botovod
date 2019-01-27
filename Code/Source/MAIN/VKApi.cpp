@@ -31,20 +31,18 @@ c_vk vk;
 
 bool c_vk::connected( String token )
 {
-	bool isConnect;
+	bool isConnect = false;
 
-	String url = "https://api.vk.com/method/users.get?access_token="+token+"&v="+vk.API_VERSION;
+	String url = "https://api.vk.com/method/users.get"
+    +String("?access_token="+token)
+    +"&v="+vk.API_VERSION;
+    
 	String RETURN = VKAPI_HTTPGET( url );
 
 	if ( Pos("response",RETURN) != 0 )
 	{
 		isConnect = true;
 	}
-	else
-	{
-		isConnect = false;
-	}
-
 	return isConnect;
 }
 void c_vk::connect( String Client_ID, String login, String pass, String *token )
@@ -232,7 +230,10 @@ String  c_vk::set_online( bool *success, String Token )
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/account.setOnline?voip=0&access_token="+Token+"&v=5.62";
+		String URL = "https://api.vk.com/method/account.setOnline"
+        +String("?voip=0")
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -263,7 +264,10 @@ String  c_vk::account_ban_user( bool *success, String UserId, String Token )
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/account.banUser?user_id="+UserId+"&access_token="+Token+"&v="+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/account.banUser"
+        +String("?user_id="+UserId)
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -293,9 +297,13 @@ bool c_vk::robot_in_ban( bool *success, String UserId, String Token )
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/users.get?access_token="+Token+"&v="+vk.API_VERSION+"&user_ids="+UserId+"&fields=blacklisted";
+		String URL = "https://api.vk.com/method/users.get"
+        +String("?user_ids="+UserId)
+        +"&fields=blacklisted"
+        +"access_token="+Token
+        +"&v="+vk.API_VERSION;
+        
 		String R;
-
 		try
 		{
 			R = idHttp->Get( idHttp->URL->URLEncode( URL ) );
@@ -314,7 +322,6 @@ bool c_vk::robot_in_ban( bool *success, String UserId, String Token )
 	}
 	catch ( Exception *ex )
 	{
-
 	}
 
 	return J;
@@ -330,14 +337,10 @@ String  c_vk::users_get( bool *success, String UserIdsCommaLine, String Token, b
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String           URL;
-		if ( MySelf ) 
+		String URL = "https://api.vk.com/method/users.get?access_token="+Token+"&v="+vk.API_VERSION;
+		if ( !MySelf ) 
         {
-            URL = "https://api.vk.com/method/users.get?access_token="+Token+"&v="+vk.API_VERSION;
-        }
-		else          
-        {
-            URL = "https://api.vk.com/method/users.get?access_token="+Token+"&v="+vk.API_VERSION+"&user_ids="+UserIdsCommaLine;
+            URL = URL+"&user_ids="+UserIdsCommaLine;
         }
 
 		try
@@ -367,7 +370,6 @@ String  c_vk::users_search( bool *success, String Request, String Token, int Off
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String fields  = "&fields=sex,can_write_private_message,can_send_friend_request,last_seen";
 		String Online  = "&online=0"; 
         if ( OnlyOnline ) 
         {
@@ -384,7 +386,19 @@ String  c_vk::users_search( bool *success, String Request, String Token, int Off
             exInterests = "&interests="+Interests;
         }
 
-		String URL = "https://api.vk.com/method/users.search?q="+Request+fields+exPhoto+exInterests+"&sort=0"+Online+"&age_from="+IntToStr(AgeFrom)+"&age_to="+IntToStr(AgeTo)+"&offset="+IntToStr(OffSet)+"&count="+IntToStr(Count)+"&access_token="+Token+"&v="+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/users.search?q="
+        +Request                                                                  
+        +"&fields=sex,can_write_private_message,can_send_friend_request,last_seen"    
+        +exPhoto
+        +exInterests
+        +"&sort=0"
+        +Online
+        +"&age_from="+IntToStr(AgeFrom)
+        +"&age_to="+IntToStr(AgeTo)
+        +"&offset="+IntToStr(OffSet)
+        +"&count="+IntToStr(Count)
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -414,7 +428,10 @@ String  c_vk::users_search_from_url( bool *success, String Request, String Token
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/users.search?"+Request+"&access_token="+Token+"&v="+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/users.search?"
+        +Request
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -444,8 +461,13 @@ String  c_vk::groups_getMembers( bool *success, String GroupID, String Token, in
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String fields = "&fields=sex,online,online_mobile,can_write_private_message,last_seen";
-		String URL = "https://api.vk.com/method/groups.getMembers?group_id="+GroupID+fields+"&offset="+IntToStr(OffSet)+"&count="+IntToStr(Count)+"&access_token="+Token+"&v="+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/groups.getMembers"
+        +String("?group_id="+GroupID)
+        +"&fields=sex,online,online_mobile,can_write_private_message,last_seen"
+        +"&offset="+IntToStr(OffSet)
+        +"&count="+IntToStr(Count)
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -475,8 +497,11 @@ String  c_vk::friends_request( bool *success, String Token )
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String fields  = "&extended=1&need_mutual=0&out=0&need_viewed=1";
-		String URL = "https://api.vk.com/method/friends.getRequests?offset=0"+fields+"&access_token="+Token+"&v="+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/friends.getRequests"
+        +String("?offset=0")
+        +"&extended=1&need_mutual=0&out=0&need_viewed=1"
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -515,7 +540,13 @@ String  c_vk::friends_add( bool *success, String UserID, String Token, String Me
             CaptchaANS = "&captcha_key=" + CaptchaANS;
         }
 
-		String URL = "https://api.vk.com/method/friends.add?user_id="+UserID+CaptchaSID+CaptchaANS+"&access_token="+Token+"&v="+vk.API_VERSION+"&text="+Message;
+		String URL = "https://api.vk.com/method/friends.add"
+        +String("?user_id="+UserID)
+        +CaptchaSID
+        +CaptchaANS
+        +"&text="+Message
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -546,7 +577,10 @@ String  c_vk::friends_delete( bool *success, String UserID, String Token )
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/friends.delete?user_id="+UserID+"&access_token="+Token+"&v="+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/friends.delete"
+        +String("?user_id="+UserID)
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -576,8 +610,13 @@ String  c_vk::friends_get( bool *success, String UserID, String Token, int OffSe
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String fields  = "&fields=sex,can_write_private_message,online";
-		String URL = "https://api.vk.com/method/friends.get?user_id="+UserID+fields+"&offset="+IntToStr(OffSet)+"&count="+IntToStr(Count)+"&access_token="+Token+"&v="+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/friends.get"
+        +String("?user_id="+UserID)
+        +"&fields=sex,can_write_private_message,online"
+        +"&offset="+IntToStr(OffSet)
+        +"&count="+IntToStr(Count)
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -616,7 +655,14 @@ String  c_vk::messages_send( bool *success, String UserID, String Message, Strin
             CaptchaANS = "&captcha_key=" + CaptchaANS;
         }
 
-		String URL = "https://api.vk.com/method/messages.send?user_id="+UserID+CaptchaSID+CaptchaANS+"&message="+Message+"&access_token="+Token+"&v="+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/messages.send"
+        +String("?user_id="+UserID)
+        +CaptchaSID
+        +CaptchaANS
+        +"&message="+Message
+        +"&access_token="
+        +Token+"&v="
+        +vk.API_VERSION;
 
 		try
 		{
@@ -646,7 +692,46 @@ String  c_vk::messages_send2( bool *success, String UserID, String attachment, S
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/messages.send?user_id="+UserID+"&attachment="+attachment+"&access_token="+Token+"&v="+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/messages.send"
+        +String("?user_id="+UserID)
+        +"&attachment="+attachment
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
+
+		try
+		{
+			J = idHttp->Get( idHttp->URL->URLEncode( URL ) );
+			*success = true;
+		}
+		catch (...)
+		{
+			*success = false;
+        }
+	}
+	catch ( Exception *ex )
+	{
+		J = ex->Message;
+	}
+
+	return J;
+}
+String  c_vk::messages_getUnreadConversations( bool *success, int OffSet, int Count, String Token )
+{
+	String J = "NULL";
+
+	try
+	{
+		std::auto_ptr<TIdHTTP> idHttp(new TIdHTTP(NULL));
+		idHttp->HandleRedirects = true;
+		idHttp->ConnectTimeout 	= 10000;
+	    idHttp->ReadTimeout 	= 10000;
+
+		String URL = "https://api.vk.com/method/messages.getConversations"
+        +String("?offset="+IntToStr(OffSet))                                                           
+        +"&count="+IntToStr(Count) 
+        +"&filter=unread" 
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -676,7 +761,11 @@ String  c_vk::messages_get( bool *success, int OffSet, int Count, String Token )
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/messages.get?offset="+IntToStr(OffSet)+"&count="+IntToStr(Count)+"&access_token="+Token+"&v="+"5.78";
+		String URL = "https://api.vk.com/method/messages.get"
+        +String("?offset="+IntToStr(OffSet))
+        +"&count="+IntToStr(Count)
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -706,7 +795,11 @@ String  c_vk::messages_getDialogs( bool *success, int OffSet, int Count, String 
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/messages.getDialogs?offset="+IntToStr(OffSet)+"&count="+IntToStr(Count)+"&access_token="+Token+"&v="+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/messages.getDialogs"
+        +String("?offset="+IntToStr(OffSet))
+        +"&count="+IntToStr(Count)
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -736,7 +829,12 @@ String  c_vk::messages_getHistory( bool *success, int OffSet, int Count, String 
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/messages.getHistory?offset="+IntToStr(OffSet)+"&count="+IntToStr(Count)+"&user_id="+UserID+"&access_token="+Token+"&v="+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/messages.getHistory"
+        +String("?offset="+IntToStr(OffSet))
+        +"&count="+IntToStr(Count)
+        +"&user_id="+UserID
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -766,7 +864,10 @@ String  c_vk::messages_markAsRead( bool *success, String MessageIDS, String Toke
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/messages.markAsRead?message_ids="+MessageIDS+"&access_token="+Token+"&v="+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/messages.markAsRead"
+        +String("?message_ids="+MessageIDS)
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -810,7 +911,9 @@ String  c_vk::photos_getUploadServer( bool *success, String Token )
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/photos.getMessagesUploadServer?access_token="+Token+"&v=5.69";//+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/photos.getMessagesUploadServer"
+        +String("?access_token="+Token)
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -840,7 +943,12 @@ String  c_vk::photos_saveMessagesPhoto( bool *success, String photo, String serv
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/photos.saveMessagesPhoto?photo="+photo+"&server="+server+"&hash="+hash+"&access_token="+Token+"&v=5.69";//+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/photos.saveMessagesPhoto"
+        +String("?photo="+photo)
+        +"&server="+server
+        +"&hash="+hash
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -870,7 +978,9 @@ String  c_vk::audio_getUploadServer( bool *success, String Token )
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/audio.getUploadServer?access_token="+Token+"&v=5.69";//+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/audio.getUploadServer"
+        +String("?access_token="+Token)
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -914,7 +1024,12 @@ String  c_vk::audio_Save( bool *success, String audio, String server, String has
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/audio.save?audio="+audio+"&server="+server+"&hash="+hash+"&access_token="+Token+"&v=5.69";//+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/audio.save"
+        +String("?audio="+audio)
+        +"&server="+server
+        +"&hash="+hash
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -944,7 +1059,10 @@ String  c_vk::docs_getMessagesUploadServer( bool *success, String Token )
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/docs.getMessagesUploadServer?type=audio_message&access_token="+Token+"&v=5.69";//+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/docs.getMessagesUploadServer"
+        +String("?type=audio_message")+
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{
@@ -974,7 +1092,12 @@ String  c_vk::docs_save( bool *success, String file, String title, String tags, 
 		idHttp->ConnectTimeout 	= 10000;
 	    idHttp->ReadTimeout 	= 10000;
 
-		String URL = "https://api.vk.com/method/docs.save?file="+file+"&title="+title+"&tags="+tags+"&access_token="+Token+"&v=5.69";//+vk.API_VERSION;
+		String URL = "https://api.vk.com/method/docs.save"
+        +String("?file="+file)
+        +"&title="+title
+        +"&tags="+tags
+        +"&access_token="+Token
+        +"&v="+vk.API_VERSION;
 
 		try
 		{

@@ -11,8 +11,16 @@
 #include <jpeg.hpp>
 #include <IdHashMessageDigest.hpp>
 #include <Vcl.Controls.hpp>
+#include <ostream>
+#include <sstream>
+#include <iomanip>
+#include <cstdio>
+#include "math.h"
+#include <memory>
+#include "inifiles.hpp"
 
 #include <IdHTTP.hpp>
+
 
 
 c_grin g;
@@ -93,20 +101,8 @@ String  c_grin::GetCaptchaRucaptcha1( String file, String captchakey )
 }
 String  __fastcall c_grin::GetMD5(const String data)
 {
-  String result;
-
-  TIdHashMessageDigest5 *idmd5 = new TIdHashMessageDigest5();
-
-  try
-  {
-	result = idmd5->HashStringAsHex(data);
-  }
-  __finally
-  {
-	delete idmd5;
-  }
-
-  return result;
+  std::auto_ptr<TIdHashMessageDigest5> idmd5(new TIdHashMessageDigest5());
+  return idmd5->HashStringAsHex(data);
 }
 AnsiString c_grin::UTF8_TO_CP1251( const char *String )
 {
@@ -220,7 +216,7 @@ String  c_grin::Encrypt( int index, int count, String sharp, String dataline )
 }
 String  c_grin::EncryptToList( String sharp, String dataline )
 {
-	TStringList *L = new TStringList;
+	std::auto_ptr<TStringList> L(new TStringList);
 
 	int shcount = 0;
 	for ( int c = 1; c <= dataline.Length(); c++ )
@@ -245,10 +241,7 @@ String  c_grin::EncryptToList( String sharp, String dataline )
         }
     }
 
-	String J = L->Text;
-
-	delete L;
-	return J;
+	return L->Text;
 }
 void c_grin::LoadFromCSV( WideString file, int ColumnCount, int StartRowIndex, TStringGrid *GRID )
 {
@@ -281,12 +274,11 @@ void c_grin::DevLog( bool enabled, String data )
                 CreateDirectory( dir.c_str(), NULL );
             }
 
-			Graphics::TBitmap *BIT = new Graphics::TBitmap;
-			GetScreen(BIT);
+			std::auto_ptr<Graphics::TBitmap> BIT(new Graphics::TBitmap);
+			GetScreen(BIT.get());
 
 			BIT->Canvas->TextOutW(10,10,data);
 			BIT->SaveToFile( file );
-			delete BIT;
 		}
 		catch ( Exception *ex )
 		{
@@ -368,27 +360,13 @@ String  c_grin::GetDirectoryApplicationDatapath()
 }
 String  c_grin::GetPixSCR( int x, int y )
 {
-	String j = "#0...";
-	Graphics::TBitmap *BIT = new Graphics::TBitmap;
-	GetScreen( BIT );
-	j = GetPixBIT( x, y, BIT );
-
-	delete BIT;
-	return j;
+	std::auto_ptr<Graphics::TBitmap> BIT(new Graphics::TBitmap);
+	GetScreen( BIT.get() );
+	return GetPixBIT( x, y, BIT.get() );
 }
 String  c_grin::GetPixBIT( int x, int y, Graphics::TBitmap *BIT )
 {
 	String ret = "err::api::GetPix";
-
-	try
-	{
-
-	}
-	catch ( Exception *ex )
-	{
-		ShowMessage( "ERR GRIN.CPP | GetPixBit | " + ex->Message );
-	}
-
 	return ret;
 }
 void c_grin::ProcessMessages()
