@@ -128,7 +128,7 @@ class c_main
 		void DrawMessageBox(String Name, String Surname, String RobotGID, TStringList *DIALOGS);
 		void DeleteUserFromQueueAndPutToDialogs(String UserID, String UserName, String UserSurname, String RobotName, bool msghello, String Text);
 		void WriteInboxList(String RobotName, String Token);
-		void WriteOutboxAutoAnsList(String Token, String RobotName);
+		void WriteAutoAnsOutList(String RobotName, String Token);
 		void GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String Token, String RobotName);
 		void GetHistory(TStringList *LIST, String UID, int OUT_3, int Count, String Token, String RobotName);
 		void SetAsRead(TStringList *DIALOG);

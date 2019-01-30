@@ -1464,10 +1464,80 @@ void c_main::WriteInboxList(String RobotName, String Token)
         std::auto_ptr<TStringList> UIDS(new TStringList);
 		f->main->GetDialogs( UIDS.get(), 0, 0, Token, RobotName );
 
+        std::auto_ptr<TStringList> activeUserIds(new TStringList);
+        std::auto_ptr<TStringList> DIALOGS(new TStringList);
+        g.GetFiles( f->main->p_dialogs ,DIALOGS.get());
+        for ( int c = 0; c < DIALOGS->Count; c++ )
+        {
+            String DialogFile = f->main->p_dialogs + DIALOGS->Strings[c];
+            std::auto_ptr<TStringList> DIALOG(new TStringList);
+            DIALOG->LoadFromFile( DialogFile );
+
+            String ROBOTGID = DIALOG->Strings[0];
+            String USERID   = DIALOG->Strings[3];
+
+            if ( RobotName == ROBOTGID )
+            {
+                activeUserIds->Add( USERID );
+            }
+        }
+
 		for ( int c = 0; c < UIDS->Count; c++ )
 		{
 			String UID = UIDS->Strings[c];
-			f->main->GetHistory( INBOX, UID, 1, 10, Token, RobotName );
+
+            if(activeUserIds->IndexOf(UID) >= 0 &&
+               activeUserIds->IndexOf(UID) < activeUserIds->Count)
+            {
+                f->main->GetHistory( INBOX, UID, 0, 10, Token, RobotName );
+            }
+		}
+
+		log(L"Список сообщений получен. Буффер наполнен. Общее количество: [ "+IntToStr(f->main->INBOX->Count)+" ]");
+	}
+	else
+	{
+		log(L"Список сообщений был получен ранее. Буффер наполнен.");
+	}
+}
+
+void c_main::WriteAutoAnsOutList(String RobotName, String Token)
+{
+	if ( Pos(Token,f->main->AUTOANSOUTBOX->Text) == 0 )
+	{
+		log(L"Получение входящих сообщений и заполнение буффера..");
+		g.ProcessMessages();
+        
+        std::auto_ptr<TStringList> UIDS(new TStringList);
+		f->main->GetDialogs( UIDS.get(), 0, 0, Token, RobotName );
+
+        std::auto_ptr<TStringList> activeUserIds(new TStringList);
+        std::auto_ptr<TStringList> DIALOGS(new TStringList);
+        g.GetFiles( f->main->p_dialogs ,DIALOGS.get());
+        for ( int c = 0; c < DIALOGS->Count; c++ )
+        {
+            String DialogFile = f->main->p_dialogs + DIALOGS->Strings[c];
+            std::auto_ptr<TStringList> DIALOG(new TStringList);
+            DIALOG->LoadFromFile( DialogFile );
+
+            String ROBOTGID = DIALOG->Strings[0];
+            String USERID   = DIALOG->Strings[3];
+
+            if ( RobotName == ROBOTGID )
+            {
+                activeUserIds->Add( USERID );
+            }
+        }
+
+		for ( int c = 0; c < UIDS->Count; c++ )
+		{
+			String UID = UIDS->Strings[c];
+
+            if(activeUserIds->IndexOf(UID) >= 0 &&
+               activeUserIds->IndexOf(UID) < activeUserIds->Count)
+            {
+                f->main->GetHistory( AUTOANSOUTBOX, UID, 0, 10, Token, RobotName );
+            }
 		}
 
 		log(L"Список сообщений получен. Буффер наполнен. Общее количество: [ "+IntToStr(f->main->INBOX->Count)+" ]");
@@ -1618,11 +1688,6 @@ void c_main::GetHistory(TStringList *LIST, String UID, int OUT_3, int Count, Str
                   OUT_3 == 2 ) 
             {
                 LIST->Add( Token+"#"+mid+"#"+from_id+"#"+read_state+"#"+title+"#"+body );
-
-                if ( !GlobalUsersCache_Exist(from_id) ) 
-                { 
-                    GlobalUsersCache_Add(from_id);
-                }
                 
                 gotch_cnt++;
 				if ( gotch_cnt >= Count ) 
@@ -4124,21 +4189,7 @@ void c_process::SendAutoAns(String RobotName, String UserID, String MessageData,
     String PX = f->main->PREFIX;
 	f->main->PREFIX = L"Автоответчик : [ "+RobotName+" ] ";
     
-	if ( Pos(Token,f->main->AUTOANSOUTBOX->Text) == 0 )
-	{
-        std::auto_ptr<TStringList> UIDS(new TStringList);
-		f->main->GetDialogs( UIDS.get(), 0, 0, Token, RobotName );
-
-		for ( int c = 0; c < UIDS->Count; c++ )
-		{
-			String UID = UIDS->Strings[c];
-			f->main->GetHistory( f->main->AUTOANSOUTBOX, UID, 1, 10, Token, RobotName );
-		}
-	}
-	else
-	{
-		f->main->log(L"Список диалогов и сообщений был получен ранее. Буффер наполнен.");
-	}
+	f->main->WriteAutoAnsOutList(RobotName, Token);
 
 	f->main->PREFIX = PX;
     
