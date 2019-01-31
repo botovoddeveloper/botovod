@@ -1533,8 +1533,8 @@ void c_main::WriteAutoAnsOutList(String RobotName, String Token)
 		{
 			String UID = UIDS->Strings[c];
 
-            if(activeUserIds->IndexOf(UID) >= 0 &&
-               activeUserIds->IndexOf(UID) < activeUserIds->Count)
+            if(activeUserIds->IndexOf(UID) < 0 ||
+               activeUserIds->IndexOf(UID) >= activeUserIds->Count)
             {
                 f->main->GetHistory( AUTOANSOUTBOX, UID, 0, 10, Token, RobotName );
             }
@@ -3479,24 +3479,24 @@ void c_process::ProcessAutoAnswerCheckNew(String RobotName, String Token)
 {
     f->main->PREFIX = "[ "+RobotName+L" ] Автоответчик : ";
 
-    f->main->WriteInboxList(RobotName, Token);
+    f->main->WriteAutoAnsOutList(RobotName, Token);
 
 	f->BAR->Position = 0;
-	f->BAR->Max      = f->main->INBOX->Count;
+	f->BAR->Max      = f->main->AUTOANSOUTBOX->Count;
 	g.ProcessMessages();
 
 	std::auto_ptr<TStringList> NEW(new TStringList);
     std::auto_ptr<TStringList> DIALOGS(new TStringList);
     g.GetFiles( f->main->p_dialogs ,DIALOGS.get());
 
-    for ( int c = f->main->INBOX->Count-1; c >= 0 ; c-- )
+    for ( int c = f->main->AUTOANSOUTBOX->Count-1; c >= 0 ; c-- )
     {
-        String utoken           = g.Encrypt(1,6,"#",f->main->INBOX->Strings[c]);
-        String mid 			    = g.Encrypt(2,6,"#",f->main->INBOX->Strings[c]);
-        String uid 			    = g.Encrypt(3,6,"#",f->main->INBOX->Strings[c]);
-        String read_state 		= g.Encrypt(4,6,"#",f->main->INBOX->Strings[c]);
-        String title            = g.Encrypt(5,6,"#",f->main->INBOX->Strings[c]);
-        String body             = g.Encrypt(6,6,"#",f->main->INBOX->Strings[c]);
+        String utoken           = g.Encrypt(1,6,"#",f->main->AUTOANSOUTBOX->Strings[c]);
+        String mid 			    = g.Encrypt(2,6,"#",f->main->AUTOANSOUTBOX->Strings[c]);
+        String uid 			    = g.Encrypt(3,6,"#",f->main->AUTOANSOUTBOX->Strings[c]);
+        String read_state 		= g.Encrypt(4,6,"#",f->main->AUTOANSOUTBOX->Strings[c]);
+        String title            = g.Encrypt(5,6,"#",f->main->AUTOANSOUTBOX->Strings[c]);
+        String body             = g.Encrypt(6,6,"#",f->main->AUTOANSOUTBOX->Strings[c]);
 
         bool ex = false;
 
@@ -3516,7 +3516,7 @@ void c_process::ProcessAutoAnswerCheckNew(String RobotName, String Token)
 
         if ( ! ex ) 
         {
-            NEW->Add( f->main->INBOX->Strings[c] );
+            NEW->Add( f->main->AUTOANSOUTBOX->Strings[c] );
         }
 
         f->BAR->Position++;
@@ -5077,17 +5077,14 @@ bool c_ii::if_EqualPosts(String ModelPost, String MyPost)
 				w = false;
 				MakePostLineGetAll(buff,JPOSTVARIABLES.get());
 
-				try
-				{
-					String chn = ModelPost[c+1];
-					if ( chn == "^" ) 
+                if(ModelPost.Length() > (c+1))
+                {
+                    String chn = ModelPost[c+1];
+                    if ( chn == "^" )
                     { 
                         c++; 
                         c++;
                     }
-				}
-				catch (...) 
-                { 
                 }
 			}
 			else
