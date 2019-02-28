@@ -1737,7 +1737,7 @@ String  c_main::GetLastStageName(TStringList *DIALOG)
 }
 void c_main::GetOnlyOneStage(TStringList *MODEL, String StageName)
 {
-	std::auto_ptr<TStringList> A(new TStringList);                                            //log("GetOnlyOneStage - start");
+	std::auto_ptr<TStringList> A(new TStringList);
 
 	bool ex = false;
 	bool wr = false;
@@ -1933,7 +1933,7 @@ void c_main::log_transform()
 	LOG->SaveToStream(ms.get());
 	ms->Position = 0;
 
-	if ( ms->Size > 2000000 )
+	if ( ms->Size > 1024000 )
 	{
 		if ( BUFF_CURRENTLOG == "NULL" || BUFF_CURRENTLOG.Length() == 0 ) 
             generatelogname();
