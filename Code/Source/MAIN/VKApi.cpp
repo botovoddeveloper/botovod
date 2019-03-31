@@ -29,6 +29,21 @@
 
 c_vk vk;
 
+String  c_vk::jsonfix_removeQuotes( String data )
+{
+	String buff = "";
+
+	for ( int c = 1; c < data.Length(); c++ )
+	{
+		String ch = data[c];
+		if ( ch != "\"" ) 
+        {
+            buff = buff + ch;
+        }
+	}
+
+	return buff;
+}
 bool c_vk::connected( String token )
 {
 	bool isConnect = false;
@@ -1098,6 +1113,78 @@ String  c_vk::docs_save( bool *success, String file, String title, String tags, 
         +"&tags="+tags
         +"&access_token="+Token
         +"&v="+vk.API_VERSION;
+
+		try
+		{
+			J = idHttp->Get( idHttp->URL->URLEncode( URL ) );
+			*success = true;
+		}
+		catch (...)
+		{
+			*success = false;
+		}
+	}
+	catch ( Exception *ex )
+	{
+		J = ex->Message;
+	}
+
+	return J;
+}
+
+String  c_vk::token_get( bool *success, String code, String application_id, String application_secret, String redirect_uri )
+{
+    String J = "NULL";
+
+	try
+	{
+		std::auto_ptr<TIdHTTP> idHttp(new TIdHTTP(NULL));
+		idHttp->HandleRedirects = true;
+		idHttp->ConnectTimeout 	= 10000;
+	    idHttp->ReadTimeout 	= 10000;
+
+		String URL = "https://oauth.vk.com/access_token"
+        +String("?client_id="+application_id)
+        +"&client_secret="+application_secret
+        +"&redirect_uri="+redirect_uri
+        +"&code="+code;
+
+		try
+		{
+			J = idHttp->Get( idHttp->URL->URLEncode( URL ) );
+			*success = true;
+		}
+		catch (...)
+		{
+			*success = false;
+		}
+	}
+	catch ( Exception *ex )
+	{
+		J = ex->Message;
+	}
+
+	return J;
+}
+
+String  c_vk::token_get( bool *success, String username, String password, String client_id, String client_secret, String scope )
+{
+    String J = "NULL";
+
+	try
+	{
+		std::auto_ptr<TIdHTTP> idHttp(new TIdHTTP(NULL));
+		idHttp->HandleRedirects = true;
+		idHttp->ConnectTimeout 	= 10000;
+	    idHttp->ReadTimeout 	= 10000;
+
+		String URL = "https://oauth.vk.com/token"
+        +String("?grant_type=password")
+        +"&client_id="+client_id
+        +"&client_secret="+client_secret
+        +"&username="+username
+        +"&password="+password
+        +"&scope="+scope;
 
 		try
 		{

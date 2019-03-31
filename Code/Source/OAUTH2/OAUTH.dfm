@@ -11439,10 +11439,10 @@ object f: Tf
         FF00FFFFFF00}
     end
     object sLabelFX1: TsLabelFX
-      Left = 8
-      Top = 368
-      Width = 44
-      Height = 33
+      Left = 17
+      Top = 377
+      Width = 28
+      Height = 17
       Caption = 'NULL'
       ParentFont = False
       Font.Charset = RUSSIAN_CHARSET
@@ -11451,12 +11451,11 @@ object f: Tf
       Font.Name = 'Consolas'
       Font.Style = []
       Angle = 0
-      Shadow.OffsetKeeper.LeftTop = -10
-      Shadow.OffsetKeeper.RightBottom = 10
+      Shadow.OffsetKeeper.LeftTop = -1
+      Shadow.OffsetKeeper.RightBottom = 3
     end
   end
   object MANAGER: TsSkinManager
-    IsDefault = False
     InternalSkins = <
       item
         Name = 'VKontakte_v2 (internal)'

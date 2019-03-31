@@ -960,21 +960,6 @@ void c_main::logline( String data )
 		log(line);
 	}
 }
-String  c_main::jsonfix( String data )
-{
-	String buff = "";
-
-	for ( int c = 1; c < data.Length(); c++ )
-	{
-		String ch = data[c];
-		if ( ch != "\"" ) 
-        {
-            buff = buff + ch;
-        }
-	}
-
-	return buff;
-}
 void c_main::buffer_write( String data )
 {
 	bool ok = false;
@@ -1245,8 +1230,8 @@ void c_main::response_read(String response, TStringList *L, String Count, String
                 continue;
             }
 
-            uname 	 = jsonfix(uname);
-            usurname = jsonfix(usurname);
+            uname 	 = vk.jsonfix_removeQuotes(uname);
+            usurname = vk.jsonfix_removeQuotes(usurname);
 
             if ( ! GlobalUsersCache_Exist( uid ) )
             {
@@ -1582,7 +1567,15 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String To
 		TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
 		for ( int c = 0; c < obj_items->Count; c++ )
 		{
-			TJSONObject *obj_message = static_cast<TJSONObject*>(obj_items->Items[c]);
+            TJSONObject *obj_item = static_cast<TJSONObject*>(obj_items->Items[c]);
+            if ((obj_item->GetValue("unread"))) {
+                String unread 	      = obj_item->GetValue("unread")->ToString();
+                if (unread != "1") {
+                    continue;
+                }
+            }
+
+            TJSONObject *obj_message = static_cast<TJSONObject*>(obj_item->Get("message")->JsonValue);
 			String mid 	         = obj_message->GetValue("id")->ToString();
 			String date 	     = obj_message->GetValue("date")->ToString();
 			String out 	         = obj_message->GetValue("out")->ToString();

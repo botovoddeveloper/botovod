@@ -17,6 +17,10 @@
 #include <atl\atlbase.h>
 #include <Inifiles.hpp>
 #include <Grin.h>
+#include "VKApi.h"
+#include <System.JSON.hpp>
+#include <Data.DBXJSON.hpp>
+#include <memory>
 
 
 Tf *f;
@@ -25,17 +29,25 @@ class c_main
 {
 	public:
 
-		String CLIENT_ID, SCOPE, API_V, LOGIN, PASSWORD, TOKEN;
+		String APPLICATION_ID; 
+        String APPLICATION_SECRET; 
+        String SCOPE; 
+        String API_V; 
+        String LOGIN; 
+        String PASSWORD; 
+        String TOKEN; 
+        String TOKEN_EXPIRE;
+        String USER_ID;
+        String CODE;
 
 		c_main();
 
 		void data_read();
 		void data_write();
-		void open_url();
+		void open_urlForCode();
+        void open_urlForToken();
 		void fill_submit();
-		void process_result(String data);
-
-		String  get_token( String data );
+        void process_result(String resultString);
 
 		void log( String data );          
         TStringList *LOG;
@@ -65,13 +77,19 @@ void __fastcall Tf::FormShow(TObject *Sender)
 
 	main->data_read();         
     g.ProcessMessages();
-	main->open_url();          
+
+#if 1
+	main->open_urlForToken();          
+    g.ProcessMessages();
+#else    
+    main->open_urlForCode();          
     g.ProcessMessages();
 	main->fill_submit();
+#endif
 }
 
 
-	 c_main::c_main()
+c_main::c_main()
 {
 	LOG = new TStringList;
 	TOKEN = "NULL";
@@ -80,19 +98,28 @@ void __fastcall Tf::FormShow(TObject *Sender)
 void c_main::data_read()
 {
 	log("DATAREAD:");
+    // client_id   2274003   client_secret   hHbZxrka2uZ6jB1inYsH
+    // client_id   3697615   client_secret   AlVXZFMUqyrnABp8ncuU
+    // client_id   3140623   client_secret   VeWdmVclDCtn6ihuP1nt
+    // client_id   3502557   client_secret   PEObAuQi6KloPM4T30DV
+    // client_id   3682744   client_secret   mY6CDUswIVdJLCD3j15n
 
 	String file = g.GetDirectoryApplicationDatapath() + "Global.Conf.ini";
 
 	TMemIniFile *INI = new TMemIniFile( UnicodeString(file), TEncoding::UTF8 );
-	API_V     = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("api"),       UnicodeString("5.0") );    
-	CLIENT_ID = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("client_id"), UnicodeString("0") );    
-	SCOPE     = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("scope"),     UnicodeString("0") );    
-	LOGIN 	  = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("login"),     UnicodeString("0") );    
-	PASSWORD  = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("password"),  UnicodeString("0") );    
+	API_V              = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("api"),       UnicodeString("5.0") );    
+	APPLICATION_ID     = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("application_id"), UnicodeString("0") );
+    APPLICATION_SECRET = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("application_secret"), UnicodeString("0") );    
+	SCOPE              = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("scope"),     UnicodeString("0") );    
+	LOGIN 	           = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("login"),     UnicodeString("0") );    
+	PASSWORD           = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("password"),  UnicodeString("0") );
+    TOKEN_EXPIRE       = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("token_expired"),  UnicodeString("0") );
+    USER_ID            = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("user_id"),  UnicodeString("0") );    
 	delete INI;
 
     log("API_V="+API_V);
-    log("CLIENT_ID="+CLIENT_ID);
+    log("APPLICATION_ID="+APPLICATION_ID);
+    log("APPLICATION_SECRET="+APPLICATION_SECRET);
     log("SCOPE="+SCOPE);
     log("LOGIN="+LOGIN);
     log("PASSWORD="+PASSWORD);
@@ -102,18 +129,28 @@ void c_main::data_write()
 	log("DATAWRITE:");
 	String file = g.GetDirectoryApplicationDatapath() + "Global.Conf.ini";
     TMemIniFile *INI = new TMemIniFile( UnicodeString(file), TEncoding::UTF8 );
-	INI->WriteString( UnicodeString("OAUTH2"), UnicodeString("token"), UnicodeString(TOKEN) );     
+	INI->WriteString( UnicodeString("OAUTH2"), UnicodeString("token"), UnicodeString(TOKEN) );  
+    INI->WriteString( UnicodeString("OAUTH2"), UnicodeString("token_expired"), UnicodeString(TOKEN_EXPIRE) );
+    INI->WriteString( UnicodeString("OAUTH2"), UnicodeString("user_id"), UnicodeString(USER_ID) );   
     INI->UpdateFile();
 	delete INI;
 
     log("TOKEN="+TOKEN);
+    log("TOKEN_EXPIRE="+TOKEN_EXPIRE);
+    log("USER_ID="+USER_ID);
 }
-void c_main::open_url()
+void c_main::open_urlForCode()
 {
 	try
 	{
-		log("OPENURL:");
-		String request = "https://oauth.vk.com/authorize?client_id="+CLIENT_ID+"&scope="+SCOPE+"&redirect_uri=https://oauth.vk.com/blank.html&display=popup&v="+API_V+"&response_type=token";
+		log("OPENURL_CODE:");
+		String request = "https://oauth.vk.com/authorize"
+        +String("?client_id="+APPLICATION_ID)
+        +"&scope="+SCOPE
+        +"&redirect_uri=https://oauth.vk.com/blank.html"
+        +"&display=popup"
+        +"&response_type=code"
+        +"&v="+API_V;
 
 		log( request );
 		f->BROWSER->Navigate( request.w_str() );
@@ -123,6 +160,47 @@ void c_main::open_url()
             Application->ProcessMessages();
         }
 		log( f->BROWSER->LocationURL );
+	}
+	catch ( Exception *ex )
+	{
+		log( ex->Message );
+	}
+}
+void c_main::open_urlForToken()
+{
+	try
+	{
+		log("OPENURL_TOKEN:");
+        String response;
+        bool success = false;
+        while ( ! success )
+        {
+            response = vk.token_get(&success, LOGIN, PASSWORD, APPLICATION_ID, APPLICATION_SECRET, SCOPE);
+            if ( ! success ) 
+            {
+                log(L"Сервер не ответил на запрос. Повтор..");
+            }
+        }
+
+        if ( Pos("error",response) > 0 ) 
+        {   
+            log(L"Сервер сообщает об ошибке: ["+response+"]");
+        }
+        else
+        {
+            log(L"Ответ сервера: ["+response+"]");
+
+            std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
+            TOKEN = vk.jsonfix_removeQuotes(json->GetValue("access_token")->ToString());
+            TOKEN_EXPIRE = json->GetValue("expires_in")->ToString();
+            USER_ID  = json->GetValue("user_id")->ToString();
+        
+            data_write();
+        }
+        
+		log("OAUTH2 STOP");
+		Application->Terminate();
+		
 	}
 	catch ( Exception *ex )
 	{
@@ -151,62 +229,83 @@ void __fastcall Tf::TTimer(TObject *Sender)
 }
 void __fastcall Tf::T2Timer(TObject *Sender)
 {
-	main->log("T2");
-	T2->Enabled = false;
-
-	String RETURN = BROWSER->LocationURL;
-
-	if ( Pos("access_token=",RETURN) != 0 )
-	{
-		main->log("LOCATION:");
-		main->log( RETURN );
-		main->process_result( RETURN );
-	}
-	else
-	{
-        T2->Enabled = true;
-        main->ClickButton(L"Разрешить");
-	}
+    main->log("T2Timer");
+    T2->Enabled = false;
+	main->process_result(BROWSER->LocationURL);
 }
-void c_main::process_result(String data)
+void c_main::process_result(String resultString)
 {
-	if ( Pos("access_token",data) > 0 )
+	if ( Pos("code=",resultString) != 0 )
 	{
-		TOKEN = get_token( data );
-		data_write();
+		log("CODE LOCATION:");
+		log( resultString );
+		
+        log("GETCODE:");
+        int p = Pos("code=",resultString);
+        CODE = resultString.SubString( p+5, resultString.Length() );
+        log( CODE );
+
+        String response;
+        bool success = false;
+        while ( ! success )
+        {
+            response = vk.token_get(&success, CODE, APPLICATION_ID, APPLICATION_SECRET, String("https://oauth.vk.com/blank.html"));
+            if ( ! success ) 
+            {
+                log(L"Сервер не ответил на запрос. Повтор..");
+            }
+        }
+
+        if ( Pos("error",response) > 0 ) 
+        {   
+            log(L"Сервер сообщает об ошибке: ["+response+"]");
+        }
+        else
+        {
+            log(L"Ответ сервера: ["+response+"]");
+
+            std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
+            TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
+            TOKEN = vk.jsonfix_removeQuotes(obj_response->GetValue("access_token")->ToString());
+            String expires_in = obj_response->GetValue("expires_in")->ToString();
+            String user_id  = obj_response->GetValue("user_id")->ToString();
+        
+            data_write();
+        }
+        
 		log("OAUTH2 STOP");
 		Application->Terminate();
 	}
-	else 
-    {
-        log("ACCESS TOKEN NOT FOUND ((((((((((");
-    }
+    else if ( Pos("access_token=",resultString) != 0 )
+	{
+		log("TOKEN LOCATION:");
+		log( resultString );
+
+        log("GETTOKEN:");
+        int p = Pos("access_token=",resultString);
+        TOKEN = resultString.SubString( p+13, resultString.Length() );
+        p = Pos("&",main->TOKEN);
+        TOKEN = TOKEN.SubString( 1, p-1 );
+        log( main->TOKEN );
+        
+        data_write();
+		log("OAUTH2 STOP");
+		Application->Terminate();
+	}
+	else
+	{
+        f->T2->Enabled = true;
+        ClickButton(L"Разрешить");
+	}
 }
 void c_main::log( String data )
 {
-	try
-	{
-		String file = g.GetDirectoryApplicationDatapath() + "Logs\\" + "OAUTH2.log";
-		TDateTime T = Time();
-		LOG->Add( TimeToStr(T) + ": " + data );
-		LOG->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
-		f->sLabelFX1->Caption = data;
-		Application->ProcessMessages();
-	}
-	catch (...)
-	{
-
-	}
-}
-String  c_main::get_token( String data )
-{
-	log("GETTOKEN:");
-	int p = Pos("access_token=",data);
-	data = data.SubString( p+13, data.Length() );
-	p = Pos("&",data);
-	data = data.SubString( 1, p-1 );
-	log( data );
-	return data;
+	String file = g.GetDirectoryApplicationDatapath() + "Logs\\" + "OAUTH2.log";
+    TDateTime T = Time();
+    LOG->Add( TimeToStr(T) + ": " + data );
+    LOG->SaveToFile( UnicodeString(file), TEncoding::UTF8 );
+    f->sLabelFX1->Caption = data;
+    Application->ProcessMessages();
 }
 void c_main::FillForm(String FieldName, String FieldText)
 {

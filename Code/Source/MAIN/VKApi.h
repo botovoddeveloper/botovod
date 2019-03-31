@@ -11,6 +11,8 @@ class c_vk
 
 	String API_VERSION;
 
+    static String jsonfix_removeQuotes( String data );
+
     static void connect( String Client_ID, String login, String pass, String *token );
     static bool connected( String token );
     static String  VKAPI_HTTPGET( String url );
@@ -48,6 +50,9 @@ class c_vk
 	static String  audio_Save( bool *success, String audio, String server, String hash, String Token );
 	static String  docs_getMessagesUploadServer( bool *success, String Token );
 	static String  docs_save( bool *success, String file, String title, String tags, String Token );
+
+    static String  token_get( bool *success, String code, String client_id, String client_secret, String redirect_uri );
+    static String  token_get( bool *success, String username, String password, String client_id, String client_secret, String scope );
 };
 
 extern c_vk vk;
