@@ -216,6 +216,7 @@ class c_process
 
         void CCleanerGO();
 		bool Establish( String RobotName, String *Token );
+        bool UpdateToken( String RobotName, String *Token );
 		String  SendMessage( String UserID, String Message, String Token );
 		String  AddToFriends( String UserID, String Message, String Token );
 		String  RequestsFriends( String Token );
@@ -236,17 +237,11 @@ class c_process
 		void ProcessTwoClose();
 
 		void SendStage1(String UserID, TStringList *DIALOG, String STACK, String Token, TStringList *MODEL);
-
 		void SendGlobalPost(String UserID, TStringList *DIALOG, String POSTTEXT, String Token, TStringList *MODEL, String CURRENT_STAGE);
-
 		void SendStageX(String UserID, TStringList *DIALOG, String STACK, String Token, TStringList *MODEL, String TARGET_STAGE);
-
 		void SendAutoAns(String RobotName, String UserID, String MessageData, String Token, TStringList *DIALOG, bool *success, bool *e900, bool *e902);
-
 		void SendAutoStop(String UserID, TStringList *DIALOG, String STACK, String Token, String AutoStopPostsFile);
-
 		void SendImage(String UserID, TStringList *IMAGELIST, String Token);
-
 		void SendAudio(String UserID, TStringList *AUDIOLIST, String Token);
 		void SendAudioRec(String UserID, TStringList *AUDIOLIST, String Token);
 };

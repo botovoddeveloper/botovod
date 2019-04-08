@@ -1043,27 +1043,27 @@ void c_main::search_request( String RequestUrl, String OffSet, String Count, int
 	g.GetFiles( p_robots, L.get() );
 	get_robotdata( Random(L->Count), &GroupName, &RobotName, &Server_ID, &Login, &Password, &Token, &Activity, &Online, &LastOnline, &freeze );
 
-	if ( f->proc->Establish(RobotName,&Token) )
+	if ( f->proc->UpdateToken(RobotName,&Token) )
 	{
 		String Group               = get_vkurl_param( "group",RequestUrl );
 		String q                   = get_vkurl_param( "q",RequestUrl );
-		String Country 			= get_vkurl_param( "country",RequestUrl );
+		String Country 			   = get_vkurl_param( "country",RequestUrl );
 		String City                = get_vkurl_param( "city",RequestUrl );
-		String AgeFrom 			= get_vkurl_param( "age_from",RequestUrl );
-		String AgeTo   			= get_vkurl_param( "age_to",RequestUrl );
-		String Sex     			= get_vkurl_param( "sex",RequestUrl );
-		String Status  			= get_vkurl_param( "status",RequestUrl );
-		String PhotoEX 			= get_vkurl_param( "photo",RequestUrl );
-		String OnlineEX 			= get_vkurl_param( "online",RequestUrl );
-		String Religion    		= get_vkurl_param( "religion",RequestUrl );
+		String AgeFrom 			   = get_vkurl_param( "age_from",RequestUrl );
+		String AgeTo   		       = get_vkurl_param( "age_to",RequestUrl );
+		String Sex     			   = get_vkurl_param( "sex",RequestUrl );
+		String Status  			   = get_vkurl_param( "status",RequestUrl );
+		String PhotoEX 			   = get_vkurl_param( "photo",RequestUrl );
+		String OnlineEX 		   = get_vkurl_param( "online",RequestUrl );
+		String Religion    		   = get_vkurl_param( "religion",RequestUrl );
 		String PersonalPriority    = get_vkurl_param( "personal_priority",RequestUrl );
-		String PeoplePriority  	= get_vkurl_param( "people_priority",RequestUrl );
+		String PeoplePriority  	   = get_vkurl_param( "people_priority",RequestUrl );
 		String Smoking  			= get_vkurl_param( "smoking",RequestUrl );
 		String Alcogol  			= get_vkurl_param( "alcohol",RequestUrl );
 		String Company  			= get_vkurl_param( "company",RequestUrl );
 		String Position  			= get_vkurl_param( "position",RequestUrl );
 		String MilitaryCountry  	= get_vkurl_param( "mil_country",RequestUrl );
-		String birth_year  		= get_vkurl_param( "byear",RequestUrl );
+		String birth_year  		   = get_vkurl_param( "byear",RequestUrl );
 		String birth_month  	    = get_vkurl_param( "bmonth",RequestUrl );
 		String birth_day  		    = get_vkurl_param( "bday",RequestUrl );
 
@@ -1538,8 +1538,8 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String To
 	log(L"Получение диалогов..");
 	g.ProcessMessages();
 
-	int max_count_of = 0;
 	int current_offset_of = 0;
+    int step_count = 200;
 
 	while ( true )
 	{
@@ -1547,7 +1547,7 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String To
 		bool success = false;
 		while ( ! success )
 		{
-			response = vk.messages_getDialogs(&success,current_offset_of,200,Token);
+			response = vk.messages_getDialogs(&success,current_offset_of,step_count,Token);
 			iSleep(1,Token);
 			if ( ! success ) 
             {
@@ -1563,14 +1563,22 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String To
 		// JSON //////////////////////////////////////////////////////////////////////////////
 		std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
 		TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
-		String messcount = obj_response->GetValue("count")->ToString();
-		TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
+        
+		TJSONArray *obj_items = NULL;
+        if(obj_response->ClassName() == "TJSONArray")
+        {
+            obj_items = static_cast<TJSONArray*>(json->Get("response")->JsonValue);
+        }
+        
 		for ( int c = 0; c < obj_items->Count; c++ )
 		{
             TJSONObject *obj_item = static_cast<TJSONObject*>(obj_items->Items[c]);
-            if ((obj_item->GetValue("unread"))) {
-                String unread 	      = obj_item->GetValue("unread")->ToString();
-                if (unread != "1") {
+            if (obj_item->ClassName() == "TJSONObject" &&
+               (obj_item->GetValue("unread"))) 
+            {
+                String unread = obj_item->GetValue("unread")->ToString();
+                if (unread != "1") 
+                {
                     continue;
                 }
             }
@@ -1606,9 +1614,9 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String To
 			}
 		}
 
-		if ( max_count_of == 0 ) 
+        if(obj_items->Count == 0)
         {
-            max_count_of = StrToInt(messcount);
+            break;
         }
 
         if ( f->CH_APIRET->Checked ) 
@@ -1616,13 +1624,7 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String To
 		    log(L"Смещение: [ "+IntToStr(current_offset_of)+L" ] Количество в стеке: [ "+obj_items->Count+" ]");
         }
 
-		current_offset_of = current_offset_of + 200;
-
-		if (  max_count_of == 0 || 
-              max_count_of < current_offset_of ) 
-        {
-            break;
-        }
+		current_offset_of = current_offset_of + step_count;
 	}
 
 	log(L"Список диалогов получен.");
@@ -2949,6 +2951,89 @@ bool c_process::Establish( String RobotName, String *Token )
 
 	return ESTABLISH;
 }
+bool c_process::UpdateToken( String RobotName, String *Token )
+{
+    bool result = false;
+    f->main->PREFIX = "[ "+RobotName+L" ] Соединение : ";
+
+	String IniFile, GroupName, CurRobotName, Server_ID, Login, Password, Activity, token, Online, LastOnline;  
+    bool freeze;
+
+	std::auto_ptr<TStringList> L(new TStringList);
+	g.GetFiles( f->main->p_robots, L.get() );
+	for ( int c = 0; c < L->Count; c++ )
+	{
+		f->main->get_robotdata( c, &GroupName, &CurRobotName, &Server_ID, &Login, &Password, &token, &Activity, &Online, &LastOnline, &freeze );
+		if ( CurRobotName == RobotName )
+		{
+			IniFile = f->main->p_robots + L->Strings[c] + "\\Conf.ini";
+			break;
+        }
+	}
+
+    std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(IniFile),TEncoding::UTF8 ));
+	String currentToken = INI->ReadString( UnicodeString("CONNECTION"), UnicodeString("token"), UnicodeString("0") );
+    if(vk.connected(currentToken) == false)
+    {
+        String file = g.GetDirectoryApplicationDatapath() + "Global.Conf.ini";
+
+        TMemIniFile *INI = new TMemIniFile( UnicodeString(file), TEncoding::UTF8 );
+        String api                = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("api"),                UnicodeString("5.0") );    
+        String application_id     = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("application_id"),     UnicodeString("0") );
+        String application_secret = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("application_secret"), UnicodeString("0") );
+        String scope              = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("scope"),              UnicodeString("0") );    
+        String login 	          = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("login"),              UnicodeString("0") );    
+        String password           = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("password"),           UnicodeString("0") );
+        delete INI;
+
+        String response;
+        bool success = false;
+        response = vk.token_get(&success, login, password, application_id, application_secret, scope);
+        f->main->iSleep(1, token);
+        if ( !success )
+        {
+            *Token = "NULL";
+            f->main->log("Соединение отсутствует.....");
+        }
+        else
+        {
+            if ( Pos("error",response) > 0 ) 
+            {   
+                f->main->log("Сервер сообщает об ошибке: ["+response+"]");
+            }
+            else
+            {
+                std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
+                String token = vk.jsonfix_removeQuotes(json->GetValue("access_token")->ToString());
+                String token_expire = json->GetValue("expires_in")->ToString();
+                String user_id  = json->GetValue("user_id")->ToString();
+        
+                TDateTime D = Date();
+                TDateTime T = Time();
+                String DT = DateToStr(D) + " - " + TimeToStr(T);
+
+                std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(IniFile), TEncoding::UTF8 ));
+                INI->WriteString(UnicodeString("CONNECTION"), UnicodeString("activity"),  UnicodeString(DT));
+                INI->WriteString(UnicodeString("CONNECTION"), UnicodeString("client_id"), UnicodeString(user_id));
+                INI->WriteString(UnicodeString("CONNECTION"), UnicodeString("token"),     UnicodeString(token));
+                INI->UpdateFile();
+
+                f->main->increment_server();
+                f->main->show_current_server();
+                f->main->log("[ "+RobotName+L" ] : Токен обновлён.");
+                result = true;
+                *Token = token;
+            }
+        }
+    }
+    else
+    {
+        result = true;
+        *Token = currentToken;
+    }
+
+	return result;
+}
 String  c_process::SendMessage( String UserID, String Message, String Token )
 {
 	String response;
@@ -3128,7 +3213,7 @@ void c_process::ProcessTwoOpen()
 					}
 
 					
-					if ( Establish(RobotName,&Token) )
+					if ( UpdateToken(RobotName,&Token) )
 					{
 						if ( f->LV_WORKTASKS->Items->Item[1]->Checked )
                         {
@@ -3197,7 +3282,7 @@ void c_process::ProcessTwoOpen()
 					}
                     else 
                     {
-                        f->main->log("ProcessTwoOpen::Establish return FALSE");
+                        f->main->log("ProcessTwoOpen::UpdateToken return FALSE");
                     }
 				}
 				if ( f->main->TERMINATED ) 
@@ -3312,7 +3397,7 @@ void c_process::ProcessHelloDoSend(String Group, String UserID, String UserName,
 	L->LoadFromFile(RobotPath+"Hello.txt");
 	String LINE = L->Strings[ Random( L->Count ) ];
 
-	if ( Establish(RobotName,&Token) )
+	if ( UpdateToken(RobotName,&Token) )
 	{
 		f->main->log(L"Пользователь: [ " + UserID + " ] , [ " + UserName + " " + UserSurname + " ]");
 
@@ -6176,7 +6261,7 @@ void __fastcall Tf::B_SENDMESSAGEClick(TObject *Sender)
 
 			if ( RobotName == Trim(l_GID->Caption) )
 			{
-				if ( proc->Establish(RobotName,&Token) )
+				if ( proc->UpdateToken(RobotName,&Token) )
 				{
 					String MESSID = proc->SendMessage( id, ME_INPUT->Lines->Text, Token );
 
@@ -6946,7 +7031,7 @@ void __fastcall Tf::N20Click(TObject *Sender)
 		String token;
         if(f->LV_SERVERS->Items->Count > 0)
         {
-            if ( proc->Establish( NeededRobotName, &token ) )
+            if ( proc->UpdateToken( NeededRobotName, &token ) )
             {
                 main->conf_robots(LV_CONF_GROUPS->ItemIndex,false);
 
@@ -6974,7 +7059,7 @@ void __fastcall Tf::N58Click(TObject *Sender)
 	{
 		String NeededRobotName = Trim(LV_CONF_ROBOTS->Items->Item[c]->Caption);
 		String token;
-		if ( proc->Establish( NeededRobotName, &token ) )
+		if ( proc->UpdateToken( NeededRobotName, &token ) )
 		{
 			main->conf_robots(LV_CONF_GROUPS->ItemIndex,false);
 			L->Add( "[ OK ]  "+NeededRobotName );
