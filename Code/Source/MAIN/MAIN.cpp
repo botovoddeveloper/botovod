@@ -1547,7 +1547,7 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String To
 		bool success = false;
 		while ( ! success )
 		{
-			response = vk.messages_getDialogs(&success,current_offset_of,step_count,Token);
+			response = vk.messages_getUnreadConversations(&success,current_offset_of,step_count,Token);
 			iSleep(1,Token);
 			if ( ! success ) 
             {
@@ -1563,68 +1563,38 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String To
 		// JSON //////////////////////////////////////////////////////////////////////////////
 		std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
 		TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
-        
-		TJSONArray *obj_items = NULL;
-        if(obj_response->ClassName() == "TJSONArray")
-        {
-            obj_items = static_cast<TJSONArray*>(json->Get("response")->JsonValue);
-        }
-        
-		for ( int c = 0; c < obj_items->Count; c++ )
+
+        int processed_count = 0;
+        String unread_count = obj_response->GetValue("unread_count")->ToString();
+        for ( int unreadIdx = 1; unreadIdx <= unread_count.ToInt(); unreadIdx++ )
 		{
-            TJSONObject *obj_item = static_cast<TJSONObject*>(obj_items->Items[c]);
-            if (obj_item->ClassName() == "TJSONObject" &&
-               (obj_item->GetValue("unread"))) 
+            if(obj_response->Get(String(unreadIdx))
             {
-                String unread = obj_item->GetValue("unread")->ToString();
-                if (unread != "1") 
+                TJSONObject *obj_unread = static_cast<TJSONObject*>(obj_response->Get(String(unreadIdx))->JsonValue);
+                TJSONObject *obj_conversation = static_cast<TJSONObject*>(obj_unread->Get("conversation")->JsonValue);
+                TJSONObject *obj_peer = static_cast<TJSONObject*>(obj_conversation->Get("peer")->JsonValue);
+                String type = obj_peer->GetValue("type")->ToString();
+                if(vk.jsonfix_removeQuotes(type) == "user")
                 {
-                    continue;
+                    String id = obj_peer->GetValue("id")->ToString();
+                    UIDS->Add( id );
                 }
+
+                processed_count++;
             }
+        }
 
-            TJSONObject *obj_message = static_cast<TJSONObject*>(obj_item->Get("message")->JsonValue);
-			String mid 	         = obj_message->GetValue("id")->ToString();
-			String date 	     = obj_message->GetValue("date")->ToString();
-			String out 	         = obj_message->GetValue("out")->ToString();
-			String user_id 	     = obj_message->GetValue("user_id")->ToString();
-			String read_state 	 = obj_message->GetValue("read_state")->ToString();
-			String title 	     = obj_message->GetValue("title")->ToString();
-			String body 	     = obj_message->GetValue("body")->ToString();
-
-			bool go1 = false; // OUT_3
-			if ( (OUT_3 == 0 && out == "0") ||
-                 (OUT_3 == 1 && out == "1") ||  
-                  OUT_3 == 2 ) 
-            {
-                go1 = true;
-            }
-
-			bool go2 = false; // READSTATE_3
-			if ( (READSTATE_3 == 0 && read_state == "0") ||
-                 (READSTATE_3 == 1 && read_state == "1") ||
-                  READSTATE_3 == 2 ) 
-            {
-                go2 = true;
-            }
-
-			if ( go1 && go2 )
-			{
-				UIDS->Add( user_id );
-			}
-		}
-
-        if(obj_items->Count == 0)
+        if(processed_count <= 0)
         {
             break;
         }
 
         if ( f->CH_APIRET->Checked ) 
         {
-		    log(L"Смещение: [ "+IntToStr(current_offset_of)+L" ] Количество в стеке: [ "+obj_items->Count+" ]");
+		    log(L"Смещение: [ "+IntToStr(current_offset_of)+L" ] Количество в стеке: [ "+processed_count+" ]");
         }
 
-		current_offset_of = current_offset_of + step_count;
+        current_offset_of = current_offset_of + processed_count;
 	}
 
 	log(L"Список диалогов получен.");
