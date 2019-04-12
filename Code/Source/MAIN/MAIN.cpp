@@ -1568,7 +1568,7 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String To
         String unread_count = obj_response->GetValue("unread_count")->ToString();
         for ( int unreadIdx = 1; unreadIdx <= unread_count.ToInt(); unreadIdx++ )
 		{
-            if(obj_response->Get(String(unreadIdx))
+            if(obj_response->Get(String(unreadIdx)))
             {
                 TJSONObject *obj_unread = static_cast<TJSONObject*>(obj_response->Get(String(unreadIdx))->JsonValue);
                 TJSONObject *obj_conversation = static_cast<TJSONObject*>(obj_unread->Get("conversation")->JsonValue);
