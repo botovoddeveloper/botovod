@@ -1185,24 +1185,22 @@ String  c_main::include_actual_bdata(int m, int d, String request)
 }
 void c_main::response_read(String response, TStringList *L, String Count, String OffSet, String RequestUrl, int iteration)
 {
-    if ( Pos("items\":[]",response) == 0 )
+    if(FileExists(f_users))
     {
-        if(FileExists(f_users))
-        {
-            L->LoadFromFile( f_users );
-        }
-        // JSON //////////////////////////////////////////////////////////////////////////////
-        std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
-        TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
-        String allcount = obj_response->GetValue("count")->ToString();
-
-        TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
-        for ( int c = 0; c < obj_items->Count; c++ )
+        L->LoadFromFile( f_users );
+    }
+    // JSON //////////////////////////////////////////////////////////////////////////////
+    std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
+    if(json->Get("response"))
+    {
+        TJSONArray *obj_items = static_cast<TJSONArray*>(json->Get("response")->JsonValue);
+        
+        for ( int c = 1; c < obj_items->Count; c++ )
         {
             TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Items[c]);
 
             String uid = "";
-            TJSONValue* uidObj = x_obj_items->GetValue("id");
+            TJSONValue* uidObj = x_obj_items->GetValue("uid");
             if(uidObj != NULL)
                 uid = uidObj->ToString();
                 
@@ -1274,7 +1272,7 @@ void c_main::response_read(String response, TStringList *L, String Count, String
             conf_ini(true);
         }
     }
-    else 
+    else
     {
         log(L"VK API ВЕРНУЛ [ 0 ] РЕЗУЛЬТАТОВ ПРИ [ OFFSET:"+OffSet+", COUNT:"+Count+" ]");
     }
@@ -1604,9 +1602,7 @@ void c_main::GetHistory(TStringList *LIST, String UID, int OUT_3, int Count, Str
 	log(L"Получение истории сообщений пользователя [ "+UID+L" ] .. Макс [ "+IntToStr( Count )+L" ] шт.");
 	g.ProcessMessages();
 
-	int max_count_of = 0;
 	int current_offset_of = 0;
-
 	int gotch_cnt = 0;
 	bool breaked = false;
 
@@ -1631,16 +1627,15 @@ void c_main::GetHistory(TStringList *LIST, String UID, int OUT_3, int Count, Str
 
 		// JSON //////////////////////////////////////////////////////////////////////////////
 		std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
-		TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
-		String messcount = obj_response->GetValue("count")->ToString();
-		TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
+		TJSONArray *obj_items = static_cast<TJSONArray*>(json->Get("response")->JsonValue);
 
-		for ( int c = 0; c < obj_items->Count; c++ )
+        int processed_count = 0;
+		for ( int c = 1; c < obj_items->Count; c++ )
 		{
 			TJSONObject *obj_root = static_cast<TJSONObject*>(obj_items->Items[c]);
-			String mid 		    = obj_root->GetValue("id")->ToString();
+			String mid 		    = obj_root->GetValue("mid")->ToString();
+            String uid 		    = obj_root->GetValue("uid")->ToString();
 			String body  		= obj_root->GetValue("body")->ToString();
-			String user_id 	    = obj_root->GetValue("user_id")->ToString();
 			String from_id 	    = obj_root->GetValue("from_id")->ToString();
 			String date 		= obj_root->GetValue("date")->ToString();
 			String read_state 	= obj_root->GetValue("read_state")->ToString();
@@ -1661,28 +1656,25 @@ void c_main::GetHistory(TStringList *LIST, String UID, int OUT_3, int Count, Str
                     break; 
                 }
             }
+            processed_count++;
 		}
-		if ( breaked ) 
+
+        if ( breaked ) 
         {
             break;
         }
-		if ( max_count_of == 0 ) 
+        
+        if(processed_count <= 0)
         {
-            max_count_of = StrToInt(messcount);
+            break;
         }
-
+        
         if ( f->CH_APIRET->Checked ) 
         {
-		    log(L"Смещение: [ "+IntToStr(current_offset_of)+L" ] Количество в стеке: [ "+obj_items->Count+" ]");
+		    log(L"Смещение: [ "+IntToStr(current_offset_of)+L" ] Количество в стеке: [ "+processed_count+" ]");
         }
 
-		current_offset_of = current_offset_of + 200;
-
-		if ( max_count_of == 0 || 
-             max_count_of < current_offset_of ) 
-        {
-            break;
-        }
+		current_offset_of = current_offset_of + processed_count;
 	}
 
 	log(L"Получено от [ "+UID+L" ] сообщений [ "+IntToStr( gotch_cnt )+L" ]");
@@ -2963,13 +2955,13 @@ bool c_process::UpdateToken( String RobotName, String *Token )
         if ( !success )
         {
             *Token = "NULL";
-            f->main->log("Соединение отсутствует.....");
+            f->main->log(L"Соединение отсутствует.....");
         }
         else
         {
             if ( Pos("error",response) > 0 ) 
             {   
-                f->main->log("Сервер сообщает об ошибке: ["+response+"]");
+                f->main->log(L"Сервер сообщает об ошибке: ["+response+"]");
             }
             else
             {

@@ -4,9 +4,6 @@
     </PropertyGroup>
     <ItemGroup>
         <Projects Include="The Social Robots.cbproj">
-            <Dependencies>..\OAUTH2\OAUTH2.cbproj</Dependencies>
-        </Projects>
-        <Projects Include="..\OAUTH2\OAUTH2.cbproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -17,32 +14,23 @@
             <Default.Personality/>
         </BorlandProject>
     </ProjectExtensions>
-    <Target Name="The Social Robots" DependsOnTargets="OAUTH2">
+    <Target Name="The Social Robots">
         <MSBuild Projects="The Social Robots.cbproj"/>
     </Target>
-    <Target Name="The Social Robots:Clean" DependsOnTargets="OAUTH2:Clean">
+    <Target Name="The Social Robots:Clean">
         <MSBuild Projects="The Social Robots.cbproj" Targets="Clean"/>
     </Target>
-    <Target Name="The Social Robots:Make" DependsOnTargets="OAUTH2:Make">
+    <Target Name="The Social Robots:Make">
         <MSBuild Projects="The Social Robots.cbproj" Targets="Make"/>
     </Target>
-    <Target Name="OAUTH2">
-        <MSBuild Projects="..\OAUTH2\OAUTH2.cbproj"/>
-    </Target>
-    <Target Name="OAUTH2:Clean">
-        <MSBuild Projects="..\OAUTH2\OAUTH2.cbproj" Targets="Clean"/>
-    </Target>
-    <Target Name="OAUTH2:Make">
-        <MSBuild Projects="..\OAUTH2\OAUTH2.cbproj" Targets="Make"/>
-    </Target>
     <Target Name="Build">
-        <CallTarget Targets="The Social Robots;OAUTH2"/>
+        <CallTarget Targets="The Social Robots"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="The Social Robots:Clean;OAUTH2:Clean"/>
+        <CallTarget Targets="The Social Robots:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="The Social Robots:Make;OAUTH2:Make"/>
+        <CallTarget Targets="The Social Robots:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>
