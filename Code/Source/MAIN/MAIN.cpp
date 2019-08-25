@@ -88,6 +88,7 @@ void __fastcall Tf::FormShow(TObject *Sender)
 
 			BTEST1->SetFocus();
 			main->conf(false);
+            vk.API_VERSION = f->main->APIV;
 
 			vcl->unset();
 			vcl->set();
@@ -1193,16 +1194,18 @@ void c_main::response_read(String response, TStringList *L, String Count, String
     std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
     if(json->Get("response"))
     {
-        TJSONArray *obj_items = static_cast<TJSONArray*>(json->Get("response")->JsonValue);
-        
+        TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
+        String count = obj_response->GetValue("count")->ToString();
+        TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->GetValue("items"));
+        int ccc = obj_items->Count;
         for ( int c = 1; c < obj_items->Count; c++ )
         {
             TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Items[c]);
 
-            String uid = "";
-            TJSONValue* uidObj = x_obj_items->GetValue("uid");
-            if(uidObj != NULL)
-                uid = uidObj->ToString();
+            String id = "";
+            TJSONValue* idObj = x_obj_items->GetValue("id");
+            if(idObj != NULL)
+                id = idObj->ToString();            
                 
             TJSONValue* unameObj = x_obj_items->GetValue("first_name");
             String uname = "";
@@ -1214,32 +1217,23 @@ void c_main::response_read(String response, TStringList *L, String Count, String
             if(usurnameObj != NULL)
                 usurname = usurnameObj->ToString();
                 
-            TJSONValue* canwritepmObj = x_obj_items->GetValue("can_write_private_message");
-            String canwritepm = "";
-            if(canwritepmObj != NULL)
-                canwritepm = canwritepmObj->ToString();
-
-            if ( f->LV_WORKTASKS->Items->Item[5]->Checked && 
-                 canwritepm == "0" )
-            {
-                log(L"Запрет Друзей : Пользователь: [ "+uid+" ] [ "+uname+" "+usurname+L" ] не принимает сообщения." );
-                GlobalUsersCache_Delete( uid );
-                log(L"Запрет Друзей : Пользователь [ "+uid+L" ] удалён из Global.Users.Cache" );
-                continue;
-            }
+            TJSONValue* trackcodeObj = x_obj_items->GetValue("track_code");
+            String trackcode = "";
+            if(trackcodeObj != NULL)
+                trackcode = trackcodeObj->ToString();
 
             uname 	 = vk.jsonfix_removeQuotes(uname);
             usurname = vk.jsonfix_removeQuotes(usurname);
 
-            if ( ! GlobalUsersCache_Exist( uid ) )
+            if ( ! GlobalUsersCache_Exist( id ) )
             {
                 TDateTime D = Date();
                 TDateTime T = Time();
                 String DT = DateToStr(D) + " - " + TimeToStr(T);
-                L->Add( Trim(f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption)+"#"+uid+"#"+uname+"#"+usurname+"#"+DT );
+                L->Add( Trim(f->LV_CONF_GROUPS->Items->Item[f->LV_CONF_GROUPS->ItemIndex]->Caption)+"#"+id+"#"+uname+"#"+usurname+"#"+DT );
 
-                GlobalUsersCache_Add( uid );
-                log(L"В очередь добавлен пользователь: [ "+uid+" ] [ "+uname+" "+usurname+" ]" );
+                GlobalUsersCache_Add( id );
+                log(L"В очередь добавлен пользователь: [ "+id+" ] [ "+uname+" "+usurname+" ]" );
                 countOfprocessed++;
 
                 if ( countOfprocessed >= StrToInt(Count) ) 
@@ -1249,7 +1243,7 @@ void c_main::response_read(String response, TStringList *L, String Count, String
             }
             else
             {
-                log( L"Пользователь [ " +uid+ L" ] уже в очереди или обрабатывался ранее. Global.Users.Cache." );
+                log( L"Пользователь [ " +id+ L" ] уже в очереди или обрабатывался ранее. Global.Users.Cache." );
             }
         }
 
