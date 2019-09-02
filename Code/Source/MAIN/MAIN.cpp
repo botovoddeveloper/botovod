@@ -1195,9 +1195,7 @@ void c_main::response_read(String response, TStringList *L, String Count, String
     if(json->Get("response"))
     {
         TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
-        String count = obj_response->GetValue("count")->ToString();
         TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->GetValue("items"));
-        int ccc = obj_items->Count;
         for ( int c = 1; c < obj_items->Count; c++ )
         {
             TJSONObject* x_obj_items = static_cast<TJSONObject*>(obj_items->Items[c]);
@@ -1557,23 +1555,26 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String To
 		TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
 
         int processed_count = 0;
-        String unread_count = obj_response->GetValue("unread_count")->ToString();
-        for ( int unreadIdx = 1; unreadIdx <= unread_count.ToInt(); unreadIdx++ )
-		{
-            if(obj_response->Get(String(unreadIdx)))
+        if (obj_response->GetValue("count")->ToString().ToInt() > 0) 
+        {
+            String unread_count = obj_response->GetValue("unread_count")->ToString();
+            for ( int unreadIdx = 1; unreadIdx <= unread_count.ToInt(); unreadIdx++ )
             {
-                TJSONObject *obj_unread = static_cast<TJSONObject*>(obj_response->Get(String(unreadIdx))->JsonValue);
-                TJSONObject *obj_conversation = static_cast<TJSONObject*>(obj_unread->Get("conversation")->JsonValue);
-                TJSONObject *obj_peer = static_cast<TJSONObject*>(obj_conversation->Get("peer")->JsonValue);
-                String type = obj_peer->GetValue("type")->ToString();
-                if(vk.jsonfix_removeQuotes(type) == "user")
+                if(obj_response->Get(String(unreadIdx)))
                 {
-                    String id = obj_peer->GetValue("id")->ToString();
-                    UIDS->Add( id );
-                }
+                    TJSONObject *obj_unread = static_cast<TJSONObject*>(obj_response->Get(String(unreadIdx))->JsonValue);
+                    TJSONObject *obj_conversation = static_cast<TJSONObject*>(obj_unread->Get("conversation")->JsonValue);
+                    TJSONObject *obj_peer = static_cast<TJSONObject*>(obj_conversation->Get("peer")->JsonValue);
+                    String type = obj_peer->GetValue("type")->ToString();
+                    if(vk.jsonfix_removeQuotes(type) == "user")
+                    {
+                        String id = obj_peer->GetValue("id")->ToString();
+                        UIDS->Add( id );
+                    }
 
-                processed_count++;
-            }
+                    processed_count++;
+                }
+            }   
         }
 
         if(processed_count <= 0)
@@ -2932,19 +2933,15 @@ bool c_process::UpdateToken( String RobotName, String *Token )
     if(vk.connected(currentToken) == false)
     {
         String file = g.GetDirectoryApplicationDatapath() + "Global.Conf.ini";
-
-        TMemIniFile *INI = new TMemIniFile( UnicodeString(file), TEncoding::UTF8 );
+        std::auto_ptr<TMemIniFile> INI(new TMemIniFile( UnicodeString(file), TEncoding::UTF8 ));
         String api                = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("api"),                UnicodeString("5.0") );    
         String application_id     = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("application_id"),     UnicodeString("0") );
         String application_secret = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("application_secret"), UnicodeString("0") );
-        String scope              = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("scope"),              UnicodeString("0") );    
-        String login 	          = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("login"),              UnicodeString("0") );    
-        String password           = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("password"),           UnicodeString("0") );
-        delete INI;
+        String scope              = INI->ReadString( UnicodeString("OAUTH2"), UnicodeString("scope"),              UnicodeString("0") );
 
         String response;
         bool success = false;
-        response = vk.token_get(&success, login, password, application_id, application_secret, scope);
+        response = vk.token_get(&success, Login, Password, application_id, application_secret, scope);
         f->main->iSleep(1, token);
         if ( !success )
         {
