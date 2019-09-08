@@ -1557,16 +1557,18 @@ void c_main::GetDialogs(TStringList *UIDS, int OUT_3, int READSTATE_3, String To
         int processed_count = 0;
         if (obj_response->GetValue("count")->ToString().ToInt() > 0) 
         {
-            String unread_count = obj_response->GetValue("unread_count")->ToString();
-            for ( int unreadIdx = 1; unreadIdx <= unread_count.ToInt(); unreadIdx++ )
-            {
-                if(obj_response->Get(String(unreadIdx)))
+            TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
+            for ( int c = 0; c < obj_items->Count; c++ )
+		    {
+			    TJSONObject *obj_item = static_cast<TJSONObject*>(obj_items->Items[c]);
+                if(obj_item != NULL)
                 {
-                    TJSONObject *obj_unread = static_cast<TJSONObject*>(obj_response->Get(String(unreadIdx))->JsonValue);
-                    TJSONObject *obj_conversation = static_cast<TJSONObject*>(obj_unread->Get("conversation")->JsonValue);
+                    TJSONObject *obj_conversation = static_cast<TJSONObject*>(obj_item->Get("conversation")->JsonValue);
                     TJSONObject *obj_peer = static_cast<TJSONObject*>(obj_conversation->Get("peer")->JsonValue);
                     String type = obj_peer->GetValue("type")->ToString();
-                    if(vk.jsonfix_removeQuotes(type) == "user")
+                    if(obj_conversation->GetValue("unread_count") &&
+                       obj_conversation->GetValue("unread_count")->ToString().ToInt() > 0 &&
+                        vk.jsonfix_removeQuotes(type) == "user")
                     {
                         String id = obj_peer->GetValue("id")->ToString();
                         UIDS->Add( id );
@@ -1622,37 +1624,43 @@ void c_main::GetHistory(TStringList *LIST, String UID, int OUT_3, int Count, Str
 
 		// JSON //////////////////////////////////////////////////////////////////////////////
 		std::auto_ptr<TJSONObject> json (static_cast<TJSONObject*>(TJSONObject::ParseJSONValue(response)));
-		TJSONArray *obj_items = static_cast<TJSONArray*>(json->Get("response")->JsonValue);
+	    TJSONObject *obj_response = static_cast<TJSONObject*>(json->Get("response")->JsonValue);
 
         int processed_count = 0;
-		for ( int c = 1; c < obj_items->Count; c++ )
-		{
-			TJSONObject *obj_root = static_cast<TJSONObject*>(obj_items->Items[c]);
-			String mid 		    = obj_root->GetValue("mid")->ToString();
-            String uid 		    = obj_root->GetValue("uid")->ToString();
-			String body  		= obj_root->GetValue("body")->ToString();
-			String from_id 	    = obj_root->GetValue("from_id")->ToString();
-			String date 		= obj_root->GetValue("date")->ToString();
-			String read_state 	= obj_root->GetValue("read_state")->ToString();
-			String out 		    = obj_root->GetValue("out")->ToString();
-            String title 		= "NULL";
-
-			bool go = false; // OUT_3
-			if ( (OUT_3 == 0 && out == "0") ||
-                 (OUT_3 == 1 && out == "1") ||
-                  OUT_3 == 2 ) 
+        if (obj_response->GetValue("count")->ToString().ToInt() > 0) 
+        {
+            TJSONArray *obj_items = static_cast<TJSONArray*>(obj_response->Get("items")->JsonValue);
+            for ( int c = 0; c < obj_items->Count; c++ )
             {
-                LIST->Add( Token+"#"+mid+"#"+from_id+"#"+read_state+"#"+title+"#"+body );
-                
-                gotch_cnt++;
-				if ( gotch_cnt >= Count ) 
-                { 
-                    breaked = true; 
-                    break; 
+                TJSONObject *obj_root = static_cast<TJSONObject*>(obj_items->Items[c]);
+                String mid 		    = obj_root->GetValue("id")->ToString();
+                String text  		= obj_root->GetValue("text")->ToString();
+                String from_id 	    = obj_root->GetValue("from_id")->ToString();
+                String date 		= obj_root->GetValue("date")->ToString();
+                String read_state 	= "0";
+                if(obj_root->GetValue("read_state"))
+                {
+                    read_state = obj_root->GetValue("read_state")->ToString();    
                 }
+                String out 		    = obj_root->GetValue("out")->ToString();
+
+                bool go = false; // OUT_3
+                if ( (OUT_3 == 0 && out == "0") ||
+                     (OUT_3 == 1 && out == "1") ||
+                      OUT_3 == 2 ) 
+                {
+                    LIST->Add( Token+"#"+mid+"#"+from_id+"#"+read_state+"#"+"NULL"+"#"+text );
+                
+                    gotch_cnt++;
+                    if ( gotch_cnt >= Count ) 
+                    { 
+                        breaked = true; 
+                        break; 
+                    }
+                }
+                processed_count++;
             }
-            processed_count++;
-		}
+        }
 
         if ( breaked ) 
         {
